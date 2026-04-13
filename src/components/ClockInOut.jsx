@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { EMPLOYEES } from '../data/mockData'
+import { loadActiveEmployees } from '../utils/usersStorage'
 
 const STORAGE_KEY = 'pp_clock_records'
 
@@ -10,12 +10,8 @@ function loadRecords() {
 function saveRecords(records) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
 }
-
 function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-}
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 function calcHours(clockIn, clockOut) {
   const ms = new Date(clockOut) - new Date(clockIn)
@@ -25,22 +21,28 @@ function calcHours(clockIn, clockOut) {
 }
 
 export default function ClockInOut({ onClose }) {
-  const [records, setRecords]       = useState(loadRecords)
-  const [selectedEmp, setSelectedEmp] = useState(EMPLOYEES[0].name)
-  const [pin, setPin]               = useState('')
-  const [error, setError]           = useState('')
-  const [success, setSuccess]       = useState('')
-  const [now, setNow]               = useState(new Date())
+  const [employees,   setEmployees]   = useState(() => loadActiveEmployees())
+  const [records,     setRecords]     = useState(loadRecords)
+  const [selectedEmp, setSelectedEmp] = useState(() => loadActiveEmployees()[0]?.name ?? '')
+  const [pin,         setPin]         = useState('')
+  const [error,       setError]       = useState('')
+  const [success,     setSuccess]     = useState('')
+  const [now,         setNow]         = useState(new Date())
 
-  // Live clock
+  // Re-read employees every time the modal opens so it stays in sync with Admin
+  useEffect(() => {
+    const fresh = loadActiveEmployees()
+    setEmployees(fresh)
+    setSelectedEmp(prev => fresh.find(e => e.name === prev) ? prev : (fresh[0]?.name ?? ''))
+  }, [])
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
 
-  // Who is currently clocked in
   const clockedIn = (empName) => {
-    const emp = records.filter(r => r.employee === empName)
+    const emp  = records.filter(r => r.employee === empName)
     const last = emp[emp.length - 1]
     return last && !last.clockOut ? last : null
   }
@@ -52,25 +54,19 @@ export default function ClockInOut({ onClose }) {
   }
 
   const handleAction = () => {
-    const emp = EMPLOYEES.find(e => e.name === selectedEmp)
+    const emp = employees.find(e => e.name === selectedEmp)
     if (!emp || emp.pin !== pin) {
       setError('Incorrect PIN'); setPin(''); return
     }
     setError('')
     const active = clockedIn(selectedEmp)
     const ts = new Date().toISOString()
-
     let updated
     if (active) {
-      // Clock OUT
-      updated = records.map(r =>
-        r.id === active.id ? { ...r, clockOut: ts } : r
-      )
+      updated = records.map(r => r.id === active.id ? { ...r, clockOut: ts } : r)
       setSuccess(`${selectedEmp} clocked out at ${formatTime(ts)}`)
     } else {
-      // Clock IN
-      const newRecord = { id: Date.now(), employee: selectedEmp, clockIn: ts, clockOut: null }
-      updated = [...records, newRecord]
+      updated = [...records, { id: Date.now(), employee: selectedEmp, clockIn: ts, clockOut: null }]
       setSuccess(`${selectedEmp} clocked in at ${formatTime(ts)}`)
     }
     saveRecords(updated)
@@ -79,58 +75,74 @@ export default function ClockInOut({ onClose }) {
     setTimeout(() => setSuccess(''), 3000)
   }
 
-  // Today's records
   const today = new Date().toDateString()
   const todayRecords = records.filter(r => new Date(r.clockIn).toDateString() === today)
+  const isClockedIn  = !!clockedIn(selectedEmp)
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+      backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: '#323232', border: '1px solid #555', borderRadius: 8,
-        width: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column'
+        background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)', border: '1px solid #1e293b', borderRadius: 10,
+        width: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
       }}>
         {/* Header */}
         <div style={{
-          padding: '14px 24px', background: '#3d3d3d',
-          borderBottom: '1px solid #555', display: 'flex', alignItems: 'center', gap: 12
+          padding: '14px 22px', background: '#0f172a',
+          borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 12,
+          flexShrink: 0,
         }}>
-          <span style={{ fontSize: 22 }}>⏰</span>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Clock In / Out</h2>
-          <span style={{ marginLeft: 'auto', color: '#4caf50', fontSize: 20, fontWeight: 700, fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 20 }}>⏰</span>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>Clock In / Out</h2>
+          <span style={{
+            marginLeft: 'auto', color: '#22c55e',
+            fontSize: 18, fontWeight: 700, fontFamily: 'monospace',
+          }}>
             {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
           <button onClick={onClose} style={{
-            padding: '6px 14px', background: '#555', border: 'none',
-            borderRadius: 4, color: '#fff', fontSize: 12, cursor: 'pointer', marginLeft: 12
-          }}>✕ Close</button>
+            padding: '6px 14px', background: 'transparent',
+            border: '1px solid #1e293b', borderRadius: 5,
+            color: '#64748b', fontSize: 12, cursor: 'pointer', marginLeft: 8,
+            transition: 'all 0.15s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+          >✕ Close</button>
         </div>
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Left: action panel */}
-          <div style={{ width: 280, padding: 24, borderRight: '1px solid #444', flexShrink: 0 }}>
-            {/* Current status badges */}
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ color: '#888', fontSize: 12, marginBottom: 10 }}>Current Status</p>
+          <div style={{ width: 280, padding: 20, borderRight: '1px solid #1e293b', flexShrink: 0 }}>
+
+            {/* Current status */}
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ color: '#475569', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 10 }}>
+                CURRENT STATUS
+              </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {EMPLOYEES.map(emp => {
+                {employees.map(emp => {
                   const active = clockedIn(emp.name)
                   return (
                     <div key={emp.name} style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '6px 10px', background: '#2c2c2c', borderRadius: 6,
-                      border: `1px solid ${active ? '#27ae60' : '#3a3a3a'}`
+                      padding: '7px 10px', background: '#0f172a', borderRadius: 6,
+                      border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : '#1e293b'}`,
+                      transition: 'all 0.2s ease',
                     }}>
                       <div style={{
-                        width: 8, height: 8, borderRadius: '50%',
-                        background: active ? '#27ae60' : '#555'
+                        width: 7, height: 7, borderRadius: '50%',
+                        background: active ? '#22c55e' : '#334155',
+                        boxShadow: active ? '0 0 6px #22c55e' : 'none',
                       }} />
-                      <span style={{ color: '#ccc', fontSize: 13, flex: 1 }}>{emp.name}</span>
+                      <span style={{ color: '#94a3b8', fontSize: 13, flex: 1 }}>{emp.name}</span>
                       {active && (
-                        <span style={{ color: '#4caf50', fontSize: 11 }}>
-                          since {formatTime(active.clockIn)}
+                        <span style={{ color: '#22c55e', fontSize: 10 }}>
+                          {formatTime(active.clockIn)}
                         </span>
                       )}
                     </div>
@@ -141,32 +153,38 @@ export default function ClockInOut({ onClose }) {
 
             {/* Employee selector */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ color: '#aaa', fontSize: 12, display: 'block', marginBottom: 6 }}>Employee</label>
+              <label style={{ color: '#475569', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+                EMPLOYEE
+              </label>
               <select
                 value={selectedEmp}
                 onChange={e => { setSelectedEmp(e.target.value); setPin(''); setError('') }}
                 style={{
-                  width: '100%', padding: '8px 12px', background: '#2c2c2c',
-                  border: '1px solid #555', borderRadius: 4, color: '#fff', fontSize: 14
+                  width: '100%', padding: '8px 12px', background: '#0f172a',
+                  border: '1px solid #1e293b', borderRadius: 6,
+                  color: '#f1f5f9', fontSize: 13, outline: 'none', cursor: 'pointer',
                 }}
               >
-                {EMPLOYEES.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
+                {employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
               </select>
             </div>
 
             {/* PIN */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ color: '#aaa', fontSize: 12, display: 'block', marginBottom: 6 }}>PIN</label>
+              <label style={{ color: '#475569', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+                PIN
+              </label>
               <input
                 type="password" value={pin} readOnly
                 style={{
-                  width: '100%', padding: '8px 12px', background: '#2c2c2c',
-                  border: `1px solid ${error ? '#e74c3c' : '#555'}`,
-                  borderRadius: 4, color: '#fff', fontSize: 18, letterSpacing: 6
+                  width: '100%', padding: '8px 12px', background: '#0f172a',
+                  border: `1px solid ${error ? '#ef4444' : '#1e293b'}`,
+                  borderRadius: 6, color: '#f1f5f9', fontSize: 20, letterSpacing: 6,
+                  outline: 'none', boxSizing: 'border-box',
                 }}
               />
-              {error && <p style={{ color: '#e74c3c', fontSize: 11, marginTop: 4 }}>{error}</p>}
-              {success && <p style={{ color: '#4caf50', fontSize: 11, marginTop: 4 }}>{success}</p>}
+              {error   && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 5 }}>{error}</p>}
+              {success && <p style={{ color: '#22c55e', fontSize: 11, marginTop: 5 }}>{success}</p>}
             </div>
 
             {/* Numpad */}
@@ -174,66 +192,77 @@ export default function ClockInOut({ onClose }) {
               {['7','8','9','4','5','6','1','2','3','0','Clear'].map(k => (
                 <button key={k} onClick={() => handleKey(k)} style={{
                   gridColumn: k === 'Clear' ? 'span 2' : 'auto',
-                  padding: '12px', background: '#4a4a4a', border: '1px solid #555',
-                  borderRadius: 6, color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer'
-                }}>{k}</button>
+                  padding: '11px', background: '#0f172a',
+                  border: '1px solid #1e293b', borderRadius: 6,
+                  color: '#f1f5f9', fontSize: k === 'Clear' ? 11 : 16,
+                  fontWeight: 600, cursor: 'pointer', transition: 'background 0.1s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#131d35' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#0f172a' }}
+                >{k}</button>
               ))}
             </div>
 
             {/* Action button */}
             <button onClick={handleAction} style={{
               width: '100%', padding: '12px',
-              background: clockedIn(selectedEmp) ? '#e74c3c' : '#27ae60',
+              background: isClockedIn ? '#ef4444' : '#22c55e',
               border: 'none', borderRadius: 6, color: '#fff',
-              fontSize: 15, fontWeight: 700, cursor: 'pointer'
-            }}>
-              {clockedIn(selectedEmp) ? '🔴 Clock Out' : '🟢 Clock In'}
+              fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              transition: 'opacity 0.15s',
+              boxShadow: isClockedIn ? '0 0 16px rgba(239,68,68,0.3)' : '0 0 16px rgba(34,197,94,0.3)',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.85' }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+            >
+              {isClockedIn ? '🔴 Clock Out' : '🟢 Clock In'}
             </button>
           </div>
 
           {/* Right: today's log */}
-          <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
-            <p style={{ color: '#888', fontSize: 12, marginBottom: 14 }}>
-              Today's Log — {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          <div style={{ flex: 1, padding: 20, overflowY: 'auto' }}>
+            <p style={{ color: '#475569', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 14 }}>
+              TODAY'S LOG — {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
 
             {todayRecords.length === 0 && (
-              <p style={{ color: '#555', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
+              <p style={{ color: '#334155', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
                 No clock-in records today
               </p>
             )}
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              {todayRecords.length > 0 && (
+            {todayRecords.length > 0 && (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #3a3a3a' }}>
+                  <tr style={{ borderBottom: '1px solid rgba(30,41,59,0.5)' }}>
                     {['Employee', 'Clock In', 'Clock Out', 'Hours'].map(h => (
-                      <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#666', fontWeight: 600, fontSize: 11 }}>{h}</th>
+                      <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#475569', fontWeight: 600, fontSize: 11 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
-              )}
-              <tbody>
-                {[...todayRecords].reverse().map(r => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid #2a2a2a' }}>
-                    <td style={{ padding: '10px', color: '#e0e0e0' }}>{r.employee}</td>
-                    <td style={{ padding: '10px', color: '#4caf50' }}>{formatTime(r.clockIn)}</td>
-                    <td style={{ padding: '10px', color: r.clockOut ? '#aaa' : '#f39c12' }}>
-                      {r.clockOut ? formatTime(r.clockOut) : '—  Active'}
-                    </td>
-                    <td style={{ padding: '10px', color: '#ccc' }}>
-                      {r.clockOut ? calcHours(r.clockIn, r.clockOut) : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                <tbody>
+                  {[...todayRecords].reverse().map(r => (
+                    <tr key={r.id} style={{ borderBottom: '1px solid rgba(30,41,59,0.5)' }}>
+                      <td style={{ padding: '10px', color: '#f1f5f9' }}>{r.employee}</td>
+                      <td style={{ padding: '10px', color: '#22c55e' }}>{formatTime(r.clockIn)}</td>
+                      <td style={{ padding: '10px', color: r.clockOut ? '#94a3b8' : '#f59e0b' }}>
+                        {r.clockOut ? formatTime(r.clockOut) : '— Active'}
+                      </td>
+                      <td style={{ padding: '10px', color: '#64748b' }}>
+                        {r.clockOut ? calcHours(r.clockIn, r.clockOut) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
 
-            {/* Summary */}
             {todayRecords.length > 0 && (
-              <div style={{ marginTop: 20, padding: 16, background: '#2c2c2c', borderRadius: 8 }}>
-                <p style={{ color: '#888', fontSize: 12, marginBottom: 10 }}>Today's Summary</p>
-                {EMPLOYEES.map(emp => {
+              <div style={{ marginTop: 20, padding: 16, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }}>
+                <p style={{ color: '#475569', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 10 }}>
+                  TODAY'S SUMMARY
+                </p>
+                {employees.map(emp => {
                   const empRecs = todayRecords.filter(r => r.employee === emp.name && r.clockOut)
                   const totalMs = empRecs.reduce((s, r) => s + (new Date(r.clockOut) - new Date(r.clockIn)), 0)
                   const h = Math.floor(totalMs / 3600000)
@@ -241,8 +270,8 @@ export default function ClockInOut({ onClose }) {
                   if (empRecs.length === 0) return null
                   return (
                     <div key={emp.name} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ color: '#ccc', fontSize: 13 }}>{emp.name}</span>
-                      <span style={{ color: '#4caf50', fontSize: 13, fontWeight: 600 }}>{h}h {m}m</span>
+                      <span style={{ color: '#94a3b8', fontSize: 13 }}>{emp.name}</span>
+                      <span style={{ color: '#22c55e', fontSize: 13, fontWeight: 600 }}>{h}h {m}m</span>
                     </div>
                   )
                 })}

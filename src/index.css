@@ -1,33 +1,76 @@
-* {
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #2c2c2c;
-  color: #f0f0f0;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #020817;
+  color: #f1f5f9;
   height: 100vh;
   overflow: hidden;
+  line-height: 1.5;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  {
+  background: #1e293b;
+  border-radius: 99px;
+  transition: background 0.2s;
 }
-::-webkit-scrollbar-track {
-  background: #1a1a2a;
-}
-::-webkit-scrollbar-thumb {
-  background: #444;
-  border-radius: 3px;
+::-webkit-scrollbar-thumb:hover { background: #334155; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ── Focus ────────────────────────────────────────────────────────────────── */
+input:focus, textarea:focus, select:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid rgba(37,99,235,0.6);
+  outline-offset: 2px;
 }
 
-input:focus {
-  outline: none;
-}
-
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
 button {
   cursor: pointer;
   font-family: inherit;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+button:active { transform: scale(0.97); }
+button:disabled { cursor: not-allowed; transform: none !important; }
+
+/* ── Inputs ───────────────────────────────────────────────────────────────── */
+input, textarea, select {
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ── Selection ────────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(37,99,235,0.35);
+  color: #fff;
+}
+
+/* ── Utility classes ──────────────────────────────────────────────────────── */
+.grad-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+}
+.glow-blue {
+  box-shadow: 0 0 20px rgba(37,99,235,0.35);
+}
+.glass {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }

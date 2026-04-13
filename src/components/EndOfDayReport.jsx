@@ -1,199 +1,380 @@
-import { useState } from 'react'
-import { TAX_RATE } from '../data/mockData'
+import { useState, useMemo } from 'react'
+import { DEFAULT_LOCATION } from '../config/branding'
+import { loadLocationConfig } from '../utils/locationConfig'
 
-// Mock sales data for demonstration
-const MOCK_SALES = [
-  { id: 67613, time: '09:15', employee: 'Rafael', product: 'New Collection Ocean Noir',    subtotal: 120.00, method: 'cash'     },
-  { id: 67614, time: '10:32', employee: 'Natalia', product: 'YSL Black Opium Extreme',      subtotal: 140.00, method: 'external' },
-  { id: 67615, time: '11:05', employee: 'Rafael',  product: 'Jean Paul Gaultier',           subtotal: 95.00,  method: 'cash'     },
-  { id: 67616, time: '12:20', employee: 'Nate',    product: 'Prada Paradoxe SET',           subtotal: 45.00,  method: 'external' },
-  { id: 67617, time: '13:44', employee: 'Natalia', product: 'Tom Ford Metallique',          subtotal: 180.00, method: 'cash'     },
-  { id: 67618, time: '15:10', employee: 'Rafael',  product: 'Burberry Hero Parfum',         subtotal: 110.00, method: 'card'     },
-  { id: 67619, time: '16:55', employee: 'Rafael',  product: 'Ralph Lauren Polo Red',        subtotal: 80.00,  method: 'cash'     },
-]
+// ── Design tokens (match system) ───────────────────────────────────────────────
+const BG     = '#020817'
+const PANEL  = '#0a0f1e'
+const CARD   = '#0f172a'
+const BORDER = '#1e293b'
+const BLUE   = '#2563eb'
+const GREEN  = '#22c55e'
+const AMBER  = '#f59e0b'
+const RED    = '#ef4444'
+const PURPLE = '#8b5cf6'
+const MUTED  = '#475569'
+const DIM    = '#94a3b8'
+const TEXT   = '#f1f5f9'
 
-export default function EndOfDayReport({ onClose }) {
-  const [notes, setNotes] = useState('')
-  const [saved, setSaved] = useState(false)
+const fmt$ = (n) => `$${(n || 0).toFixed(2)}`
 
-  const netRevenue  = MOCK_SALES.reduce((s, x) => s + x.subtotal, 0)
-  const taxRevenue  = netRevenue * TAX_RATE
-  const grossRevenue = netRevenue + taxRevenue
+function fmtTime(ts) {
+  return new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+}
 
-  const cashTotal     = MOCK_SALES.filter(s => s.method === 'cash').reduce((s, x) => s + x.subtotal + x.subtotal * TAX_RATE, 0)
-  const externalTotal = MOCK_SALES.filter(s => s.method === 'external').reduce((s, x) => s + x.subtotal + x.subtotal * TAX_RATE, 0)
-  const cardTotal     = MOCK_SALES.filter(s => s.method === 'card').reduce((s, x) => s + x.subtotal + x.subtotal * TAX_RATE, 0)
+// ── Minimal SVG donut chart ────────────────────────────────────────────────────
+function DonutChart({ slices, size = 100 }) {
+  const total = slices.reduce((s, x) => s + x.value, 0)
+  if (total === 0) return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: CARD, border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ color: MUTED, fontSize: 10 }}>—</span>
+    </div>
+  )
+  const r = 40, cx = 50, cy = 50, stroke = 18
+  let angle = -Math.PI / 2
+  const paths = slices.filter(s => s.value > 0).map(s => {
+    const sweep = (s.value / total) * 2 * Math.PI
+    const x1 = cx + r * Math.cos(angle)
+    const y1 = cy + r * Math.sin(angle)
+    angle += sweep
+    const x2 = cx + r * Math.cos(angle)
+    const y2 = cy + r * Math.sin(angle)
+    const large = sweep > Math.PI ? 1 : 0
+    return { d: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, color: s.color, label: s.label, value: s.value }
+  })
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100">
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={CARD} strokeWidth={stroke} />
+      {paths.map((p, i) => (
+        <path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth={stroke} strokeLinecap="butt" />
+      ))}
+      <circle cx={cx} cy={cy} r={r - stroke / 2} fill={PANEL} />
+      <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={TEXT} fontSize="11" fontWeight="700">
+        {slices.length}
+      </text>
+      <text x={cx} y={cy + 11} textAnchor="middle" dominantBaseline="middle" fill={MUTED} fontSize="7">
+        methods
+      </text>
+    </svg>
+  )
+}
 
-  // Sales by employee
-  const byEmployee = MOCK_SALES.reduce((acc, s) => {
-    acc[s.employee] = (acc[s.employee] || 0) + s.subtotal
-    return acc
-  }, {})
+export default function EndOfDayReport({ onClose, sales = [], posSession }) {
+  const [notes, setNotes]     = useState('')
+  const [saved, setSaved]     = useState(false)
+  const [section, setSection] = useState('overview') // 'overview' | 'invoices'
 
-  // Products sold
-  const byProduct = MOCK_SALES.reduce((acc, s) => {
-    acc[s.product] = (acc[s.product] || 0) + 1
-    return acc
-  }, {})
-  const topProducts = Object.entries(byProduct).sort((a, b) => b[1] - a[1])
+  const location  = posSession?.location || DEFAULT_LOCATION
+  const locCfg    = loadLocationConfig(location)
+  const taxRatePct = locCfg?.taxRate ?? 8.5
+  const taxLabel  = locCfg?.taxDisplayAs || 'TAX'
 
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const today = new Date()
+  const todaySales = useMemo(() => sales.filter(s => {
+    const d = new Date(s.timestamp)
+    return (
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth()    === today.getMonth()    &&
+      d.getDate()     === today.getDate()     &&
+      s.status !== 'deleted'
+    )
+  }), [sales]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Bar chart: max bar = 100% width
-  const maxEmpSales = Math.max(...Object.values(byEmployee))
+  // ── Metrics ────────────────────────────────────────────────────────────────
+  const netRevenue   = todaySales.reduce((s, x) => s + (x.subtotal || 0), 0)
+  const taxRevenue   = todaySales.reduce((s, x) => s + (x.tax || 0), 0)
+  const grossRevenue = todaySales.reduce((s, x) => s + (x.total || 0), 0)
+  const totalSpare   = todaySales.reduce((s, x) => s + (x.totalSpare || 0), 0)
+
+  // ── Payment breakdown ──────────────────────────────────────────────────────
+  const payMethods = useMemo(() => {
+    const map = {}
+    todaySales.forEach(s => {
+      const m = s.paymentMethod || 'Other'
+      map[m] = (map[m] || 0) + s.total
+    })
+    const colors = ['#22c55e', '#2563eb', '#8b5cf6', '#f59e0b', '#06b6d4']
+    return Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, value], i) => ({ label, value, color: colors[i % colors.length] }))
+  }, [todaySales])
+
+  // ── Sales by employee ──────────────────────────────────────────────────────
+  const byEmployee = useMemo(() => {
+    const map = {}
+    todaySales.forEach(s => {
+      if (!map[s.employee]) map[s.employee] = { name: s.employee, subtotal: 0, count: 0 }
+      map[s.employee].subtotal += s.subtotal || 0
+      map[s.employee].count    += 1
+    })
+    return Object.values(map).sort((a, b) => b.subtotal - a.subtotal)
+  }, [todaySales])
+
+  const maxEmp = Math.max(...byEmployee.map(e => e.subtotal), 1)
+
+  // ── Products sold ──────────────────────────────────────────────────────────
+  const topProducts = useMemo(() => {
+    const map = {}
+    todaySales.flatMap(s => s.items || []).forEach(item => {
+      const name = item.product?.name || item.name || 'Unknown'
+      map[name] = (map[name] || 0) + Math.max(0, item.qty || 1)
+    })
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8)
+  }, [todaySales])
+
+  const todayLabel = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const printedAt  = today.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  const hasData    = todaySales.length > 0
+
+  const statCard = (label, value, color, sub) => (
+    <div style={{
+      background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8,
+      padding: '14px 18px', borderLeft: `3px solid ${color}`,
+    }}>
+      <p style={{ color: MUTED, fontSize: 11, marginBottom: 6 }}>{label}</p>
+      <p style={{ color, fontSize: 24, fontWeight: 800 }}>{value}</p>
+      {sub && <p style={{ color: MUTED, fontSize: 10, marginTop: 4 }}>{sub}</p>}
+    </div>
+  )
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      padding: 20
+      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, padding: 20, backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: '#323232', border: '1px solid #555', borderRadius: 8,
-        width: 760, maxHeight: '90vh', overflowY: 'auto'
+        background: `linear-gradient(160deg, #0d1829 0%, ${PANEL} 100%)`,
+        border: `1px solid ${BORDER}`, borderRadius: 10,
+        width: '100%', maxWidth: 860, maxHeight: '92vh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.8)',
       }}>
-        {/* Header */}
-        <div style={{
-          padding: '16px 24px', background: '#3d3d3d',
-          borderBottom: '1px solid #555', display: 'flex', alignItems: 'center', gap: 12
-        }}>
-          <span style={{ fontSize: 22 }}>📊</span>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>End of Day Report</h2>
-            <p style={{ color: '#888', fontSize: 12 }}>{today} — Miracle Mall 01</p>
-          </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-            <button style={{
-              padding: '8px 16px', background: '#2980b9', border: 'none',
-              borderRadius: 6, color: '#fff', fontSize: 13, cursor: 'pointer'
-            }}>🖨️ Print</button>
-            <button onClick={onClose} style={{
-              padding: '8px 16px', background: '#555', border: 'none',
-              borderRadius: 6, color: '#fff', fontSize: 13, cursor: 'pointer'
-            }}>Close</button>
-          </div>
-        </div>
 
-        <div style={{ padding: 24 }}>
-          {/* Revenue summary */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 24 }}>
+        {/* ── Header ── */}
+        <div style={{
+          padding: '14px 22px', background: CARD, borderRadius: '10px 10px 0 0',
+          borderBottom: `1px solid ${BORDER}`,
+          display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, flexWrap: 'wrap',
+        }}>
+          <div style={{
+            width: 34, height: 34, background: 'rgba(37,99,235,0.12)',
+            border: '1px solid rgba(37,99,235,0.25)', borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+          }}>📊</div>
+          <div>
+            <p style={{ color: TEXT, fontWeight: 800, fontSize: 15 }}>End of Day Report</p>
+            <p style={{ color: MUTED, fontSize: 11, marginTop: 1 }}>{location} · {todayLabel}</p>
+          </div>
+
+          {/* Section toggle */}
+          <div style={{
+            marginLeft: 'auto', display: 'flex', gap: 6,
+            background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 3,
+          }}>
             {[
-              { label: 'Total Net Revenue',   value: netRevenue,   color: '#4caf50' },
-              { label: 'Total Tax Revenue',   value: taxRevenue,   color: '#f39c12' },
-              { label: 'Total Gross Revenue', value: grossRevenue, color: '#2980b9' },
-            ].map(item => (
-              <div key={item.label} style={{
-                background: '#2c2c2c', borderRadius: 8, padding: '16px 20px',
-                borderLeft: `4px solid ${item.color}`
-              }}>
-                <p style={{ color: '#888', fontSize: 12, marginBottom: 6 }}>{item.label}</p>
-                <p style={{ color: item.color, fontSize: 26, fontWeight: 800 }}>
-                  ${item.value.toFixed(2)}
-                </p>
-              </div>
+              { key: 'overview', label: 'Overview' },
+              { key: 'invoices', label: 'Invoices' },
+            ].map(({ key, label }) => (
+              <button key={key} onClick={() => setSection(key)} style={{
+                padding: '5px 14px', border: 'none', borderRadius: 6, cursor: 'pointer',
+                background: section === key ? BLUE : 'transparent',
+                color: section === key ? '#fff' : MUTED,
+                fontSize: 12, fontWeight: section === key ? 700 : 400,
+                transition: 'all 0.15s',
+              }}>{label}</button>
             ))}
           </div>
 
-          {/* Transactions count */}
-          <p style={{ color: '#888', fontSize: 13, marginBottom: 20 }}>
-            Number of Transactions: <strong style={{ color: '#fff' }}>{MOCK_SALES.length}</strong>
-          </p>
+          <button onClick={onClose} style={{
+            background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6,
+            color: MUTED, fontSize: 20, cursor: 'pointer',
+            width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = RED; e.currentTarget.style.color = RED }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED }}
+          >×</button>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-            {/* Payment methods */}
-            <div style={{ background: '#2c2c2c', borderRadius: 8, padding: 20 }}>
-              <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
-                Payment Methods
-              </h3>
-              {[
-                { label: 'Cash',            value: cashTotal,     color: '#27ae60' },
-                { label: 'External Credit', value: externalTotal, color: '#8e44ad' },
-                { label: 'Credit Cards',    value: cardTotal,     color: '#2980b9' },
-              ].map(m => (
-                <div key={m.label} style={{ marginBottom: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ color: '#ccc', fontSize: 13 }}>{m.label}</span>
-                    <span style={{ color: m.color, fontSize: 13, fontWeight: 700 }}>
-                      ${m.value.toFixed(2)}
-                    </span>
-                  </div>
-                  <div style={{ height: 6, background: '#3a3a3a', borderRadius: 3 }}>
-                    <div style={{
-                      height: '100%', borderRadius: 3, background: m.color,
-                      width: `${(m.value / grossRevenue) * 100}%`
-                    }} />
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* ── Body ── */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 22, display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-            {/* Sales by employee */}
-            <div style={{ background: '#2c2c2c', borderRadius: 8, padding: 20 }}>
-              <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
-                Sales by Employee
-              </h3>
-              {Object.entries(byEmployee).sort((a, b) => b[1] - a[1]).map(([name, total]) => (
-                <div key={name} style={{ marginBottom: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ color: '#ccc', fontSize: 13 }}>{name}</span>
-                    <span style={{ color: '#4caf50', fontSize: 13, fontWeight: 700 }}>
-                      ${total.toFixed(2)}
-                    </span>
-                  </div>
-                  <div style={{ height: 6, background: '#3a3a3a', borderRadius: 3 }}>
-                    <div style={{
-                      height: '100%', borderRadius: 3, background: '#4caf50',
-                      width: `${(total / maxEmpSales) * 100}%`
-                    }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Printed at */}
+          <p style={{ color: '#334155', fontSize: 11 }}>Printed at {printedAt}</p>
 
-          {/* Products sold */}
-          <div style={{ background: '#2c2c2c', borderRadius: 8, padding: 20, marginBottom: 20 }}>
-            <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
-              Products Sold Today
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
-              {topProducts.map(([name, qty]) => (
-                <div key={name} style={{
-                  background: '#3a3a3a', borderRadius: 6, padding: '12px 14px',
-                  borderBottom: '3px solid #4caf50'
+          {/* ── OVERVIEW SECTION ── */}
+          {section === 'overview' && (
+            <>
+              {/* Revenue cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+                {statCard('Net Revenue',    fmt$(netRevenue),   GREEN,  `${todaySales.length} transactions`)}
+                {statCard(`${taxLabel} Collected`, fmt$(taxRevenue), AMBER, `${taxRatePct}%`)}
+                {statCard('Gross Revenue',  fmt$(grossRevenue), BLUE,   'Net + Tax')}
+                {statCard('Total Spare',    fmt$(totalSpare),   PURPLE, 'Above min price')}
+              </div>
+
+              {!hasData && (
+                <div style={{
+                  padding: 40, textAlign: 'center',
+                  background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8,
                 }}>
-                  <p style={{ color: '#aaa', fontSize: 11, marginBottom: 4, lineHeight: 1.3 }}>{name}</p>
-                  <p style={{ color: '#4caf50', fontSize: 22, fontWeight: 800 }}>{qty}×</p>
+                  <p style={{ color: MUTED, fontSize: 13 }}>No sales recorded today yet</p>
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          {/* Notes */}
-          <div style={{ background: '#2c2c2c', borderRadius: 8, padding: 20 }}>
-            <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
-              📝 Additional Notes
-            </h3>
-            <textarea
-              value={notes}
-              onChange={e => { setNotes(e.target.value); setSaved(false) }}
-              placeholder="Enter end of day notes here..."
-              style={{
-                width: '100%', height: 80, background: '#3a3a3a', border: '1px solid #555',
-                borderRadius: 6, color: '#fff', fontSize: 13, padding: 12, resize: 'vertical',
-                fontFamily: 'inherit'
-              }}
-            />
-            <button
-              onClick={() => setSaved(true)}
-              style={{
-                marginTop: 8, padding: '8px 20px', background: saved ? '#27ae60' : '#2980b9',
-                border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, cursor: 'pointer'
-              }}
-            >
-              {saved ? '✓ Saved' : 'Save Notes'}
-            </button>
-          </div>
+              {hasData && (
+                <>
+                  {/* Payment methods + employees */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+                    {/* Payment methods */}
+                    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
+                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 16 }}>PAYMENT METHODS</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                        <DonutChart slices={payMethods} size={90} />
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {payMethods.map(m => (
+                            <div key={m.label}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: m.color }} />
+                                  <span style={{ color: DIM, fontSize: 12 }}>{m.label}</span>
+                                </div>
+                                <span style={{ color: m.color, fontSize: 12, fontWeight: 700 }}>{fmt$(m.value)}</span>
+                              </div>
+                              <div style={{ height: 4, background: BORDER, borderRadius: 2 }}>
+                                <div style={{ height: '100%', borderRadius: 2, background: m.color, width: `${(m.value / grossRevenue) * 100}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sales by employee */}
+                    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
+                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 16 }}>SALES BY EMPLOYEE</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {byEmployee.map(emp => (
+                          <div key={emp.name}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ color: DIM, fontSize: 13 }}>{emp.name}</span>
+                              <div style={{ display: 'flex', gap: 12 }}>
+                                <span style={{ color: MUTED, fontSize: 11 }}>{emp.count} sales</span>
+                                <span style={{ color: GREEN, fontSize: 13, fontWeight: 700 }}>{fmt$(emp.subtotal)}</span>
+                              </div>
+                            </div>
+                            <div style={{ height: 5, background: BORDER, borderRadius: 2 }}>
+                              <div style={{ height: '100%', borderRadius: 2, background: GREEN, width: `${(emp.subtotal / maxEmp) * 100}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Products sold */}
+                  {topProducts.length > 0 && (
+                    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
+                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 14 }}>TOP PRODUCTS TODAY</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+                        {topProducts.map(([name, qty]) => (
+                          <div key={name} style={{
+                            background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 6,
+                            padding: '10px 12px', borderBottom: `3px solid ${GREEN}`,
+                          }}>
+                            <p style={{ color: MUTED, fontSize: 11, lineHeight: 1.3, marginBottom: 6 }}>{name}</p>
+                            <p style={{ color: GREEN, fontSize: 20, fontWeight: 800 }}>{qty}×</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
+                    <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 12 }}>ADDITIONAL NOTES</p>
+                    <textarea
+                      value={notes}
+                      onChange={e => { setNotes(e.target.value); setSaved(false) }}
+                      placeholder="Enter end of day notes here..."
+                      style={{
+                        width: '100%', height: 72, background: PANEL,
+                        border: `1px solid ${BORDER}`, borderRadius: 6,
+                        color: TEXT, fontSize: 13, padding: '10px 12px',
+                        resize: 'vertical', fontFamily: 'inherit',
+                        boxSizing: 'border-box', outline: 'none',
+                      }}
+                      onFocus={e => { e.target.style.borderColor = BLUE }}
+                      onBlur={e => { e.target.style.borderColor = BORDER }}
+                    />
+                    <button
+                      onClick={() => setSaved(true)}
+                      style={{
+                        marginTop: 8, padding: '7px 18px',
+                        background: saved ? 'rgba(34,197,94,0.1)' : BLUE,
+                        border: saved ? `1px solid rgba(34,197,94,0.3)` : 'none',
+                        borderRadius: 6, color: saved ? GREEN : '#fff',
+                        fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                      }}
+                    >
+                      {saved ? '✓ Saved' : 'Save Notes'}
+                    </button>
+                  </div>
+
+                  {/* Refund policy */}
+                  <p style={{ color: '#334155', fontSize: 11, textAlign: 'center' }}>
+                    No Refunds. Exchanges within 14 days.
+                  </p>
+                </>
+              )}
+            </>
+          )}
+
+          {/* ── INVOICES SECTION ── */}
+          {section === 'invoices' && (
+            <div style={{ borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    {['Invoice #', 'Time', 'Employee', 'Payment', 'Subtotal', 'Tax', 'Total'].map(h => (
+                      <th key={h} style={{
+                        padding: '8px 12px',
+                        textAlign: ['Subtotal','Tax','Total'].includes(h) ? 'right' : 'left',
+                        color: MUTED, fontWeight: 600, fontSize: 10,
+                        background: CARD, borderBottom: `1px solid ${BORDER}`, letterSpacing: 0.4,
+                      }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {todaySales.length === 0 && (
+                    <tr>
+                      <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#334155', fontSize: 13 }}>
+                        No sales today
+                      </td>
+                    </tr>
+                  )}
+                  {[...todaySales].reverse().map((s, i) => (
+                    <tr key={s.number} style={{
+                      borderBottom: `1px solid rgba(30,41,59,0.4)`,
+                      background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)',
+                    }}>
+                      <td style={{ padding: '8px 12px', color: BLUE, fontWeight: 700, fontSize: 13 }}>{s.number}</td>
+                      <td style={{ padding: '8px 12px', color: DIM, fontSize: 12 }}>{fmtTime(s.timestamp)}</td>
+                      <td style={{ padding: '8px 12px', color: DIM, fontSize: 12 }}>{s.employee}</td>
+                      <td style={{ padding: '8px 12px', color: MUTED, fontSize: 12, textTransform: 'capitalize' }}>{s.paymentMethod}</td>
+                      <td style={{ padding: '8px 12px', color: DIM, fontSize: 12, textAlign: 'right' }}>{fmt$(s.subtotal)}</td>
+                      <td style={{ padding: '8px 12px', color: MUTED, fontSize: 12, textAlign: 'right' }}>{fmt$(s.tax)}</td>
+                      <td style={{ padding: '8px 12px', color: GREEN, fontWeight: 700, fontSize: 13, textAlign: 'right' }}>{fmt$(s.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
