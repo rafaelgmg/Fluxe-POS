@@ -27,6 +27,7 @@ import SellerSelectModal from './components/SellerSelectModal'
 import FrozenSalesModal from './components/FrozenSalesModal'
 import LockScreen from './components/LockScreen'
 import BarcodeModal, { BarcodeIconButton } from './components/BarcodeModal'
+import FluxeAssist from './components/FluxeAssist'
 
 const PRODUCTS_STORAGE_KEY = 'fluxe-products-v1'
 
@@ -79,6 +80,7 @@ export default function App() {
   const [showCaptureAuth,   setShowCaptureAuth]   = useState(false)
   const [captureEmployee,   setCaptureEmployee]   = useState(null) // vendedor autenticado no fluxo de captura
   const [showCRMAuth,       setShowCRMAuth]       = useState(false)
+  const [showAssist,        setShowAssist]         = useState(false)
 
   const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSLog, getScheduled } = useCRM()
   const { sales, saveSale, updateSale } = useSales()
@@ -396,8 +398,8 @@ export default function App() {
       }}>
         {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 12 }}>
-          <span style={{ fontWeight: 800, fontSize: 15, color: '#93c5fd', letterSpacing: 2 }}>
-            Fluxe
+          <span className="fluxe-logo">
+            <span className="fluxe-f">F</span>luxe
           </span>
           <span style={{
             padding: '2px 8px', borderRadius: 6,
@@ -499,6 +501,38 @@ export default function App() {
             <rect x="6" y="13.3" width="8" height="1" rx="0.5" fill="#334155" />
           </svg>
           Cash Drawer
+        </button>
+
+        {/* Fluxe Assist button */}
+        <button
+          onClick={() => setShowAssist(v => !v)}
+          title="Fluxe Assist — quick commands"
+          style={{
+            background: showAssist ? 'rgba(37,99,235,0.15)' : 'none',
+            border: showAssist ? '1px solid rgba(37,99,235,0.35)' : '1px solid transparent',
+            color: showAssist ? '#93c5fd' : '#64748b',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 2, fontSize: 10, cursor: 'pointer',
+            padding: '4px 9px', borderRadius: 8, transition: 'all 0.2s ease',
+            boxShadow: showAssist ? '0 0 12px rgba(37,99,235,0.2)' : 'none',
+          }}
+          onMouseEnter={e => {
+            if (!showAssist) {
+              e.currentTarget.style.background = 'rgba(37,99,235,0.10)'
+              e.currentTarget.style.borderColor = 'rgba(37,99,235,0.25)'
+              e.currentTarget.style.color = '#93c5fd'
+            }
+          }}
+          onMouseLeave={e => {
+            if (!showAssist) {
+              e.currentTarget.style.background = 'none'
+              e.currentTarget.style.borderColor = 'transparent'
+              e.currentTarget.style.color = '#64748b'
+            }
+          }}
+        >
+          <span style={{ fontSize: 15 }}>✨</span>
+          Assist
         </button>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -776,6 +810,15 @@ export default function App() {
       {showEndOfDay    && <EndOfDayReport onClose={() => setShowEndOfDay(false)}   sales={sales} posSession={posSession} />}
       {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} />}
       {showCompetition && <Competition   onClose={() => setShowCompetition(false)} sales={sales} posSession={posSession} />}
+      {showAssist && (
+        <FluxeAssist
+          onClose={() => setShowAssist(false)}
+          sales={sales}
+          customers={customers}
+          empName={currentUser?.name || ''}
+          location={posSession?.location || ''}
+        />
+      )}
       {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}   />}
       {showInventory   && <Inventory     onClose={() => setShowInventory(false)}    />}
       {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} />}

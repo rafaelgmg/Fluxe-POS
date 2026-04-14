@@ -57,11 +57,20 @@ function defaultExt(loc) {
     // ── competition config (per-location) — read by Competition.jsx at runtime
     // ✅ LIVE: competitionMode, competitionTimeframe, competitionViewTop, competitionShowRankingOnly
     // ○ SAVED: competitionRegions (future filter by region)
-    competitionMode:             'individual_total', // 'none'|'teamwork_total'|'teamwork_highest'|'teamwork_products'|'individual_total'|'individual_highest'|'individual_products'
+    competitionMode:             'individual_total', // 'none'|'teamwork_*'|'individual_*'|'individual_spare'|'individual_hybrid'
     competitionTimeframe:        'daily',            // 'daily'|'weekly'|'monthly'
     competitionViewTop:          5,                  // number of positions to show; 0 = all
     competitionShowRankingOnly:  false,              // hide podium, show ranked list only
     competitionRegions:          [],                 // [] = all regions (structure only)
+    // ── Advanced ranking modes (SaaS toggles) ─────────────────────────────────
+    competitionEnableSpare:       false,             // ✅ LIVE — unlocks individual_spare mode
+    competitionEnableHybrid:      false,             // ✅ LIVE — unlocks individual_hybrid mode
+    competitionHybridMultiplier:  1.0,               // ✅ LIVE — score = sales + spare × multiplier
+    // ── Placement bonuses ──────────────────────────────────────────────────────
+    competitionBonusSales:  { enabled: false, top1: 0, top2: 0, top3: 0, minimumToQualify: 0 },  // ✅ LIVE
+    competitionBonusSpare:  { enabled: false, top1: 0, top2: 0, top3: 0, minimumToQualify: 0 },  // ✅ LIVE
+    competitionBonusHybrid: { enabled: false, top1: 0, top2: 0, top3: 0, minimumToQualify: 0 },  // ✅ LIVE
+    competitionBonusCombinationMode: 'sum_all',      // ✅ LIVE — 'sum_all' | 'highest_only'
 
     // ════════════════════════════════════════════════════════
     // Alerts / Notifications (per-location, per-event)
@@ -137,6 +146,13 @@ function defaultExt(loc) {
     printMasterZInEOD:             false,  // structure only
     blockEmployeeSalaryReview:     false,  // structure only
     blockEmployeeSalaryMobile:     false,  // structure only
+    spareCommissionRate:           30,     // ✅ LIVE — used when spareCommissionMode = 'fixed'
+    spareCommissionMode:           'fixed', // ✅ LIVE — 'fixed' | 'tiered'
+    spareTiers: [                          // ✅ LIVE — used when spareCommissionMode = 'tiered'
+      { id: 1, threshold: 0,   rate: 25 },
+      { id: 2, threshold: 120, rate: 30 },
+      { id: 3, threshold: 200, rate: 35 },
+    ],
 
     // ── meta
     createdAt: new Date().toISOString(),
@@ -413,6 +429,64 @@ function NumInput({ value, onChange, min = 0, max, suffix, width = 80, disabled 
         style={{ ...inp(), width, opacity: disabled ? 0.4 : 1 }}
       />
       {suffix && <span style={{ color: MUTED, fontSize: 11 }}>{suffix}</span>}
+    </div>
+  )
+}
+
+// ── Spare tier editor (used in Commission PrefGroup) ─────────────────────────
+function SpareTierEditor({ tiers, onChange }) {
+  function updateTier(id, field, rawVal) {
+    const val = parseFloat(rawVal)
+    onChange(tiers.map(t => t.id === id ? { ...t, [field]: isNaN(val) ? 0 : val } : t))
+  }
+  function removeTier(id) {
+    onChange(tiers.filter(t => t.id !== id))
+  }
+  function addTier() {
+    const maxId = tiers.length > 0 ? Math.max(...tiers.map(t => t.id)) + 1 : 1
+    onChange([...tiers, { id: maxId, threshold: 0, rate: 30 }])
+  }
+  const sorted = [...tiers].sort((a, b) => a.threshold - b.threshold)
+  return (
+    <div>
+      {sorted.length === 0 && (
+        <p style={{ color: MUTED, fontSize: 11, marginBottom: 10 }}>
+          No tiers defined. Add at least one threshold to enable tiered spare commission.
+        </p>
+      )}
+      {sorted.map((tier, i) => (
+        <div key={tier.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 6 }}>
+          <div style={{ flex: 1 }}>
+            {i === 0 && <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, marginBottom: 4 }}>DAILY SPARE ≥ $</p>}
+            <input
+              type="number" min={0}
+              value={tier.threshold}
+              onChange={e => updateTier(tier.id, 'threshold', e.target.value)}
+              style={{ ...inp(), width: '100%' }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            {i === 0 && <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, marginBottom: 4 }}>RATE (%)</p>}
+            <input
+              type="number" min={0} max={100}
+              value={tier.rate}
+              onChange={e => updateTier(tier.id, 'rate', e.target.value)}
+              style={{ ...inp(), width: '100%' }}
+            />
+          </div>
+          <button
+            onClick={() => removeTier(tier.id)}
+            style={{ background: 'transparent', border: 'none', color: RED, fontSize: 20, cursor: 'pointer', padding: '4px 6px', lineHeight: 1, marginBottom: 1 }}
+          >×</button>
+        </div>
+      ))}
+      <button
+        onClick={addTier}
+        style={{ marginTop: 6, fontSize: 11, color: BLUE, background: 'transparent', border: `1px solid ${BLUE}55`, borderRadius: 6, padding: '5px 14px', cursor: 'pointer' }}
+      >+ Add Tier</button>
+      <p style={{ color: MUTED, fontSize: 11, marginTop: 10, lineHeight: 1.6 }}>
+        Tier applies retroactively to all spare generated that day once the daily threshold is reached.
+      </p>
     </div>
   )
 }
@@ -771,6 +845,55 @@ function TabPreferences({ form, set, allLocations = [] }) {
             onChange={v => set('blockEmployeeSalaryMobile', v)}
           />
         </PrefGroup>
+        <PrefGroup icon="💰" title="Commission" defaultOpen>
+          {/* ── Mode selector ── */}
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ color: TEXT, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+              Spare Commission Mode <StatusBadge live />
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[['fixed', 'Fixed Rate'], ['tiered', 'Tiered']].map(([val, lbl]) => (
+                <button key={val} onClick={() => set('spareCommissionMode', val)} style={{
+                  padding: '6px 16px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  border: `1px solid ${form.spareCommissionMode === val ? BLUE : BORDER}`,
+                  background: form.spareCommissionMode === val ? `${BLUE}18` : 'transparent',
+                  color: form.spareCommissionMode === val ? BLUE : MUTED,
+                  transition: 'all 0.15s',
+                }}>{lbl}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Fixed mode ── */}
+          {(form.spareCommissionMode || 'fixed') === 'fixed' && (
+            <div style={{ padding: '4px 0 2px' }}>
+              <p style={{ color: TEXT, fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
+                Spare Commission Rate
+              </p>
+              <NumInput
+                value={form.spareCommissionRate}
+                onChange={v => set('spareCommissionRate', v)}
+                min={0} max={100} suffix="%" width={80}
+              />
+              <p style={{ color: MUTED, fontSize: 11, marginTop: 6 }}>
+                Fixed percentage of spare paid as commission for NC categories. Default: 30%.
+              </p>
+            </div>
+          )}
+
+          {/* ── Tiered mode ── */}
+          {form.spareCommissionMode === 'tiered' && (
+            <div style={{ padding: '4px 0 2px' }}>
+              <p style={{ color: TEXT, fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
+                Spare Tiers
+              </p>
+              <SpareTierEditor
+                tiers={form.spareTiers || []}
+                onChange={v => set('spareTiers', v)}
+              />
+            </div>
+          )}
+        </PrefGroup>
       </div>
 
       {/* ── H. Price List ── */}
@@ -898,12 +1021,64 @@ function TabMerchant({ form, set }) {
   )
 }
 
+// ── Bonus group editor ────────────────────────────────────────────────────────
+// Module-scope to avoid React reconciliation issues (never nest component defs)
+const BONUS_RANK_COLORS = { 1: '#f59e0b', 2: '#94a3b8', 3: '#cd7c2f' }
+
+function BonusGroupEditor({ cfg, onChange }) {
+  const set = (key, val) => onChange({ ...cfg, [key]: val })
+  const labelStyle = { color: '#475569', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 4 }
+  const field = (label, key, color) => (
+    <div>
+      <label style={{ ...labelStyle, color }}>{label}</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ color: '#475569', fontSize: 11 }}>$</span>
+        <input
+          type="number" min="0" step="1"
+          value={cfg[key] ?? 0}
+          onChange={e => set(key, Math.max(0, parseFloat(e.target.value) || 0))}
+          style={{
+            width: 72, padding: '5px 8px', background: '#020817',
+            border: '1px solid #1e293b', borderRadius: 4,
+            color: color || '#f1f5f9', fontSize: 12, outline: 'none',
+          }}
+        />
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{
+      background: 'rgba(0,0,0,0.25)', border: '1px solid #1e293b',
+      borderRadius: 6, padding: '10px 12px', marginTop: 6,
+    }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        {field('1ST PLACE', 'top1', BONUS_RANK_COLORS[1])}
+        {field('2ND PLACE', 'top2', BONUS_RANK_COLORS[2])}
+        {field('3RD PLACE', 'top3', BONUS_RANK_COLORS[3])}
+        <div style={{ width: 1, background: '#1e293b', alignSelf: 'stretch', margin: '0 4px' }} />
+        {field('MIN. TO QUALIFY ($)', 'minimumToQualify', '#475569')}
+      </div>
+      <p style={{ color: '#334155', fontSize: 9, marginTop: 6 }}>
+        Minimum to qualify = employees below this value are excluded from the ranked pool (not placed 4th — simply ineligible).
+      </p>
+    </div>
+  )
+}
+
 // ── Competition configuration card ────────────────────────────────────────────
 function CompetitionCard({ form, set, allLocations = [] }) {
-  const enabled  = !!form.featureCompetition
-  const mode     = form.competitionMode     || 'individual_total'
-  const timeframe = form.competitionTimeframe || 'daily'
-  const viewTop  = Number(form.competitionViewTop  ?? 5)
+  const enabled          = !!form.featureCompetition
+  const mode             = form.competitionMode            || 'individual_total'
+  const timeframe        = form.competitionTimeframe       || 'daily'
+  const viewTop          = Number(form.competitionViewTop  ?? 5)
+  const enableSpare      = !!form.competitionEnableSpare
+  const enableHybrid     = !!form.competitionEnableHybrid
+  const hybridMultiplier = Number(form.competitionHybridMultiplier ?? 1.0)
+  const bonusSales       = form.competitionBonusSales  || { enabled: false, top1: 0, top2: 0, top3: 0, minimumToQualify: 0 }
+  const bonusSpare       = form.competitionBonusSpare  || { enabled: false, top1: 0, top2: 0, top3: 0, minimumToQualify: 0 }
+  const bonusHybrid      = form.competitionBonusHybrid || { enabled: false, top1: 0, top2: 0, top3: 0, minimumToQualify: 0 }
+  const combMode         = form.competitionBonusCombinationMode || 'sum_all'
 
   const regions = useMemo(() => {
     const s = new Set(allLocations.map(l => l.region).filter(Boolean))
@@ -911,16 +1086,17 @@ function CompetitionCard({ form, set, allLocations = [] }) {
   }, [allLocations])
 
   const TEAMWORK = [
-    { id: 'teamwork_total',    label: 'Total Sales',    desc: 'Sum of revenue by location'     },
-    { id: 'teamwork_highest',  label: 'Highest Sale',   desc: 'Best single transaction'        },
-    { id: 'teamwork_products', label: '# Products',     desc: 'Total items sold by location'   },
+    { id: 'teamwork_total',    label: 'Total Sales',  desc: 'Sum of revenue by location'   },
+    { id: 'teamwork_highest',  label: 'Highest Sale', desc: 'Best single transaction'      },
+    { id: 'teamwork_products', label: '# Products',   desc: 'Total items sold by location' },
   ]
+  // Individual modes — fixed set (spare/hybrid are now realtime tabs in Competition screen)
   const INDIVIDUAL = [
-    { id: 'individual_total',    label: 'Total Sales',  desc: 'Sum of revenue by employee'     },
-    { id: 'individual_highest',  label: 'Highest Sale', desc: 'Best single transaction'        },
-    { id: 'individual_products', label: '# Products',   desc: 'Total items sold by employee'   },
+    { id: 'individual_total',    label: 'Total Sales',  desc: 'Sum of revenue by employee'   },
+    { id: 'individual_highest',  label: 'Highest Sale', desc: 'Best single transaction'      },
+    { id: 'individual_products', label: '# Products',   desc: 'Total items sold by employee' },
   ]
-  const VIEW_TOP_OPTIONS = [3, 5, 10, 12, 0]  // 0 = All
+  const VIEW_TOP_OPTIONS = [3, 5, 10, 12, 0]
 
   const modeBtn = (m) => {
     const active = mode === m.id
@@ -930,7 +1106,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
         border: `1px solid ${active ? BLUE : BORDER}`,
         background: active ? `${BLUE}18` : 'transparent',
         color: active ? TEXT : MUTED,
-        transition: 'all 0.15s', boxShadow: active ? `0 0 10px ${BLUE}20` : 'none',
+        transition: 'all 0.15s', boxShadow: active ? `0 0 10px ${BLUE}20` : 'none', minWidth: 0,
       }}>
         <div style={{ fontSize: 11, fontWeight: active ? 700 : 600, marginBottom: 1 }}>{m.label}</div>
         <div style={{ fontSize: 9, color: active ? '#94a3b8' : '#334155' }}>{m.desc}</div>
@@ -963,6 +1139,130 @@ function CompetitionCard({ form, set, allLocations = [] }) {
           borderRadius: '0 0 8px 8px', padding: '18px 16px',
         }}>
 
+          {/* ── Advanced ranking modes ── */}
+          <div style={{ marginBottom: 18 }}>
+            <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.6, marginBottom: 10 }}>
+              ADVANCED RANKING MODES
+            </p>
+            <Toggle
+              label={<>Enable Spare Ranking <StatusBadge live /></>}
+              checked={enableSpare}
+              onChange={v => set('competitionEnableSpare', v)}
+              description="Shows '💰 Spare' tab in Competition screen — ranks by total spare generated"
+            />
+            <Toggle
+              label={<>Enable Hybrid Ranking <StatusBadge live /></>}
+              checked={enableHybrid}
+              onChange={v => set('competitionEnableHybrid', v)}
+              description="Shows '⚡ Hybrid' tab in Competition screen — score = sales + (spare × multiplier)"
+            />
+            {enableHybrid && (
+              <div style={{ padding: '10px 0 4px', borderTop: `1px solid ${BORDER}`, marginTop: 4 }}>
+                <p style={{ color: TEXT, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Hybrid Multiplier <StatusBadge live /></p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <NumInput
+                    value={hybridMultiplier}
+                    onChange={v => set('competitionHybridMultiplier', v)}
+                    min={0} max={10} suffix="×" width={80}
+                  />
+                  <span style={{ color: MUTED, fontSize: 11 }}>
+                    Score = Sales + Spare × {hybridMultiplier}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Placement Bonuses ── */}
+          <div style={{ margin: '16px 0 18px' }}>
+            <div style={{ borderTop: `1px solid ${BORDER}`, marginBottom: 14 }} />
+            <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.6, marginBottom: 10 }}>
+              🎖️ PLACEMENT BONUSES <StatusBadge live />
+            </p>
+            <p style={{ color: '#334155', fontSize: 10, marginBottom: 12 }}>
+              Award cash bonuses to top-ranked employees per day, per tab. Each group is independent.
+            </p>
+
+            {/* Sales Bonus */}
+            <div style={{ marginBottom: 10 }}>
+              <Toggle
+                label="Sales Ranking Bonus"
+                checked={!!bonusSales.enabled}
+                onChange={v => set('competitionBonusSales', { ...bonusSales, enabled: v })}
+                description="Cash bonus for top Sales ranking (📊 Sales tab)"
+              />
+              {bonusSales.enabled && (
+                <BonusGroupEditor
+                  cfg={bonusSales}
+                  onChange={v => set('competitionBonusSales', v)}
+                />
+              )}
+            </div>
+
+            {/* Spare Bonus (only available when spare ranking is enabled) */}
+            <div style={{ marginBottom: 10, opacity: enableSpare ? 1 : 0.4, pointerEvents: enableSpare ? 'auto' : 'none' }}>
+              <Toggle
+                label={<>Spare Ranking Bonus{!enableSpare && <span style={{ color: '#334155', fontSize: 10, marginLeft: 8 }}>(enable Spare Ranking above)</span>}</>}
+                checked={!!bonusSpare.enabled}
+                onChange={v => set('competitionBonusSpare', { ...bonusSpare, enabled: v })}
+                description="Cash bonus for top Spare ranking (💰 Spare tab)"
+              />
+              {bonusSpare.enabled && enableSpare && (
+                <BonusGroupEditor
+                  cfg={bonusSpare}
+                  onChange={v => set('competitionBonusSpare', v)}
+                />
+              )}
+            </div>
+
+            {/* Hybrid Bonus (only available when hybrid ranking is enabled) */}
+            <div style={{ marginBottom: 14, opacity: enableHybrid ? 1 : 0.4, pointerEvents: enableHybrid ? 'auto' : 'none' }}>
+              <Toggle
+                label={<>Hybrid Ranking Bonus{!enableHybrid && <span style={{ color: '#334155', fontSize: 10, marginLeft: 8 }}>(enable Hybrid Ranking above)</span>}</>}
+                checked={!!bonusHybrid.enabled}
+                onChange={v => set('competitionBonusHybrid', { ...bonusHybrid, enabled: v })}
+                description="Cash bonus for top Hybrid ranking (⚡ Hybrid tab)"
+              />
+              {bonusHybrid.enabled && enableHybrid && (
+                <BonusGroupEditor
+                  cfg={bonusHybrid}
+                  onChange={v => set('competitionBonusHybrid', v)}
+                />
+              )}
+            </div>
+
+            {/* Combination Mode */}
+            {(bonusSales.enabled || (bonusSpare.enabled && enableSpare) || (bonusHybrid.enabled && enableHybrid)) && (
+              <div style={{ paddingTop: 4 }}>
+                <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.6, marginBottom: 8 }}>
+                  BONUS COMBINATION RULE
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[
+                    { v: 'sum_all',      l: 'Sum All',      d: 'Earn bonuses from every group won' },
+                    { v: 'highest_only', l: 'Highest Only',  d: 'Earn only the highest single bonus' },
+                  ].map(({ v, l, d }) => {
+                    const active = combMode === v
+                    return (
+                      <button key={v} onClick={() => set('competitionBonusCombinationMode', v)} style={{
+                        flex: 1, padding: '9px 10px', borderRadius: 6, textAlign: 'left', cursor: 'pointer',
+                        border: `1px solid ${active ? BLUE : BORDER}`,
+                        background: active ? `${BLUE}18` : 'transparent',
+                        color: active ? TEXT : MUTED,
+                        transition: 'all 0.15s',
+                      }}>
+                        <div style={{ fontSize: 11, fontWeight: active ? 700 : 600, marginBottom: 2 }}>{l}</div>
+                        <div style={{ fontSize: 9, color: active ? '#94a3b8' : '#334155' }}>{d}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ borderTop: `1px solid ${BORDER}`, margin: '0 0 18px' }} />
+
           {/* None */}
           <div style={{ marginBottom: 16 }}>
             <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.6, marginBottom: 8 }}>NO COMPETITION</p>
@@ -994,7 +1294,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
             <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.6, marginBottom: 8 }}>
               👤 INDIVIDUAL — Ranked by Employee
             </p>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {INDIVIDUAL.map(modeBtn)}
             </div>
           </div>

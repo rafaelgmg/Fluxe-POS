@@ -59,9 +59,19 @@ const MODE_LABEL = {
 
 const TIMEFRAME_LABEL = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' }
 
+// ── Ranking tab config ────────────────────────────────────────────────────────
+const TAB_CFG = {
+  sales:  { label: '📊 Sales',  color: '#60a5fa', bg: 'rgba(37,99,235,0.15)',  border: 'rgba(96,165,250,0.4)'  },
+  spare:  { label: '💰 Spare',  color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' },
+  hybrid: { label: '⚡ Hybrid', color: '#a78bfa', bg: 'rgba(139,92,246,0.15)', border: 'rgba(167,139,250,0.4)' },
+}
+
 // ── Value formatter ───────────────────────────────────────────────────────────
-function fmtValue(v, mode) {
+// tab: 'sales' | 'spare' | 'hybrid'
+function fmtValue(v, mode, tab = 'sales') {
   if (!mode || mode === 'none') return ''
+  if (tab === 'spare')  return `$${Number(v).toFixed(2)}`
+  if (tab === 'hybrid') return `${Number(v).toFixed(1)} pts`
   if (mode.endsWith('_products')) return `${Math.round(v)} items`
   if (mode.endsWith('_highest'))  return `$${Number(v).toFixed(2)}`
   return `$${Number(v).toFixed(2)}`
@@ -77,11 +87,18 @@ const MEDALS = {
 export default function Competition({ onClose, sales = [], posSession = null }) {
 
   // ── Read competition config from location settings ──────────────────────────
-  const locCfg    = loadLocationConfig(posSession?.location) || {}
-  const compMode  = locCfg.competitionMode            || 'individual_total'
-  const timeframe = locCfg.competitionTimeframe       || 'daily'
-  const viewTop   = Number(locCfg.competitionViewTop  ?? 5)   // 0 = show all
-  const rankOnly  = !!locCfg.competitionShowRankingOnly
+  const locCfg           = loadLocationConfig(posSession?.location) || {}
+  const compMode         = locCfg.competitionMode            || 'individual_total'
+  const timeframe        = locCfg.competitionTimeframe       || 'daily'
+  const viewTop          = Number(locCfg.competitionViewTop  ?? 5)   // 0 = show all
+  const rankOnly         = !!locCfg.competitionShowRankingOnly
+  const enableSpare      = !!locCfg.competitionEnableSpare
+  const enableHybrid     = !!locCfg.competitionEnableHybrid
+  const hybridMultiplier = Number(locCfg.competitionHybridMultiplier ?? 1.0)
+
+  // ── Active ranking tab (local — does NOT touch location config) ───────────
+  // Default: 'sales'. Spare/Hybrid only selectable if enabled in location.
+  const [rankTab, setRankTab] = useState('sales')
 
   // ── Track today / day rollover ────────────────────────────────────────────
   const [today, setToday] = useState(() => localDateStr())
@@ -125,30 +142,52 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
     })
 
     // 2. Grouping key
-    const isTeamwork = compMode.startsWith('teamwork')
+    // Spare/Hybrid tabs always rank by employee; Sales follows compMode (teamwork or individual)
+    const isTeamwork = rankTab === 'sales' && compMode.startsWith('teamwork')
     const getKey = s => isTeamwork
       ? (s.location || 'Unknown Location')
       : (s.employee || 'Unknown')
 
-    // 3. Compute metric
-    const map = {}
-    if (compMode.endsWith('_total')) {
+    // 3. Compute metric based on active tab
+    const map      = {}
+    const extraMap = {}   // populated only for hybrid display
+
+    if (rankTab === 'spare') {
+      // Spare tab: sum totalSpare per employee — no extra processing when not active
       filtered.forEach(s => {
         const k = getKey(s)
-        map[k] = (map[k] || 0) + (s.subtotal || 0)
+        map[k] = (map[k] || 0) + (s.totalSpare || 0)
       })
-    } else if (compMode.endsWith('_highest')) {
+    } else if (rankTab === 'hybrid') {
+      // Hybrid tab: score = subtotal + totalSpare × multiplier
       filtered.forEach(s => {
-        const k = getKey(s)
-        const v = s.subtotal || 0
-        map[k] = Math.max(map[k] || 0, v)
+        const k     = getKey(s)
+        const sub   = s.subtotal   || 0
+        const spare = s.totalSpare || 0
+        map[k] = (map[k] || 0) + sub + spare * hybridMultiplier
+        if (!extraMap[k]) extraMap[k] = { subtotal: 0, spare: 0 }
+        extraMap[k].subtotal += sub
+        extraMap[k].spare    += spare
       })
-    } else if (compMode.endsWith('_products')) {
-      filtered.forEach(s => {
-        const k = getKey(s)
-        const count = (s.items || []).reduce((sum, i) => sum + Math.abs(i.qty || 0), 0)
-        map[k] = (map[k] || 0) + count
-      })
+    } else {
+      // Sales tab: use location's compMode (total / highest / products)
+      if (compMode.endsWith('_total')) {
+        filtered.forEach(s => {
+          const k = getKey(s)
+          map[k] = (map[k] || 0) + (s.subtotal || 0)
+        })
+      } else if (compMode.endsWith('_highest')) {
+        filtered.forEach(s => {
+          const k = getKey(s)
+          map[k] = Math.max(map[k] || 0, s.subtotal || 0)
+        })
+      } else if (compMode.endsWith('_products')) {
+        filtered.forEach(s => {
+          const k     = getKey(s)
+          const count = (s.items || []).reduce((sum, i) => sum + Math.abs(i.qty || 0), 0)
+          map[k] = (map[k] || 0) + count
+        })
+      }
     }
 
     // 4. Sort, assign stable colors
@@ -157,26 +196,40 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
       .map(([name, value]) => ({
         name,
         value,
-        subtotal: value,  // kept for backward compat
+        subtotal: value,
         initials: getInitials(name),
         color: AVATAR_COLORS[names.indexOf(name) % AVATAR_COLORS.length],
+        extra: extraMap[name] || null,
       }))
       .sort((a, b) => b.value - a.value)
 
     // 5. Apply viewTop
     return viewTop > 0 ? all.slice(0, viewTop) : all
-  }, [sales, today, compMode, timeframe, viewTop])
+  }, [sales, today, compMode, timeframe, viewTop, rankTab, hybridMultiplier])
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
   })
 
-  const modeLabel      = MODE_LABEL[compMode]       || ''
+  // fmt: value formatter bound to current tab + compMode
+  const fmt = (v) => fmtValue(v, compMode, rankTab)
+
+  const salesModeLabel = MODE_LABEL[compMode]       || ''
   const timeframeLabel = TIMEFRAME_LABEL[timeframe] || ''
-  const subtitle       = compMode === 'none'
+  const tabModeLabel   = rankTab === 'spare'  ? 'Spare Ranking · Employee'
+                       : rankTab === 'hybrid' ? 'Hybrid Score · Employee'
+                       : salesModeLabel
+  const subtitle = compMode === 'none'
     ? 'Competition is not configured for this location'
-    : `${timeframeLabel} · ${modeLabel}`
+    : `${timeframeLabel} · ${tabModeLabel}`
+
+  // Visible tabs (Sales always visible)
+  const visibleTabs = [
+    { key: 'sales'  },
+    ...(enableSpare  ? [{ key: 'spare'  }] : []),
+    ...(enableHybrid ? [{ key: 'hybrid' }] : []),
+  ]
 
   const [first, second, third, ...rest] = standings
 
@@ -209,7 +262,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
         {dateLabel} · {clock}
       </div>
 
-      {/* Mode badge — top right below close */}
+      {/* Timeframe badge — top right below close */}
       {compMode !== 'none' && (
         <div style={{
           position: 'absolute', top: 20, right: 110,
@@ -217,6 +270,19 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
           borderRadius: 8, padding: '5px 12px', color: '#60a5fa', fontSize: 11, fontWeight: 600,
         }}>
           {timeframeLabel}
+        </div>
+      )}
+
+      {/* Ranking tab badge (top-right, only when multiple tabs available) */}
+      {visibleTabs.length > 1 && compMode !== 'none' && (
+        <div style={{
+          position: 'absolute', top: 20, right: 215,
+          background: TAB_CFG[rankTab].bg,
+          border: `1px solid ${TAB_CFG[rankTab].border}`,
+          borderRadius: 8, padding: '5px 12px',
+          color: TAB_CFG[rankTab].color, fontSize: 11, fontWeight: 700,
+        }}>
+          {TAB_CFG[rankTab].label}
         </div>
       )}
 
@@ -235,10 +301,39 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
             border: '1px solid rgba(245,158,11,0.3)',
           }}>
             Leader: <strong style={{ color: COLORS.accent }}>{first.name}</strong>
-            {' '}— <strong style={{ color: COLORS.accent }}>{fmtValue(first.value, compMode)}</strong>
+            {' '}— <strong style={{ color: COLORS.accent }}>{fmt(first.value)}</strong>
           </div>
         )}
       </div>
+
+      {/* ── Ranking tabs (only when 2+ tabs available and competition is on) ── */}
+      {compMode !== 'none' && visibleTabs.length > 1 && (
+        <div style={{
+          display: 'flex', gap: 8, marginBottom: 28, justifyContent: 'center',
+        }}>
+          {visibleTabs.map(({ key }) => {
+            const cfg    = TAB_CFG[key]
+            const active = rankTab === key
+            return (
+              <button
+                key={key}
+                onClick={() => setRankTab(key)}
+                style={{
+                  padding: '9px 24px', borderRadius: 24, fontSize: 13, fontWeight: 700,
+                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  border: `1px solid ${active ? cfg.border : 'rgba(30,41,59,0.8)'}`,
+                  background: active ? cfg.bg : 'rgba(15,23,42,0.5)',
+                  color: active ? cfg.color : '#475569',
+                  boxShadow: active ? `0 0 18px ${cfg.bg}` : 'none',
+                  transform: active ? 'scale(1.04)' : 'scale(1)',
+                }}
+              >
+                {cfg.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {/* ── No competition / empty states ── */}
       {compMode === 'none' && (
@@ -306,12 +401,18 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                   </p>
                   <p style={{
                     color: person.color, fontSize: isCenter ? 22 : 15,
-                    fontWeight: 800, marginBottom: 8,
+                    fontWeight: 800, marginBottom: compMode === 'individual_hybrid' ? 2 : 8,
                     textShadow: pulse && isCenter ? `0 0 20px ${person.color}` : 'none',
                     transition: 'text-shadow 0.3s',
                   }}>
-                    {fmtValue(person.value, compMode)}
+                    {fmt(person.value)}
                   </p>
+                  {/* Hybrid breakdown */}
+                  {compMode === 'individual_hybrid' && person.extra && (
+                    <p style={{ color: '#475569', fontSize: 10, marginBottom: 8, textAlign: 'center' }}>
+                      ${person.extra.subtotal.toFixed(2)} + ${person.extra.spare.toFixed(2)} spare
+                    </p>
+                  )}
 
                   {/* Podium block */}
                   <div style={{
@@ -350,8 +451,13 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                   <div>
                     <p style={{ color: '#94a3b8', fontSize: 13 }}>{person.name}</p>
                     <p style={{ color: person.color, fontSize: 14, fontWeight: 700 }}>
-                      {fmtValue(person.value, compMode)}
+                      {fmt(person.value)}
                     </p>
+                    {compMode === 'individual_hybrid' && person.extra && (
+                      <p style={{ color: '#475569', fontSize: 10, marginTop: 1 }}>
+                        ${person.extra.subtotal.toFixed(2)} + ${person.extra.spare.toFixed(2)} spare
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -410,14 +516,26 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                 </div>
 
                 {/* Value */}
-                <div style={{
-                  color: isFirst ? COLORS.accent : person.color,
-                  fontSize: isFirst ? 22 : 17,
-                  fontWeight: 800,
-                  textShadow: pulse && isFirst ? `0 0 16px ${COLORS.accent}` : 'none',
-                  transition: 'text-shadow 0.3s',
-                }}>
-                  {fmtValue(person.value, compMode)}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{
+                    color: isFirst ? COLORS.accent : person.color,
+                    fontSize: isFirst ? 22 : 17,
+                    fontWeight: 800,
+                    textShadow: pulse && isFirst ? `0 0 16px ${COLORS.accent}` : 'none',
+                    transition: 'text-shadow 0.3s',
+                  }}>
+                    {fmt(person.value)}
+                  </div>
+                  {/* Hybrid breakdown */}
+                  {compMode === 'individual_hybrid' && person.extra && (
+                    <div style={{ color: '#475569', fontSize: 10, marginTop: 2 }}>
+                      ${person.extra.subtotal.toFixed(2)} + ${person.extra.spare.toFixed(2)} spare
+                    </div>
+                  )}
+                  {/* Spare label */}
+                  {compMode === 'individual_spare' && (
+                    <div style={{ color: '#64748b', fontSize: 10, marginTop: 2 }}>spare</div>
+                  )}
                 </div>
               </div>
             )

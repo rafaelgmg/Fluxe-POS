@@ -62,6 +62,39 @@ input, textarea, select {
   color: #fff;
 }
 
+/* ── Fluxe logo ───────────────────────────────────────────────────────────── */
+.fluxe-logo {
+  font-family: 'Inter', 'Sora', 'Poppins', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  background: linear-gradient(135deg, #e2e8f0 0%, #93c5fd 45%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;          /* text-shadow não funciona com background-clip */
+  filter: drop-shadow(0 0 8px rgba(99, 150, 255, 0.28));
+  cursor: default;
+  user-select: none;
+  transition: filter 0.2s ease, transform 0.2s ease, letter-spacing 0.2s ease;
+  display: inline-block;
+}
+
+.fluxe-logo:hover {
+  filter: drop-shadow(0 0 14px rgba(99, 150, 255, 0.52));
+  transform: scale(1.05);
+  letter-spacing: 1.1px;
+}
+
+.fluxe-logo .fluxe-f {
+  font-size: 19px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* ── Utility classes ──────────────────────────────────────────────────────── */
 .grad-primary {
   background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);

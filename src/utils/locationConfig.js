@@ -7,6 +7,8 @@
  * Storage key: fluxe-locations-v1  (same as LocationSettings.jsx)
  */
 
+import { loadSpareRate } from './commissionTiersStorage'
+
 const LOC_KEY = 'fluxe-locations-v1'
 
 /**
@@ -66,4 +68,56 @@ export function getLocationPref(locationName, key, defaultValue = undefined) {
   const cfg = loadLocationConfig(locationName)
   if (!cfg) return defaultValue
   return key in cfg ? cfg[key] : defaultValue
+}
+
+/**
+ * Get the spare commission rate (as %) for a location.
+ * Uses the location's spareCommissionRate if configured,
+ * falls back to the global spare rate (default 30%).
+ *
+ * @param {string|null} locationName
+ * @returns {number}  e.g. 30
+ */
+export function loadSpareRateForLocation(locationName) {
+  if (locationName) {
+    const cfg = loadLocationConfig(locationName)
+    if (cfg?.spareCommissionRate != null) {
+      const val = parseFloat(cfg.spareCommissionRate)
+      if (!isNaN(val) && val >= 0 && val <= 100) return val
+    }
+  }
+  return loadSpareRate()
+}
+
+/**
+ * Resolve the effective spare commission rate (as %) for a given day.
+ *
+ * - mode = 'fixed'  → returns spareCommissionRate from location (or global default 30%)
+ * - mode = 'tiered' → looks up location's spareTiers table using daySpareTotal
+ *                     (retroactive: highest threshold reached wins)
+ *                     Falls back to fixed rate if no tiers are defined.
+ *
+ * @param {string|null} locationName
+ * @param {number}      daySpareTotal  - total spare earned by the employee on that day ($)
+ * @returns {number} rate as % (e.g. 30)
+ */
+export function resolveSpareRateForDay(locationName, daySpareTotal = 0) {
+  const cfg  = locationName ? loadLocationConfig(locationName) : null
+  const mode = cfg?.spareCommissionMode || 'fixed'
+
+  if (mode === 'tiered') {
+    const tiers = cfg?.spareTiers
+    if (Array.isArray(tiers) && tiers.length > 0) {
+      // Sort highest threshold first — pick the first tier the daily spare meets
+      const sorted = [...tiers].sort((a, b) => b.threshold - a.threshold)
+      const match  = sorted.find(t => daySpareTotal >= t.threshold)
+      if (match) return match.rate
+      // Below the lowest threshold — use lowest-threshold tier's rate as floor
+      return sorted[sorted.length - 1].rate
+    }
+    // Tiered selected but no tiers defined → fall through to fixed
+  }
+
+  // Fixed mode (or tiered with no tiers configured)
+  return loadSpareRateForLocation(locationName)
 }

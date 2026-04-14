@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { DEFAULT_LOCATION } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
+import { loadCRM } from '../utils/crmStorage'
 
 // ── Design tokens (match system) ───────────────────────────────────────────────
 const BG     = '#020817'
@@ -122,6 +123,33 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8)
   }, [todaySales])
 
+  // ── CRM: new customers captured today at this location ────────────────────
+  const todayNewCustomers = useMemo(() => {
+    return loadCRM().filter(c => {
+      const d = new Date(c.createdAt || c.capturedAt || 0)
+      const sameDay = (
+        d.getFullYear() === today.getFullYear() &&
+        d.getMonth()    === today.getMonth()    &&
+        d.getDate()     === today.getDate()
+      )
+      // Filter by location when capturedLocation is set; if empty, include it
+      const sameLocation = !c.capturedLocation || c.capturedLocation === location
+      return sameDay && sameLocation
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Leads per employee (from CRM capturedBy) ──────────────────────────────
+  const leadsByEmployee = useMemo(() => {
+    const map = {}
+    todayNewCustomers.forEach(c => {
+      const name = c.capturedBy || '(unattributed)'
+      map[name] = (map[name] || 0) + 1
+    })
+    return Object.entries(map).sort((a, b) => b[1] - a[1])
+  }, [todayNewCustomers])
+
+  const maxLeads = Math.max(...leadsByEmployee.map(([, n]) => n), 1)
+
   const todayLabel = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   const printedAt  = today.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   const hasData    = todaySales.length > 0
@@ -207,11 +235,12 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
           {section === 'overview' && (
             <>
               {/* Revenue cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
-                {statCard('Net Revenue',    fmt$(netRevenue),   GREEN,  `${todaySales.length} transactions`)}
-                {statCard(`${taxLabel} Collected`, fmt$(taxRevenue), AMBER, `${taxRatePct}%`)}
-                {statCard('Gross Revenue',  fmt$(grossRevenue), BLUE,   'Net + Tax')}
-                {statCard('Total Spare',    fmt$(totalSpare),   PURPLE, 'Above min price')}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 10 }}>
+                {statCard('Net Revenue',       fmt$(netRevenue),                   GREEN,  `${todaySales.length} transactions`)}
+                {statCard(`${taxLabel} Collected`, fmt$(taxRevenue),               AMBER,  `${taxRatePct}%`)}
+                {statCard('Gross Revenue',     fmt$(grossRevenue),                 BLUE,   'Net + Tax')}
+                {statCard('Total Spare',       fmt$(totalSpare),                   PURPLE, 'Above min price')}
+                {statCard('New Customers',     String(todayNewCustomers.length),   '#06b6d4', leadsByEmployee[0] ? `Top: ${leadsByEmployee[0][0]}` : 'None captured yet')}
               </div>
 
               {!hasData && (
@@ -291,6 +320,65 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                       </div>
                     </div>
                   )}
+
+                  {/* Leads captured */}
+                  <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>LEADS CAPTURED TODAY</p>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, padding: '3px 10px',
+                        background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)',
+                        borderRadius: 20, color: '#06b6d4',
+                      }}>{todayNewCustomers.length} new {todayNewCustomers.length === 1 ? 'customer' : 'customers'}</span>
+                    </div>
+
+                    {leadsByEmployee.length === 0 ? (
+                      <p style={{ color: '#334155', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>
+                        No new customers captured today
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {leadsByEmployee.map(([name, count], i) => (
+                          <div key={name}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {i === 0 && (
+                                  <span style={{ fontSize: 13 }}>🏆</span>
+                                )}
+                                <span style={{ color: i === 0 ? TEXT : DIM, fontSize: 13, fontWeight: i === 0 ? 700 : 400 }}>
+                                  {name}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ color: MUTED, fontSize: 11 }}>
+                                  {count} {count === 1 ? 'lead' : 'leads'}
+                                </span>
+                                <span style={{
+                                  fontSize: 11, fontWeight: 700, padding: '2px 8px',
+                                  background: i === 0 ? 'rgba(6,182,212,0.12)' : 'rgba(71,85,105,0.12)',
+                                  border: `1px solid ${i === 0 ? 'rgba(6,182,212,0.3)' : 'rgba(71,85,105,0.2)'}`,
+                                  borderRadius: 12,
+                                  color: i === 0 ? '#06b6d4' : MUTED,
+                                }}>
+                                  {todayNewCustomers.length > 0
+                                    ? Math.round((count / todayNewCustomers.length) * 100)
+                                    : 0}%
+                                </span>
+                              </div>
+                            </div>
+                            <div style={{ height: 5, background: BORDER, borderRadius: 2 }}>
+                              <div style={{
+                                height: '100%', borderRadius: 2,
+                                background: i === 0 ? '#06b6d4' : '#334155',
+                                width: `${(count / maxLeads) * 100}%`,
+                                transition: 'width 0.4s ease',
+                              }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Notes */}
                   <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>

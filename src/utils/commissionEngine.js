@@ -19,7 +19,7 @@
  *
  * ── Commission types per category ────────────────────────────────────────────
  *
- *  'tier_nc'        → New Collections: (subtotal - spare) × tierRate + spare × 30%
+ *  'tier_nc'        → New Collections: (subtotal - spare) × tierRate + spare × spareRate% (per-location, default 30%)
  *  'pct_subtotal'   → Brands: fixed % of subtotal (e.g. 5%) — rate from category
  *  'pct_spare'      → Spare: fixed % of spare (e.g. 30%) — rate from category
  *  'fixed_per_unit' → Fixed $ per unit sold — rate from category
@@ -38,6 +38,7 @@
 
 import { buildCategoryMap } from './categoriesStorage'
 import { loadCommissionTiers, loadSpareRate } from './commissionTiersStorage'
+import { resolveSpareRateForDay } from './locationConfig'
 
 /**
  * Given a day's subtotal, return the applicable tier rate (decimal) and label.
@@ -87,12 +88,13 @@ function resolveItemFields(item) {
 /**
  * Calculate commission for a single line item.
  *
- * @param {object}      item       - raw item from invoice.items
- * @param {object|null} catConfig  - category config { commissionType, commissionRate }
- * @param {number}      tierRate   - day tier rate in decimal (0 = below $600 = no commission)
+ * @param {object}      item         - raw item from invoice.items
+ * @param {object|null} catConfig    - category config { commissionType, commissionRate }
+ * @param {number}      tierRate     - day tier rate in decimal (0 = below $600 = no commission)
+ * @param {number|null} spareRatePct - spare commission % (e.g. 30). null = use global default.
  * @returns {number} commission in dollars, rounded to 2 decimals
  */
-export function calcItemCommission(item, catConfig, tierRate = 0) {
+export function calcItemCommission(item, catConfig, tierRate = 0, spareRatePct = null) {
   if (!catConfig) return 0
   const { commissionType, commissionRate } = catConfig
   if (!commissionType || commissionType === 'none') return 0
@@ -101,13 +103,14 @@ export function calcItemCommission(item, catConfig, tierRate = 0) {
   if (tierRate === 0) return 0
 
   const { qty, subtotal, spare } = resolveItemFields(item)
+  // Resolve spare rate: use per-location value if provided, else global default
+  const spareRate = (spareRatePct ?? loadSpareRate()) / 100
 
   switch (commissionType) {
     case 'tier_nc': {
       // New Collections: split product value and spare.
       // productCommission = (subtotal - spare) * tierRate  (day tier, retroactive)
-      // spareCommission   = spare * spareRate              (configurable, default 30%)
-      const spareRate    = loadSpareRate() / 100
+      // spareCommission   = spare * spareRate              (configurable per location, default 30%)
       const productValue = Math.max(0, subtotal - spare)
       const productComm  = productValue * tierRate
       const spareComm    = spare * spareRate
@@ -119,7 +122,6 @@ export function calcItemCommission(item, catConfig, tierRate = 0) {
       // and paid at the NC spare rate instead of the brand rate.
       const rate = (commissionRate ?? 0) / 100
       if (catConfig.spareCommissionEnabled) {
-        const spareRate    = loadSpareRate() / 100
         const productValue = Math.max(0, subtotal - spare)
         const productComm  = productValue * rate
         const spareComm    = spare * spareRate
@@ -146,35 +148,36 @@ export function calcItemCommission(item, catConfig, tierRate = 0) {
 /**
  * Calculate commission for a single invoice.
  *
- * @param {object} invoice
- * @param {object} categoryMap  - from buildCategoryMap()
- * @param {number} tierRate     - day tier rate (pass 0 if day is below $600)
+ * @param {object}      invoice
+ * @param {object}      categoryMap   - from buildCategoryMap()
+ * @param {number}      tierRate      - day tier rate (pass 0 if day is below $600)
+ * @param {number|null} spareRatePct  - spare commission % for this location (null = global default)
  * @returns {{ total: number, breakdown: object[] }}
  */
-export function calcInvoiceCommission(invoice, categoryMap, tierRate = 0) {
+export function calcInvoiceCommission(invoice, categoryMap, tierRate = 0, spareRatePct = null) {
   if (!invoice || invoice.status === 'deleted') {
     return { total: 0, breakdown: [] }
   }
 
+  const spareRate = (spareRatePct ?? loadSpareRate()) / 100
+
   const breakdown = (invoice.items || []).map(raw => {
     const item       = resolveItemFields(raw)
     const catConfig  = categoryMap[item.category] || null
-    const commission = calcItemCommission(raw, catConfig, tierRate)
+    const commission = calcItemCommission(raw, catConfig, tierRate, spareRatePct)
 
     // For tier_nc and pct_subtotal w/ spare split, compute breakdown for display
     let productCommission = null
     let spareCommission   = null
     const commType = catConfig?.commissionType
     if (commType === 'tier_nc' && tierRate > 0) {
-      const spareRate    = loadSpareRate() / 100
       const productValue = Math.max(0, item.subtotal - item.spare)
-      productCommission  = Math.round(productValue * tierRate * 100) / 100
+      productCommission  = Math.round(productValue * tierRate  * 100) / 100
       spareCommission    = Math.round(item.spare   * spareRate * 100) / 100
     } else if (commType === 'pct_subtotal' && catConfig?.spareCommissionEnabled && tierRate > 0) {
-      const spareRate    = loadSpareRate() / 100
       const rate         = (catConfig.commissionRate ?? 0) / 100
       const productValue = Math.max(0, item.subtotal - item.spare)
-      productCommission  = Math.round(productValue * rate     * 100) / 100
+      productCommission  = Math.round(productValue * rate      * 100) / 100
       spareCommission    = Math.round(item.spare   * spareRate * 100) / 100
     }
 
@@ -218,14 +221,18 @@ export function calcInvoiceCommission(invoice, categoryMap, tierRate = 0) {
 export function calcPeriodCommission(sales, categoryMap) {
   const validSales = sales.filter(s => s.status !== 'deleted')
 
-  // ── Step 1: sum subtotals per local day ────────────────────────────────────
+  // ── Step 1: sum subtotals and spare totals per local day ──────────────────
   const daySubtotals = {}
+  const daySpares    = {}
   for (const s of validSales) {
     const key = localDateKey(s.timestamp)
     daySubtotals[key] = (daySubtotals[key] || 0) + (s.subtotal || 0)
+    // Sum spare across all line items for the spare-tier threshold lookup
+    const invoiceSpare = (s.items || []).reduce((sum, raw) => sum + (raw.spare ?? 0), 0)
+    daySpares[key] = (daySpares[key] || 0) + invoiceSpare
   }
 
-  // ── Step 2: tier per day ───────────────────────────────────────────────────
+  // ── Step 2: product tier per day ──────────────────────────────────────────
   const dayTierMap = {}
   for (const [key, sub] of Object.entries(daySubtotals)) {
     const tier = getDayTier(sub)
@@ -237,10 +244,12 @@ export function calcPeriodCommission(sales, categoryMap) {
   const byCategory = {}
 
   for (const invoice of validSales) {
-    const dayKey   = localDateKey(invoice.timestamp)
-    const tierRate = dayTierMap[dayKey]?.rate ?? 0
+    const dayKey       = localDateKey(invoice.timestamp)
+    const tierRate     = dayTierMap[dayKey]?.rate ?? 0
+    // Resolve spare rate: fixed % OR tiered based on the day's total spare
+    const spareRatePct = resolveSpareRateForDay(invoice.location, daySpares[dayKey] ?? 0)
 
-    const { total, breakdown } = calcInvoiceCommission(invoice, categoryMap, tierRate)
+    const { total, breakdown } = calcInvoiceCommission(invoice, categoryMap, tierRate, spareRatePct)
 
     byInvoice.push({
       number:       invoice.number,

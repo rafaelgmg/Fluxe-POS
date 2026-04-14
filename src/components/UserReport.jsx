@@ -8,6 +8,7 @@ import { buildCategoryMap } from '../utils/categoriesStorage'
 import { getDayBonusResult, calcFinalDailyPay } from '../utils/bonusEngine'
 import { setManualBonus } from '../utils/bonusStorage'
 import { loadUsers } from '../utils/usersStorage'
+import { calcDayCompetitionBonus } from '../utils/competitionBonusEngine'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const BG     = '#020817'
@@ -869,11 +870,36 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
       d.finalBonus   = bonus.finalBonus
       d.hourlyPay    = pay.hourlyPay
       d.basePay      = pay.basePay
-      d.finalDailyPay = pay.finalDailyPay
+
+      // ── Competition placement bonus ───────────────────────────────────────
+      // Requires all sales at this location on this day (not just this employee)
+      const allSalesForDay = sales.filter(s =>
+        s.status !== 'deleted' &&
+        s.location === d.location &&
+        localDateStr(new Date(s.timestamp)) === d.dateKey
+      )
+      const locCfg         = d.location ? (() => {
+        try {
+          const raw = localStorage.getItem('fluxe-locations-v1')
+          const list = raw ? JSON.parse(raw) : []
+          return list.find(l => l.name === d.location) || null
+        } catch { return null }
+      })() : null
+      const hybridMult     = Number(locCfg?.competitionHybridMultiplier ?? 1.0)
+      const compBonus      = calcDayCompetitionBonus(empName, d.dateKey, d.location, allSalesForDay, hybridMult)
+      d.compBonusSales     = compBonus.salesBonus
+      d.compBonusSpare     = compBonus.spareBonus
+      d.compBonusHybrid    = compBonus.hybridBonus
+      d.totalCompBonus     = compBonus.totalCompBonus
+      d.compSalesRank      = compBonus.salesRank
+      d.compSpareRank      = compBonus.spareRank
+      d.compHybridRank     = compBonus.hybridRank
+
+      d.finalDailyPay = Math.round((pay.finalDailyPay + compBonus.totalCompBonus) * 100) / 100
     })
 
     return days
-  }, [employeeSales, clockRecords, selectedName, unlockedEmployee, bonusVersion])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [employeeSales, clockRecords, selectedName, unlockedEmployee, bonusVersion, sales])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const validSales    = employeeSales.filter(s => s.status !== 'deleted')
 
@@ -1229,6 +1255,16 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
                   setBonusVersion(v => v + 1)
                 }
 
+                // Show comp-bonus columns only when at least one day has a rank
+                const hasCompBonus = dailySales.some(d => d.totalCompBonus > 0 || d.compSalesRank || d.compSpareRank || d.compHybridRank)
+
+                // Rank label helper: "🥇 1st" / "🥈 2nd" / "🥉 3rd" / "—"
+                const rankLabel = (rank) =>
+                  rank === 1 ? '🥇 1st' :
+                  rank === 2 ? '🥈 2nd' :
+                  rank === 3 ? '🥉 3rd' :
+                  rank ? `#${rank}` : '—'
+
                 const cols = [
                   { key: 'displayDate',    label: 'Date',           color: DIM,    fmt: v => v },
                   { key: 'salesTotal',     label: 'Sales Total',    color: GREEN,  fmt: fmt$ },
@@ -1244,6 +1280,13 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
                   { key: 'autoBonus',      label: 'Auto Bonus',     color: AMBER,  fmt: v => v > 0 ? fmt$(v) : '—' },
                   { key: 'manualBonus',    label: 'Manual Adj.',    color: AMBER,  fmt: v => v !== 0 ? fmt$(v) : '—' },
                   { key: 'finalBonus',     label: 'Final Bonus',    color: AMBER,  fmt: v => v !== 0 ? fmt$(v) : '—' },
+                  // Competition placement columns (visible when any comp bonus earned)
+                  ...(hasCompBonus ? [
+                    { key: 'compSalesRank',  label: '📊 Rank',  color: '#60a5fa', fmt: rankLabel },
+                    { key: 'compSpareRank',  label: '💰 Rank',  color: '#f59e0b', fmt: rankLabel },
+                    { key: 'compHybridRank', label: '⚡ Rank',  color: '#a78bfa', fmt: rankLabel },
+                    { key: 'totalCompBonus', label: 'Comp Bonus', color: GREEN, fmt: v => v > 0 ? fmt$(v) : '—' },
+                  ] : []),
                   { key: 'finalDailyPay',  label: 'Final Daily Pay',color: GREEN,  fmt: fmt$ },
                 ]
 
@@ -1266,6 +1309,10 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
                   autoBonus:      rows.reduce((s, d) => s + d.autoBonus, 0),
                   manualBonus:    rows.reduce((s, d) => s + d.manualBonus, 0),
                   finalBonus:     rows.reduce((s, d) => s + d.finalBonus, 0),
+                  compSalesRank:  null,
+                  compSpareRank:  null,
+                  compHybridRank: null,
+                  totalCompBonus: rows.reduce((s, d) => s + (d.totalCompBonus || 0), 0),
                   finalDailyPay:  rows.reduce((s, d) => s + d.finalDailyPay, 0),
                   _avgHr: (() => {
                     const ms    = rows.reduce((s, d) => s + d.hoursMs, 0)
@@ -1285,7 +1332,7 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
 
                 return (
                   <div style={{ borderRadius: 8, border: `1px solid ${BORDER}`, overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1100 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: hasCompBonus ? 1400 : 1100 }}>
                       <thead>
                         <tr>
                           {cols.map((c, i) => (
