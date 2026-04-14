@@ -6,7 +6,8 @@ import { parseBarcode } from './utils/parseBarcode'
 import { printReceipt } from './utils/printReceipt'
 import { useCRM } from './hooks/useCRM'
 import { useSales, nextInvoiceNumber } from './hooks/useSales'
-import { COLORS, DEFAULT_LOCATION, SYSTEM_NAME } from './config/branding'
+import { COLORS, DEFAULT_LOCATION, SYSTEM_NAME, LOCATIONS_CFG } from './config/branding'
+import ServiceApp from './components/service/ServiceApp'
 import AccountLoginScreen from './components/AccountLoginScreen'
 import LoginScreen from './components/LoginScreen'
 import LoginModal from './components/LoginModal'
@@ -197,15 +198,20 @@ export default function App() {
 
   const handleConfirmPayment = ({
     method, total, subtotal, tax, tip = 0,
-    // Cash
+    // Split payments array (new)
+    payments,
+    // Cash (legacy / single)
     amountReceived, changeDue,
-    // Card
+    // Card (legacy / single)
     cardBrand, cardLast4, authorizationNumber,
-    // External
+    // External (legacy / single)
     externalRef,
+    // Check (legacy / single)
+    checkNumber,
     // Shared
     notes, linkedCustomerId, receiptAction = 'none',
   }) => {
+    const isSingle = !payments || payments.length <= 1
     const invoice = {
       number:        nextInvoiceNumber(),
       timestamp:     new Date(),
@@ -218,16 +224,16 @@ export default function App() {
       tip,
       status:        'normal',
       paymentMethod: method,
+      payments:      payments || [],
       totalSpare:    cart.reduce((s, i) => s + i.spare, 0),
       notes:         notes || '',
       linkedCustomerId: linkedCustomerId || null,
       receiptAction,
-      // Cash details
-      ...(method === 'cash' && { amountReceived, changeDue }),
-      // Card details
-      ...(method === 'card' && { cardBrand, cardLast4, authorizationNumber }),
-      // External
-      ...(method === 'external' && { externalRef }),
+      // Legacy flat fields — only written for single-method sales (backward compat)
+      ...(isSingle && method === 'cash'     && { amountReceived, changeDue }),
+      ...(isSingle && method === 'card'     && { cardBrand, cardLast4, authorizationNumber }),
+      ...(isSingle && method === 'external' && { externalRef }),
+      ...(isSingle && method === 'check'    && { checkNumber }),
     }
     setShowPayment(false)
     setPendingInvoice(invoice)
@@ -381,6 +387,20 @@ export default function App() {
           if (employee) setCurrentUser(employee)
         }}
         onBack={() => setAccountSession(null)}
+      />
+    )
+  }
+
+  // ── Business type routing — retail keeps existing flow, service gets ServiceApp ──
+  const activeLocCfg   = LOCATIONS_CFG.find(l => l.id === posSession?.locationId)
+  const businessType   = activeLocCfg?.business_type || 'retail'
+
+  if (businessType === 'service') {
+    return (
+      <ServiceApp
+        posSession={posSession}
+        currentUser={currentUser}
+        onLogout={() => setPosSession(null)}
       />
     )
   }

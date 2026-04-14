@@ -116,24 +116,33 @@ export function printReceipt(invoice, locCfg) {
     </tr>`
 
   // ── Footer lines ───────────────────────────────────────────────────────────
-  let payDetails = ''
-  if (invoice.paymentMethod === 'cash') {
-    const recv  = invoice.amountReceived != null ? `  |  Received: ${fmt$(invoice.amountReceived)}` : ''
-    const chng  = invoice.changeDue      != null ? `  |  Change: ${fmt$(invoice.changeDue)}`        : ''
-    payDetails = recv + chng
-  } else if (invoice.paymentMethod === 'card' && invoice.cardBrand) {
-    const brand = invoice.cardBrand.charAt(0).toUpperCase() + invoice.cardBrand.slice(1)
-    const last4 = invoice.cardLast4 ? ` ****${invoice.cardLast4}` : ''
-    const auth  = invoice.authorizationNumber ? `  |  Auth: ${invoice.authorizationNumber}` : ''
-    payDetails = ` — ${brand}${last4}${auth}`
-  } else if (invoice.paymentMethod === 'external' && invoice.externalRef) {
-    payDetails = ` — ${invoice.externalRef}`
-  } else if (invoice.paymentMethod === 'check' && invoice.checkNumber) {
-    payDetails = ` — Check #${invoice.checkNumber}`
+  function buildPaymentLine(p) {
+    const method = p.method || p.paymentMethod || ''
+    const label  = method.charAt(0).toUpperCase() + method.slice(1)
+    let detail = ''
+    if (method === 'cash') {
+      if (p.amountReceived != null) detail += `  |  Received: ${fmt$(p.amountReceived)}`
+      if (p.changeDue      != null) detail += `  |  Change: ${fmt$(p.changeDue)}`
+    } else if (method === 'card' && p.cardBrand) {
+      const brand = p.cardBrand.charAt(0).toUpperCase() + p.cardBrand.slice(1)
+      const last4 = p.cardLast4 ? ` ****${p.cardLast4}` : ''
+      const auth  = p.authorizationNumber ? `  |  Auth: ${p.authorizationNumber}` : ''
+      detail = ` — ${brand}${last4}${auth}`
+    } else if (method === 'external' && p.externalRef) {
+      detail = ` — ${p.externalRef}`
+    } else if (method === 'check' && p.checkNumber) {
+      detail = ` — Check #${p.checkNumber}`
+    }
+    const amt = p.amount != null ? `  ${fmt$(p.amount)}` : ''
+    return `<p class="c">Payment: <b>${label}</b>${detail}${amt}</p>`
   }
 
-  const payLine = invoice.paymentMethod
-    ? `<p class="c">Payment: <b>${invoice.paymentMethod.charAt(0).toUpperCase() + invoice.paymentMethod.slice(1)}</b>${payDetails}</p>` : ''
+  let payLine = ''
+  if (Array.isArray(invoice.payments) && invoice.payments.length > 0) {
+    payLine = invoice.payments.map(p => buildPaymentLine(p)).join('\n')
+  } else if (invoice.paymentMethod) {
+    payLine = buildPaymentLine(invoice)
+  }
 
   const notesLine = invoice.notes
     ? `<p class="c" style="font-style:italic;color:#555">${invoice.notes}</p>` : ''

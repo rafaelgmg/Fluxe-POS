@@ -27,18 +27,20 @@ const branding = {
   // ── Locations ───────────────────────────────────────────────────────────────
   locations: [
     {
-      id:       'loc_01',
-      name:     'Miracle Mall 01',
-      address:  '3663 Las Vegas Blvd, Las Vegas, Nevada',
-      region:   'Las Vegas',
-      phone:    '',
+      id:            'loc_01',
+      name:          'Miracle Mall 01',
+      address:       '3663 Las Vegas Blvd, Las Vegas, Nevada',
+      region:        'Las Vegas',
+      phone:         '',
+      business_type: 'retail',   // 'retail' | 'service'
     },
     {
-      id:       'loc_02',
-      name:     'Perfume Passage',
-      address:  'Las Vegas, Nevada',
-      region:   'Las Vegas',
-      phone:    '',
+      id:            'loc_02',
+      name:          'Perfume Passage',
+      address:       'Las Vegas, Nevada',
+      region:        'Las Vegas',
+      phone:         '',
+      business_type: 'retail',   // 'retail' | 'service'
     },
   ],
 

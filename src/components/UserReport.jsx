@@ -250,13 +250,51 @@ function InvoiceProductsTable({ items = [], invoiceTax, invoiceSubtotal }) {
 
 // ─── Invoice Payments Section ─────────────────────────────────────────────────
 function InvoicePaymentsSection({ invoice }) {
-  const payments = [{
-    timestamp:  invoice.timestamp,
-    method:     invoice.paymentMethod || '—',
-    details:    invoice.paymentMethod === 'Cash' ? 'Cash payment' : `${invoice.paymentMethod} transaction`,
-    amount:     invoice.total,
-    tip:        invoice.tip || 0,
-  }]
+  // Build display rows — prefer new payments[] array, fall back to legacy flat fields
+  const payments = (() => {
+    if (Array.isArray(invoice.payments) && invoice.payments.length > 0) {
+      return invoice.payments.map(p => {
+        const method = p.method || '—'
+        let details = ''
+        if (method === 'cash') {
+          const parts = []
+          if (p.amountReceived != null) parts.push(`Received: ${fmt$(p.amountReceived)}`)
+          if (p.changeDue      != null) parts.push(`Change: ${fmt$(p.changeDue)}`)
+          details = parts.join('  ·  ') || 'Cash payment'
+        } else if (method === 'card') {
+          const brand = p.cardBrand ? p.cardBrand.charAt(0).toUpperCase() + p.cardBrand.slice(1) : ''
+          const last4 = p.cardLast4 ? ` ****${p.cardLast4}` : ''
+          const auth  = p.authorizationNumber ? `  Auth: ${p.authorizationNumber}` : ''
+          details = `${brand}${last4}${auth}`.trim() || 'Card transaction'
+        } else if (method === 'external') {
+          details = p.externalRef || 'External payment'
+        } else if (method === 'check') {
+          details = p.checkNumber ? `Check #${p.checkNumber}` : 'Check payment'
+        }
+        return { timestamp: invoice.timestamp, method, details, amount: p.amount ?? invoice.total, tip: 0 }
+      })
+    }
+    // Legacy single-payment fallback
+    const method = invoice.paymentMethod || '—'
+    let details = ''
+    if (method === 'cash') {
+      const parts = []
+      if (invoice.amountReceived != null) parts.push(`Received: ${fmt$(invoice.amountReceived)}`)
+      if (invoice.changeDue      != null) parts.push(`Change: ${fmt$(invoice.changeDue)}`)
+      details = parts.join('  ·  ') || 'Cash payment'
+    } else if (method === 'card' && invoice.cardBrand) {
+      const brand = invoice.cardBrand.charAt(0).toUpperCase() + invoice.cardBrand.slice(1)
+      const last4 = invoice.cardLast4 ? ` ****${invoice.cardLast4}` : ''
+      details = `${brand}${last4}`
+    } else if (method === 'external') {
+      details = invoice.externalRef || 'External payment'
+    } else if (method === 'check') {
+      details = invoice.checkNumber ? `Check #${invoice.checkNumber}` : 'Check payment'
+    } else {
+      details = `${method} transaction`
+    }
+    return [{ timestamp: invoice.timestamp, method, details, amount: invoice.total, tip: invoice.tip || 0 }]
+  })()
 
   return (
     <div>
@@ -586,7 +624,12 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale }) {
                 totalSpareVal > 0 ? AMBER : totalSpareVal < 0 ? RED : MUTED,
               )}
               {summaryItem('Tip',     fmt$(invoice.tip || 0), MUTED)}
-              {summaryItem('Payment', invoice.paymentMethod || '—', DIM)}
+              {summaryItem('Payment',
+                Array.isArray(invoice.payments) && invoice.payments.length > 1
+                  ? `Split (${invoice.payments.map(p => p.method).join(' + ')})`
+                  : invoice.paymentMethod || '—',
+                DIM,
+              )}
             </div>
           </div>
 
