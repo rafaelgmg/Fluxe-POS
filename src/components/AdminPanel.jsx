@@ -994,10 +994,14 @@ function AdminHeader({ goBack, onClose, backLabel = '← Back' }) {
 
 // ─── Main AdminPanel ──────────────────────────────────────────────────────────
 
-export default function AdminPanel({ onClose, sales = [], updateSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer }) {
+export default function AdminPanel({ onClose, sales = [], updateSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, products: liveProducts = null }) {
   const [unlocked, setUnlocked] = useState(false)
 
   const [products, setProducts] = useState(loadAllProducts)
+
+  useEffect(() => {
+    if (liveProducts && liveProducts.length > 0) setProducts(liveProducts)
+  }, [liveProducts])
 
   const [activeModule, setActiveModule] = useState(null)   // id of selected module tile
   const [activeScreen, setActiveScreen] = useState(null)   // id of selected submenu item + optional screen key

@@ -879,7 +879,7 @@ export default function App() {
       )}
       {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}   />}
       {showInventory   && <Inventory     onClose={() => setShowInventory(false)} products={products} />}
-      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} />}
+      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} />}
       {showReceipts    && <Receipts      onClose={() => setShowReceipts(false)}    posSession={posSession} />}
       {showCashDrawer  && <CashDrawer   onClose={() => setShowCashDrawer(false)} />}
       {showCRM && (
