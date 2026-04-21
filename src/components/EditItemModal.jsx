@@ -323,7 +323,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                 </p>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5, marginBottom: 14 }}>
                 {['7','8','9','4','5','6','1','2','3','0','.','Clear'].map(k => (
                   <button key={k} onClick={() => handleDiscNumpad(k)} style={{
                     padding: '9px 0', background: BGCARD, border: `1px solid ${BORDER}`,

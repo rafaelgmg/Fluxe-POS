@@ -75,10 +75,9 @@ export function useCart({ products, location }) {
   // ── Barcode scan → product lookup → open edit modal ───────────────────────
   const handleBarcodeScanned = useCallback((rawCode) => {
     const { cleanBarcode, minPrice } = parseBarcode(rawCode)
-    const base = PRODUCT_BY_BARCODE[cleanBarcode]
-    if (!base) return
-    // Use live product from state so qty reflects recent sales
-    const live = products.find(p => p.barcode === cleanBarcode) || base
+    // Search live products (Supabase) first, fallback to mockData
+    const live = products.find(p => p.barcode === cleanBarcode) || PRODUCT_BY_BARCODE[cleanBarcode]
+    if (!live) return
     const productWithPrice = minPrice !== null ? { ...live, minPrice } : live
     openEditModal(productWithPrice)
   }, [products, openEditModal])
