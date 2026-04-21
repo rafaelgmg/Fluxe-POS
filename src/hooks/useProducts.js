@@ -111,5 +111,5 @@ export function useProducts() {
     })
   }, [])
 
-  return { products, decrementStock }
+  return { products, setProducts, decrementStock }
 }

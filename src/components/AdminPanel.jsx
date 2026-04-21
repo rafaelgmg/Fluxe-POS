@@ -994,14 +994,24 @@ function AdminHeader({ goBack, onClose, backLabel = '← Back' }) {
 
 // ─── Main AdminPanel ──────────────────────────────────────────────────────────
 
-export default function AdminPanel({ onClose, sales = [], updateSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, products: liveProducts = null }) {
+export default function AdminPanel({ onClose, sales = [], updateSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, products: liveProducts = null, setProducts: setAppProducts = null }) {
   const [unlocked, setUnlocked] = useState(false)
 
-  const [products, setProducts] = useState(loadAllProducts)
+  const [localProducts, setLocalProducts] = useState(loadAllProducts)
 
   useEffect(() => {
-    if (liveProducts && liveProducts.length > 0) setProducts(liveProducts)
+    if (liveProducts && liveProducts.length > 0) setLocalProducts(liveProducts)
   }, [liveProducts])
+
+  // Use shared App state if available, so edits (category etc.) are reflected in POS immediately
+  const products    = liveProducts && liveProducts.length > 0 ? liveProducts : localProducts
+  const setProducts = setAppProducts
+    ? (updater) => {
+        const next = typeof updater === 'function' ? updater(products) : updater
+        setLocalProducts(next)
+        setAppProducts(next)
+      }
+    : setLocalProducts
 
   const [activeModule, setActiveModule] = useState(null)   // id of selected module tile
   const [activeScreen, setActiveScreen] = useState(null)   // id of selected submenu item + optional screen key

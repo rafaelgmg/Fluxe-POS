@@ -50,7 +50,7 @@ awaitOrgSession()
 export default function App() {
   const [currentUser, setCurrentUser]   = useState(null)  // session user (LoginModal)
   const [saleEmployee, setSaleEmployee] = useState(null)  // seller confirmed for current sale
-  const { products, decrementStock }    = useProducts()
+  const { products, setProducts, decrementStock } = useProducts()
   const [selectedCategory, setCategory] = useState('All')
   const [search, setSearch]             = useState('')
   const [showBarcodeModal, setShowBarcodeModal] = useState(false)
@@ -879,7 +879,7 @@ export default function App() {
       )}
       {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}   />}
       {showInventory   && <Inventory     onClose={() => setShowInventory(false)} products={products} />}
-      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} />}
+      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} />}
       {showReceipts    && <Receipts      onClose={() => setShowReceipts(false)}    posSession={posSession} />}
       {showCashDrawer  && <CashDrawer   onClose={() => setShowCashDrawer(false)} />}
       {showCRM && (
