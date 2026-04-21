@@ -189,7 +189,6 @@ export function toSupabaseSaleRow(invoice, orgId) {
     employee_id:        isUUID(invoice.employeeId) ? invoice.employeeId : null,
     employee_name:      invoice.employee            || '',
     subtotal:           invoice.subtotal            ?? 0,
-    discount:           invoice.discount            ?? 0,
     tax:                invoice.tax                 ?? 0,
     tip:                invoice.tip                 ?? 0,
     total:              invoice.total               ?? 0,

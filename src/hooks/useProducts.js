@@ -12,7 +12,17 @@ export function useProducts() {
   // Phase 1: hydrate from Supabase after initial localStorage render.
   // Falls back silently to localStorage data if Supabase is unavailable.
   useEffect(() => {
-    awaitOrgSession().then(() => fetchProducts()).then(remote => { if (remote) setProducts(remote) })
+    awaitOrgSession().then(() => fetchProducts()).then(remote => {
+      if (!remote) return
+      // Merge: remote provides live stock (qty/qtyByLoc), local provides category name
+      // because Supabase products table stores category_id (UUID) not the name string
+      const localMap = Object.fromEntries(loadAllProducts().map(p => [p.barcode, p]))
+      const merged = remote.map(p => ({
+        ...p,
+        category: localMap[p.barcode]?.category || p.category || '',
+      }))
+      setProducts(merged)
+    })
   }, [])
 
   /**
