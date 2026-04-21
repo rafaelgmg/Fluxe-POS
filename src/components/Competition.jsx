@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { COLORS } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
+import { localDateKey } from '../utils/dateUtils'
 
 // ── Avatar colors ─────────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
@@ -9,9 +10,8 @@ const AVATAR_COLORS = [
 ]
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
-function localDateStr(d = new Date()) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-}
+// Thin shim — delegates to shared util, keeps existing call sites intact
+const localDateStr = (d = new Date()) => localDateKey(d)
 
 /**
  * Returns true if `timestamp` falls within the given timeframe relative to today.
@@ -137,7 +137,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
 
     // 1. Filter by timeframe + status
     const filtered = sales.filter(s => {
-      if (s.status === 'deleted' || s.status === 'refunded') return false
+      if (s.status === 'deleted' || s.status === 'voided' || s.status === 'refunded') return false
       return inTimeframe(s.timestamp, timeframe, today)
     })
 

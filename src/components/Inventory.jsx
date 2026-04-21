@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
-import { PRODUCTS, CATEGORIES, EMPLOYEES } from '../data/mockData'
+import { useState, useMemo, useEffect } from 'react'
+import { CATEGORIES } from '../data/mockData'
+import { loadActiveEmployees } from '../utils/usersStorage'
 import { BUSINESS_SHORT, COLORS, LOCATIONS_CFG } from '../config/branding'
 
 const LOCATIONS = LOCATIONS_CFG.map(l => l.name)
@@ -16,7 +17,8 @@ const MOCK_TRANSFERS = [
 
 // ── PIN Gate ──────────────────────────────────────────────────────────────────
 function InventoryPinGate({ onUnlock, onClose }) {
-  const [employee, setEmployee] = useState(EMPLOYEES[0].name)
+  const employees = loadActiveEmployees()
+  const [employee, setEmployee] = useState(employees[0]?.name ?? '')
   const [pin, setPin]           = useState('')
   const [shake, setShake]       = useState(false)
 
@@ -25,7 +27,7 @@ function InventoryPinGate({ onUnlock, onClose }) {
     const next = pin + digit
     setPin(next)
     if (next.length === 4) {
-      const emp = EMPLOYEES.find(e => e.name === employee)
+      const emp = employees.find(e => e.name === employee)
       if (emp && emp.pin === next) {
         onUnlock(emp)
       } else {
@@ -60,7 +62,7 @@ function InventoryPinGate({ onUnlock, onClose }) {
             border: '1px solid #1e293b', borderRadius: 6,
             color: '#f1f5f9', fontSize: 13, marginBottom: 16, cursor: 'pointer', outline: 'none',
           }}>
-          {EMPLOYEES.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
+          {employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
         </select>
 
         <div style={{
@@ -111,11 +113,15 @@ function InventoryPinGate({ onUnlock, onClose }) {
 }
 
 // ── Main Inventory ────────────────────────────────────────────────────────────
-export default function Inventory({ onClose }) {
+export default function Inventory({ onClose, products: liveProducts = [] }) {
   const [signedIn, setSignedIn]         = useState(null) // employee object
-  const [products, setProducts]         = useState(PRODUCTS)
+  const [products, setProducts]         = useState(liveProducts)
   const [tab, setTab]                   = useState('byItem')
   const [location, setLocation]         = useState(LOCATIONS[0])
+
+  useEffect(() => {
+    if (liveProducts.length > 0) setProducts(liveProducts)
+  }, [liveProducts])
   const [search, setSearch]             = useState('')
 
   // By Item / Update Inventory
@@ -247,6 +253,7 @@ export default function Inventory({ onClose }) {
   )
 
   const stockColor = (qty) => qty <= 0 ? '#ef4444' : qty <= 2 ? '#ef4444' : qty <= 5 ? '#f59e0b' : '#22c55e'
+  const locId = LOCATIONS_CFG.find(l => l.name === location)?.id
 
   // ══════════════════════════════════════════════════════════════════════════
   return (
@@ -363,12 +370,12 @@ export default function Inventory({ onClose }) {
                       <TD color="#666">—</TD>
                       <TD center>
                         <span style={{
-                          color: stockColor(p.qty), fontWeight: 700,
-                          background: `${stockColor(p.qty)}20`, padding: '2px 8px', borderRadius: 4
-                        }}>{p.qty}</span>
+                          color: stockColor(p.qtyByLoc?.[locId] ?? p.qty), fontWeight: 700,
+                          background: `${stockColor(p.qtyByLoc?.[locId] ?? p.qty)}20`, padding: '2px 8px', borderRadius: 4
+                        }}>{p.qtyByLoc?.[locId] ?? p.qty}</span>
                       </TD>
                       <TD center>
-                        <input type="number" min="0" defaultValue={p.qty}
+                        <input type="number" min="0" defaultValue={p.qtyByLoc?.[locId] ?? p.qty}
                           onChange={e => handleCountChange(p.id, e.target.value)}
                           style={{
                             width: 56, padding: '3px 6px', background: '#0f172a',

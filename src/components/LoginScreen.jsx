@@ -5,6 +5,7 @@ import {
   LOCATIONS_CFG,
 } from '../config/branding'
 import { loadActiveEmployees } from '../utils/usersStorage'
+import { verifyEmployeePin, resolveSessionContext } from '../services/supabaseAuth'
 
 const LOCATION_PASSWORD = LOGIN_PASSWORD
 const LOC_KEY = 'fluxe-locations-v1'
@@ -64,6 +65,7 @@ export default function LoginScreen({ onLogin, onBack }) {
   const [selectedEmp,     setSelectedEmp]     = useState(employees[0]?.name ?? '')
   const [pin,             setPin]             = useState('')
   const [pinError,        setPinError]        = useState('')
+  const [verifying,       setVerifying]       = useState(false)
 
   const locationList = loadActiveLocationNames(region)
 
@@ -77,10 +79,18 @@ export default function LoginScreen({ onLogin, onBack }) {
     if (password !== LOCATION_PASSWORD) { setError('Incorrect password. Please try again.'); return }
     setError('')
     setLoading(true)
-    await new Promise(r => setTimeout(r, 600))
-    setLoading(false)
     const locCfg = LOCATIONS_CFG.find(l => l.name === location)
-    setPendingSession({ account, region, location, locationId: locCfg?.id || null })
+    // Phase 6: resolve org UUID + location UUID once at login time
+    const ctx = await resolveSessionContext(locCfg?.id || null)
+    setLoading(false)
+    setPendingSession({
+      account,
+      region,
+      location,
+      locationId:   locCfg?.id    || null,   // legacy 'loc_01' — kept for backward compat
+      locationUUID: ctx.locationUUID,          // Supabase UUID — used by write path
+      orgId:        ctx.orgId,                 // Supabase org UUID — carried in session
+    })
     setStep('pin')
   }
 
@@ -88,23 +98,47 @@ export default function LoginScreen({ onLogin, onBack }) {
     if (e.key === 'Enter') handleLocationLogin()
   }
 
-  // PIN numpad
+  // PIN numpad — Phase 6: async verification via Supabase RPC
   const pressPin = (val) => {
+    if (verifying) return
     if (val === '⌫') { setPin(p => p.slice(0, -1)); setPinError(''); return }
     if (pin.length >= 6) return
-    const next = pin + val
-    setPin(next)
-    if (next.length >= 4) {
-      const emp = employees.find(e => e.name === selectedEmp)
-      if (emp && emp.pin === next) {
-        setPinError('')
-        onLogin(pendingSession, emp)
-      } else if (next.length === emp?.pin?.length || next.length >= 6) {
-        setPinError('Incorrect PIN — try again')
-        setTimeout(() => { setPin(''); setPinError('') }, 700)
+    setPin(prev => prev + val)
+  }
+
+  // Trigger async verification once PIN reaches minimum length.
+  // Tries at 4, 5, and 6 digits — stops as soon as RPC returns a match
+  // or reports failure when max length is reached.
+  useEffect(() => {
+    const next = pin
+    if (next.length < 4 || verifying) return
+    let cancelled = false
+
+    const doVerify = async () => {
+      setVerifying(true)
+      try {
+        const result = await verifyEmployeePin(selectedEmp, next)
+        if (cancelled) return
+        if (result) {
+          setPinError('')
+          setVerifying(false)
+          onLogin(pendingSession, result)
+        } else if (next.length >= 6) {
+          // Max length reached with no match — wrong PIN
+          setPinError('Incorrect PIN — try again')
+          setTimeout(() => { setPin(''); setPinError(''); setVerifying(false) }, 700)
+        } else {
+          // Could be a longer PIN (5 or 6 digits) — wait for more input
+          setVerifying(false)
+        }
+      } catch {
+        if (!cancelled) setVerifying(false)
       }
     }
-  }
+
+    doVerify()
+    return () => { cancelled = true }
+  }, [pin]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Physical keyboard / numpad support — only active on PIN step
   useEffect(() => {
@@ -267,14 +301,15 @@ export default function LoginScreen({ onLogin, onBack }) {
                 </label>
                 <input
                   type="password"
-                  value={pin}
+                  value={verifying ? '······' : pin}
                   readOnly
                   style={{
                     width: '100%', padding: '9px 12px', background: '#0f172a',
-                    border: `1px solid ${pinError ? '#ef4444' : '#1e293b'}`,
-                    borderRadius: 6, color: '#f1f5f9',
+                    border: `1px solid ${pinError ? '#ef4444' : verifying ? BLUE : '#1e293b'}`,
+                    borderRadius: 6, color: verifying ? '#2563eb' : '#f1f5f9',
                     fontSize: 22, letterSpacing: 10, outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.15s',
+                    opacity: verifying ? 0.7 : 1,
                   }}
                 />
                 {pinError && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 5 }}>{pinError}</p>}

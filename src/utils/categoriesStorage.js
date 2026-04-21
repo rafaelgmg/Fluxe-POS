@@ -139,3 +139,17 @@ export function buildCategoryMap(activeOnly = false) {
   const cats = activeOnly ? loadActiveCategories() : loadCategories()
   return Object.fromEntries(cats.map(c => [c.name, c]))
 }
+
+/**
+ * Async variant: tries Supabase first, falls back to loadCategories() on failure.
+ * Use this from hooks/effects where async is acceptable.
+ * Phase 1 only reads — no writes to Supabase.
+ */
+export async function loadCategoriesAsync() {
+  try {
+    const { fetchCategories } = await import('../services/supabaseRead')
+    const remote = await fetchCategories()
+    if (remote) return remote
+  } catch {}
+  return loadCategories()
+}

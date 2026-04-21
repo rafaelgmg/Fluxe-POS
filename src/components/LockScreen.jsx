@@ -16,6 +16,7 @@
 
 import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
+import { verifyEmployeePin } from '../services/supabaseAuth'
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
 const BG     = '#020817'
@@ -94,11 +95,12 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
   const now = useClock()
   const employees = loadActiveEmployees()
 
-  const [unlocking, setUnlocking]     = useState(false)
-  const [selected,  setSelected]      = useState(employees[0]?.name ?? '')
-  const [pin,       setPin]           = useState('')
-  const [error,     setError]         = useState('')
-  const [shake,     setShake]         = useState(false)
+  const [unlocking,  setUnlocking]  = useState(false)
+  const [selected,   setSelected]   = useState(employees[0]?.name ?? '')
+  const [pin,        setPin]        = useState('')
+  const [error,      setError]      = useState('')
+  const [shake,      setShake]      = useState(false)
+  const [verifying,  setVerifying]  = useState(false)
 
   // Elapsed time since lock
   const elapsedMs   = now - new Date(lockedAt)
@@ -109,21 +111,32 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
     : `${elapsedSecs}s`
 
   const handleKey = (val) => {
+    if (verifying) return
     setError('')
     if (val === 'Clear') { setPin(''); return }
     if (pin.length >= 6) return
     setPin(prev => prev + val)
   }
 
-  const handleUnlock = () => {
-    const emp = employees.find(e => e.name === selected)
-    if (emp && emp.pin === pin) {
-      onUnlock({ employee: emp, unlockedAt: new Date().toISOString() })
-    } else {
-      setError('Incorrect PIN — try again')
+  const handleUnlock = async () => {
+    if (verifying || !pin) return
+    setVerifying(true)
+    try {
+      const result = await verifyEmployeePin(selected, pin)
+      if (result) {
+        setVerifying(false)
+        onUnlock({ employee: result, unlockedAt: new Date().toISOString() })
+      } else {
+        setError('Incorrect PIN — try again')
+        setPin('')
+        setShake(true)
+        setVerifying(false)
+        setTimeout(() => setShake(false), 500)
+      }
+    } catch {
+      setError('Verification failed — try again')
       setPin('')
-      setShake(true)
-      setTimeout(() => setShake(false), 500)
+      setVerifying(false)
     }
   }
 

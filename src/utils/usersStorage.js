@@ -101,3 +101,17 @@ export function loadActiveEmployees() {
     .filter(u => u.status === 'active')
     .map(userToEmployee)
 }
+
+/**
+ * Async variant: tries Supabase first, falls back to loadUsers() on failure.
+ * Use this from hooks/effects where async is acceptable.
+ * Phase 1 only reads — no writes to Supabase.
+ */
+export async function loadUsersAsync() {
+  try {
+    const { fetchUsers } = await import('../services/supabaseRead')
+    const remote = await fetchUsers()
+    if (remote) return remote
+  } catch {}
+  return loadUsers()
+}

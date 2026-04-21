@@ -73,7 +73,7 @@ const branding = {
 
   // ── Login screen ────────────────────────────────────────────────────────────
   login: {
-    password:       'pass123',   // Location password (move to env in production)
+    password:       import.meta.env.VITE_ADMIN_PASSWORD || '',
     checkboxLabel:  'Use only with Perfume Passage',
   },
 

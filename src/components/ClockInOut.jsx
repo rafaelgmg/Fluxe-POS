@@ -1,15 +1,7 @@
 import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
-
-const STORAGE_KEY = 'pp_clock_records'
-
-function loadRecords() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [] }
-  catch { return [] }
-}
-function saveRecords(records) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
-}
+import { loadClockRecords, saveClockRecords } from '../utils/clockStorage'
+import { localId } from '../domain/utils/ids'
 function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
@@ -22,7 +14,7 @@ function calcHours(clockIn, clockOut) {
 
 export default function ClockInOut({ onClose }) {
   const [employees,   setEmployees]   = useState(() => loadActiveEmployees())
-  const [records,     setRecords]     = useState(loadRecords)
+  const [records,     setRecords]     = useState(loadClockRecords)
   const [selectedEmp, setSelectedEmp] = useState(() => loadActiveEmployees()[0]?.name ?? '')
   const [pin,         setPin]         = useState('')
   const [error,       setError]       = useState('')
@@ -66,10 +58,10 @@ export default function ClockInOut({ onClose }) {
       updated = records.map(r => r.id === active.id ? { ...r, clockOut: ts } : r)
       setSuccess(`${selectedEmp} clocked out at ${formatTime(ts)}`)
     } else {
-      updated = [...records, { id: Date.now(), employee: selectedEmp, clockIn: ts, clockOut: null }]
+      updated = [...records, { id: localId('clk'), employee: selectedEmp, clockIn: ts, clockOut: null }]
       setSuccess(`${selectedEmp} clocked in at ${formatTime(ts)}`)
     }
-    saveRecords(updated)
+    saveClockRecords(updated)
     setRecords(updated)
     setPin('')
     setTimeout(() => setSuccess(''), 3000)

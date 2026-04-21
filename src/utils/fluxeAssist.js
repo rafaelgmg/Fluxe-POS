@@ -35,18 +35,10 @@ import { loadCommissionTiers } from './commissionTiersStorage'
 import { getDayBonusResult } from './bonusEngine'
 import { calcDayCompetitionBonus } from './competitionBonusEngine'
 import { calcPeriodCommissionFresh } from './commissionEngine'
+import { localDateKey } from './dateUtils'
+import { loadLocationConfig } from './locationConfig'
 
 // ── Internal helpers ───────────────────────────────────────────────────────────
-
-function todayKey() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function dateKey(ts) {
-  const d = new Date(ts)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 const fmt$ = (n) => `$${Number(n || 0).toFixed(2)}`
 
@@ -129,18 +121,18 @@ export function runCommand(cmd, { sales = [], customers = [], empName, location 
     return { lines: ['No employee logged in.'], type: 'warn' }
   }
 
-  const today = todayKey()
+  const today = localDateKey()
 
   // ── Employee's valid sales today ──────────────────────────────────────────
   const myTodaySales = sales.filter(s => {
-    if (s.status === 'deleted' || s.status === 'refunded') return false
-    return s.employee === empName && dateKey(s.timestamp) === today
+    if (s.status === 'deleted' || s.status === 'voided' || s.status === 'refunded') return false
+    return s.employee === empName && localDateKey(s.timestamp) === today
   })
 
   // ── All valid sales today at this location (for ranking) ──────────────────
   const allTodayAtLoc = sales.filter(s => {
-    if (s.status === 'deleted' || s.status === 'refunded') return false
-    return s.location === location && dateKey(s.timestamp) === today
+    if (s.status === 'deleted' || s.status === 'voided' || s.status === 'refunded') return false
+    return s.location === location && localDateKey(s.timestamp) === today
   })
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -275,9 +267,7 @@ export function runCommand(cmd, { sales = [], customers = [], empName, location 
       try {
         let hybridMult = 1.0
         try {
-          const raw  = localStorage.getItem('fluxe-locations-v1')
-          const list = raw ? JSON.parse(raw) : []
-          const cfg  = list.find(l => l.name === location)
+          const cfg  = loadLocationConfig(location)
           hybridMult = Number(cfg?.competitionHybridMultiplier ?? 1.0)
         } catch {}
 
@@ -301,7 +291,7 @@ export function runCommand(cmd, { sales = [], customers = [], empName, location 
         const capturedBy = c.capturedBy || c.purchases?.[0]?.seller
         if (capturedBy !== empName) return false
         const ts = c.capturedAt || c.createdAt
-        return ts ? dateKey(ts) === today : false
+        return ts ? localDateKey(ts) === today : false
       })
 
       const names = captured.slice(0, 3).map(c =>

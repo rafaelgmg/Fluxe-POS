@@ -1,7 +1,9 @@
+import { sumItemSpare } from '../utils/spareUtils'
+
 export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale, currentUser, onFreezeSale, onEditItem }) {
   const subtotal      = items.reduce((sum, i) => sum + i.subtotal, 0)
   const totalDiscount = items.reduce((sum, i) => sum + (i.discount * i.qty), 0)
-  const totalSpare    = items.reduce((sum, i) => sum + i.spare, 0)
+  const totalSpare    = sumItemSpare(items)
   const tax   = subtotal * taxRate
   const total = subtotal + tax
   const empty = items.length === 0

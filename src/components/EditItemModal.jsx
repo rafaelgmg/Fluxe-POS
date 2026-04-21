@@ -74,14 +74,16 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
 
   const handleAdd = () => {
     const resolvedQty = parseInt(qty) || 1   // campo vazio → 1
-    const spare       = price - product.minPrice
     const discount    = product.systemPrice - price
     onAdd({
       product, qty: resolvedQty, salePrice: price,
       systemPrice: product.systemPrice,
       discount:    discount > 0 ? discount : 0,
       subtotal:    price * resolvedQty,
-      spare:       spare * resolvedQty,
+      // True economic spare per line — can be negative when sold below minPrice.
+      // Negative values reduce cartTotalSpare correctly (e.g. fully-discounted lines).
+      // Commission calculations clamp this to 0 in commissionEngine.resolveItemFields.
+      spare:       (price - (product.minPrice ?? 0)) * resolvedQty,
     })
   }
 

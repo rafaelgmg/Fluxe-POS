@@ -1,83 +1,155 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { loadCategories } from '../utils/categoriesStorage'
+import { loadAllSales, persistAllSales, nextInvoiceNumber as _nextInvoiceNumber } from '../utils/salesStorage'
+import { fetchSales, fetchCategories } from '../services/supabaseRead'
+import { writeSaleToSupabase, voidSaleInSupabase } from '../services/supabaseWrite'
 
-const SALES_KEY   = 'fluxe-sales-v1'
-const COUNTER_KEY = 'fluxe-invoice-counter-v1'
-const SERVER_URL  = 'http://localhost:3001'
-
-function loadSales() {
-  try {
-    const raw = localStorage.getItem(SALES_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
+// Status values aligned with Supabase schema enum (sale_status).
+// Translates any legacy localStorage value to the canonical backend value.
+const STATUS_MAP = {
+  normal:    'completed',
+  completed: 'completed',
+  deleted:   'voided',
+  voided:    'voided',
 }
 
-function persistSales(sales) {
-  localStorage.setItem(SALES_KEY, JSON.stringify(sales))
-}
-
-// Sequential invoice number — never collides
-export function nextInvoiceNumber() {
-  const current = parseInt(localStorage.getItem(COUNTER_KEY) || '60000', 10)
-  const next = current + 1
-  localStorage.setItem(COUNTER_KEY, String(next))
-  return next
-}
+// Re-export so App.jsx import stays unchanged
+export { _nextInvoiceNumber as nextInvoiceNumber }
 
 export function useSales() {
-  const [sales, setSales] = useState(loadSales)
+  const [sales, setSales] = useState(loadAllSales)
+
+  // Phase 2: categories ref hydrated from Supabase so categoryId in saved
+  // invoices is a UUID (matching Supabase schema) instead of a legacy integer.
+  const categoriesRef = useRef(loadCategories())
+  useEffect(() => {
+    fetchCategories().then(remote => { if (remote) categoriesRef.current = remote })
+  }, [])
+
+  // Hydrate sales from Supabase after initial localStorage render (Phase 1).
+  // saveSale writes locally first then to Supabase (Phase 3 — writeSaleToSupabase).
+  useEffect(() => {
+    fetchSales().then(remote => { if (remote) setSales(remote) })
+  }, [])
 
   const saveSale = useCallback(async (invoice) => {
     const serialized = {
       ...invoice,
       tip:    invoice.tip    ?? 0,
-      status: invoice.status ?? 'normal',
+      // Phase 2: status uses canonical enum values (completed/voided).
+      // Legacy 'normal'/'deleted' values are mapped for backward compat.
+      status: STATUS_MAP[invoice.status] ?? 'completed',
       timestamp: invoice.timestamp instanceof Date
         ? invoice.timestamp.toISOString()
         : invoice.timestamp,
-      items: (invoice.items || []).map(item => ({
-        name:        item.product?.name        || item.name        || '',
-        barcode:     item.product?.barcode     || item.barcode     || '',
-        description: item.product?.description || item.description || '',
-        size:        item.product?.size        || item.size        || '',
-        category:    item.product?.category    || item.category    || '',
-        qty:         item.qty,
-        salePrice:   item.salePrice,
-        systemPrice: item.product?.systemPrice || item.systemPrice || item.salePrice,
-        minPrice:    item.product?.minPrice    ?? item.minPrice    ?? 0,
-        discount:    item.discount ?? 0,
-        subtotal:    item.subtotal,
-        spare:       item.spare ?? 0,
-      })),
+      items: (() => {
+        // Build name→id map from Supabase categories (UUID ids) when available,
+        // falling back to localStorage categories (integer ids) if cache is empty.
+        const catMap = {}
+        try {
+          categoriesRef.current.forEach(c => { catMap[c.name] = c.id })
+        } catch {}
+
+        return (invoice.items || []).map((item, idx) => {
+          const categoryName = item.product?.category || item.category || ''
+          return {
+            // ── Line identity (stable refund key within this invoice) ────────
+            lineId:      `${invoice.number}-${idx + 1}`,
+            // ── IDs (stable backend references) ─────────────────────────────
+            productId:   item.product?.id   ?? item.productId   ?? null,
+            categoryId:  catMap[categoryName] ?? null,
+            // ── Name snapshots (display + history — never change after sale) ──
+            name:        item.product?.name        || item.name        || '',
+            barcode:     item.product?.barcode     || item.barcode     || '',
+            description: item.product?.description || item.description || '',
+            size:        item.product?.size        || item.size        || '',
+            category:    categoryName,
+            // ── Price snapshots ──────────────────────────────────────────────
+            qty:         item.qty,
+            salePrice:   item.salePrice,
+            systemPrice: item.product?.systemPrice || item.systemPrice || item.salePrice,
+            minPrice:    item.product?.minPrice    ?? item.minPrice    ?? 0,
+            discount:    item.discount ?? 0,
+            subtotal:    item.subtotal,
+            spare:       item.spare ?? 0,
+          }
+        })
+      })(),
     }
 
+    // ── Step 1: persist locally first (offline-first guarantee) ─────────────
     setSales(prev => {
       const updated = [...prev, serialized]
-      persistSales(updated)
+      persistAllSales(updated)
       return updated
     })
 
-    // Try to persist to backend (fire-and-forget, already saved locally)
-    try {
-      await fetch(`${SERVER_URL}/api/sales`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(serialized),
+    // ── Step 2: write to Supabase — fire-and-forget with fallback ─────────
+    // The sale is already safe in localStorage. Supabase failure never blocks the POS.
+    const { saleId, serverNumber } = await writeSaleToSupabase(serialized)
+
+    // ── Step 3: reconcile number if server assigned a different one ────────
+    // Normally server and local counters match (sequence reset after Phase 0 seed).
+    // If they diverge (e.g. offline sales pushed the local counter ahead), patch.
+    if (serverNumber != null && serverNumber !== serialized.number) {
+      setSales(prev => {
+        const reconciled = prev.map(s =>
+          s.number === serialized.number ? { ...s, number: serverNumber } : s
+        )
+        persistAllSales(reconciled)
+        return reconciled
       })
-    } catch {
-      // Server offline — local copy is the source of truth
     }
+
+    // Store supabaseId on the local record so voidSaleInSupabase can find it
+    // without a network round-trip (Phase 8+).
+    if (saleId) {
+      setSales(prev => {
+        const withId = prev.map(s =>
+          s.number === serialized.number ? { ...s, supabaseId: saleId } : s
+        )
+        persistAllSales(withId)
+        return withId
+      })
+    }
+
+    // Return saleId (UUID) + confirmed number so caller can chain inventory write.
+    return { saleId, serverNumber: serverNumber ?? serialized.number }
   }, [])
 
-  /** Patch any field(s) on an existing sale by invoice number */
+  /** Patch any field(s) on an existing sale by invoice number (local only). */
   const updateSale = useCallback((invoiceNumber, patch) => {
     setSales(prev => {
       const updated = prev.map(s =>
         s.number === invoiceNumber ? { ...s, ...patch } : s
       )
-      persistSales(updated)
+      persistAllSales(updated)
       return updated
     })
   }, [])
 
-  return { sales, saveSale, updateSale }
+  /**
+   * Void a sale: update local state to status='voided' AND propagate to Supabase.
+   * Also restores inventory_stock and creates inventory_movements type='refund'.
+   *
+   * Fire-and-forget on the Supabase side — local state is always updated first.
+   *
+   * @param {object}      invoice        Full invoice object (needs .items[], .locationId)
+   * @param {string|null} performedById  UUID of the employee performing the void (optional)
+   */
+  const voidSale = useCallback((invoice, performedById = null) => {
+    // 1. Immediate local update
+    setSales(prev => {
+      const updated = prev.map(s =>
+        s.number === invoice.number ? { ...s, status: 'voided' } : s
+      )
+      persistAllSales(updated)
+      return updated
+    })
+    // 2. Backend void + inventory restore (fire-and-forget)
+    voidSaleInSupabase(invoice, { performedById })
+      .catch(err => console.warn('[Fluxe] voidSale backend error:', err.message))
+  }, [])
+
+  return { sales, saveSale, updateSale, voidSale }
 }

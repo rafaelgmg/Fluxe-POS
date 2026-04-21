@@ -1,15 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
-
-// ─── Storage ──────────────────────────────────────────────────────────────────
-const PRODUCTS_KEY = 'fluxe-products-v1'
-
-function loadProducts() {
-  try {
-    const raw = localStorage.getItem(PRODUCTS_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
-}
+import { loadAllProducts } from '../utils/productsStorage'
+import { fetchProducts } from '../services/supabaseRead'
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 const BG     = '#020817'
@@ -166,7 +158,12 @@ function DonutChart({ segments }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function LocationReport({ onClose, sales = [] }) {
-  const products = useMemo(loadProducts, [])
+  const [products, setProducts] = useState(loadAllProducts)
+
+  // Phase 5: hydrate products from Supabase (localStorage is already rendered above)
+  useEffect(() => {
+    fetchProducts().then(remote => { if (remote) setProducts(remote) })
+  }, [])
 
   const [selectedLoc, setSelectedLoc] = useState(LOCATIONS_CFG[0]?.id || '')
   const [fromDate,    setFromDate]    = useState(isoToday(-6))
@@ -191,7 +188,7 @@ export default function LocationReport({ onClose, sales = [] }) {
     const from = fromDate ? new Date(fromDate + 'T00:00:00') : null
     const to   = toDate   ? new Date(toDate   + 'T23:59:59') : null
     return sales.filter(s => {
-      if (s.status === 'deleted') return false
+      if (s.status === 'voided') return false
       if (s.location !== locName) return false
       const d = new Date(s.timestamp)
       if (from && d < from) return false

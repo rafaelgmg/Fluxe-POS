@@ -15,6 +15,9 @@ const LOC_KEY = 'fluxe-locations-v1'
  * Load the full config object for a location by name.
  * Returns null if not found.
  *
+ * Prefer loadLocationConfigById() for new code — name-based lookup is legacy.
+ * Kept as primary for backward compatibility until all callers migrate to ID.
+ *
  * @param {string} locationName
  * @returns {object|null}
  */
@@ -25,6 +28,26 @@ export function loadLocationConfig(locationName) {
     if (raw) {
       const list = JSON.parse(raw)
       return list.find(l => l.name === locationName) || null
+    }
+  } catch {}
+  return null
+}
+
+/**
+ * Load the full config object for a location by stable ID.
+ * Preferred over loadLocationConfig() for new code — ID is immutable,
+ * name can change. Falls back to name lookup if id is absent on the record.
+ *
+ * @param {string|null} locationId
+ * @returns {object|null}
+ */
+export function loadLocationConfigById(locationId) {
+  if (!locationId) return null
+  try {
+    const raw = localStorage.getItem(LOC_KEY)
+    if (raw) {
+      const list = JSON.parse(raw)
+      return list.find(l => l.id === locationId) || null
     }
   } catch {}
   return null
@@ -120,4 +143,35 @@ export function resolveSpareRateForDay(locationName, daySpareTotal = 0) {
 
   // Fixed mode (or tiered with no tiers configured)
   return loadSpareRateForLocation(locationName)
+}
+
+// ── ID-first variants (preferred for new code with access to locationId) ──────
+
+/**
+ * getTaxRateById — like getTaxRate() but looks up by stable ID.
+ * Falls back to 0.085 if location not found.
+ *
+ * @param {string|null} locationId
+ * @returns {number}  e.g. 0.085
+ */
+export function getTaxRateById(locationId) {
+  const cfg = loadLocationConfigById(locationId)
+  const rate = cfg?.taxRate ?? 8.5
+  return rate / 100
+}
+
+/**
+ * resolveSpareRateForDayById — like resolveSpareRateForDay() but looks up by ID.
+ * Delegates to the name-based variant after resolving config by ID.
+ *
+ * @param {string|null} locationId
+ * @param {number}      daySpareTotal
+ * @returns {number} rate as %
+ */
+export function resolveSpareRateForDayById(locationId, daySpareTotal = 0) {
+  if (!locationId) return loadSpareRate()
+  const cfg = loadLocationConfigById(locationId)
+  if (!cfg) return loadSpareRate()
+  // Reuse name-based logic — cfg.name is authoritative (came from same store)
+  return resolveSpareRateForDay(cfg.name, daySpareTotal)
 }

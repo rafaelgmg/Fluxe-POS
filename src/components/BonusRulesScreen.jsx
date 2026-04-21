@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { loadBonusRules, saveBonusRules, nextRuleId } from '../utils/bonusStorage'
+import { localDateKey } from '../utils/dateUtils'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const BG     = '#020817'
@@ -18,13 +19,7 @@ const PURPLE = '#8b5cf6'
 const fmt$ = n => `$${Number(n || 0).toFixed(2)}`
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function todayStr() {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
+const todayStr = () => localDateKey()
 
 function fmtDate(dateStr) {
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {

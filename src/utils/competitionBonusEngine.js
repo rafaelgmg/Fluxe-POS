@@ -28,6 +28,7 @@
  */
 
 import { loadLocationConfig } from './locationConfig'
+import { sumItemSpare } from './spareUtils'
 
 const ZERO = {
   salesBonus:     0, spareBonus:  0, hybridBonus: 0,
@@ -57,14 +58,26 @@ const ZERO = {
  *   hybridValue:    number,   — employee's hybrid score
  * }}
  */
+/**
+ * @param {string}   empName
+ * @param {string}   dateKey
+ * @param {string}   location
+ * @param {object[]} allSalesForDay
+ * @param {number}   [hybridMultiplier=1.0]
+ * @param {object}   [opts]
+ * @param {object}   [opts.locationCfg] - pre-loaded location config object.
+ *   If omitted, falls back to loadLocationConfig(location) from storage.
+ *   Pass this when calling from backend context to avoid storage reads.
+ */
 export function calcDayCompetitionBonus(
   empName,
   dateKey,
   location,
   allSalesForDay,
   hybridMultiplier = 1.0,
+  { locationCfg } = {},
 ) {
-  const cfg = loadLocationConfig(location)
+  const cfg = locationCfg ?? loadLocationConfig(location)
   if (!cfg) return { ...ZERO }
 
   const bonusSalesCfg  = cfg.competitionBonusSales  || {}
@@ -79,8 +92,7 @@ export function calcDayCompetitionBonus(
     if (!emp) continue
     if (!empTotals[emp]) empTotals[emp] = { subtotal: 0, spare: 0 }
     empTotals[emp].subtotal += sale.subtotal || 0
-    const saleSpare = (sale.items || []).reduce((sum, item) => sum + (item.spare ?? 0), 0)
-    empTotals[emp].spare += saleSpare
+    empTotals[emp].spare    += sumItemSpare(sale.items)
   }
 
   const myTotals = empTotals[empName] || { subtotal: 0, spare: 0 }
@@ -137,10 +149,12 @@ export function calcDayCompetitionBonus(
  * Used to conditionally show bonus columns in reports.
  *
  * @param {string} locationName
+ * @param {object} [opts]
+ * @param {object} [opts.locationCfg] - pre-loaded location config (see calcDayCompetitionBonus)
  * @returns {boolean}
  */
-export function hasCompetitionBonusConfigured(locationName) {
-  const cfg = loadLocationConfig(locationName)
+export function hasCompetitionBonusConfigured(locationName, { locationCfg } = {}) {
+  const cfg = locationCfg ?? loadLocationConfig(locationName)
   if (!cfg) return false
   return !!(
     cfg.competitionBonusSales?.enabled ||

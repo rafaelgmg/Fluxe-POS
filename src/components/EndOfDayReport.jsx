@@ -77,7 +77,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
       d.getFullYear() === today.getFullYear() &&
       d.getMonth()    === today.getMonth()    &&
       d.getDate()     === today.getDate()     &&
-      s.status !== 'deleted'
+      s.status !== 'voided'
     )
   }), [sales]) // eslint-disable-line react-hooks/exhaustive-deps
 

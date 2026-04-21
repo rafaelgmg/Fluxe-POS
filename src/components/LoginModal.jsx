@@ -1,16 +1,47 @@
 import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
+import { verifyEmployeePin } from '../services/supabaseAuth'
 
 export default function LoginModal({ onLogin, onCancel, requiredRole = null, title = 'Employee Sign In', subtitle = 'Enter your PIN to continue' }) {
   const employees = loadActiveEmployees()
   const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.name ?? '')
-  const [pin, setPin]   = useState('')
-  const [error, setError] = useState('')
+  const [pin,       setPin]       = useState('')
+  const [error,     setError]     = useState('')
+  const [verifying, setVerifying] = useState(false)
 
   const handleKey = (val) => {
+    if (verifying) return
     if (val === '⌫') { setPin(p => p.slice(0, -1)); setError(''); return }
     if (pin.length >= 6) return
     setPin(prev => prev + val)
+  }
+
+  const handleSignIn = async () => {
+    if (verifying || !pin) return
+    setVerifying(true)
+    try {
+      const result = await verifyEmployeePin(selectedEmployee, pin)
+      if (result) {
+        const hasAccess = !requiredRole || result.role === requiredRole || result.role === 'admin'
+        if (!hasAccess) {
+          setError('Access restricted — manager PIN required')
+          setPin('')
+          setVerifying(false)
+          return
+        }
+        setError('')
+        setVerifying(false)
+        onLogin(result)
+      } else {
+        setError('Incorrect PIN')
+        setPin('')
+        setVerifying(false)
+      }
+    } catch {
+      setError('Verification failed — try again')
+      setPin('')
+      setVerifying(false)
+    }
   }
 
   // Physical keyboard / numpad support
@@ -24,22 +55,6 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
-
-  const handleSignIn = () => {
-    const emp = employees.find(e => e.name === selectedEmployee)
-    if (emp && emp.pin === pin) {
-      if (requiredRole && emp.role !== requiredRole) {
-        setError('Access restricted — manager PIN required')
-        setPin('')
-        return
-      }
-      setError('')
-      onLogin(emp)
-    } else {
-      setError('Incorrect PIN')
-      setPin('')
-    }
-  }
 
   const numKeys = ['1','2','3','4','5','6','7','8','9','','0','⌫']
 
@@ -95,13 +110,14 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
           </label>
           <input
             type="password"
-            value={pin}
+            value={verifying ? '······' : pin}
             readOnly
             style={{
               width: '100%', padding: '9px 12px', background: '#0f172a',
-              border: `1px solid ${error ? '#ef4444' : '#1e293b'}`,
-              borderRadius: 6, color: '#f1f5f9',
+              border: `1px solid ${error ? '#ef4444' : verifying ? '#2563eb' : '#1e293b'}`,
+              borderRadius: 6, color: verifying ? '#2563eb' : '#f1f5f9',
               fontSize: 20, letterSpacing: 8, outline: 'none', boxSizing: 'border-box',
+              opacity: verifying ? 0.7 : 1, transition: 'all 0.15s',
             }}
           />
           {error && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 5 }}>{error}</p>}
@@ -113,17 +129,17 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             <button
               key={i}
               onClick={() => { if (k) handleKey(k) }}
-              disabled={!k}
+              disabled={!k || verifying}
               style={{
                 padding: '13px', background: !k ? 'transparent' : '#0f172a',
                 border: !k ? 'none' : '1px solid #1e293b', borderRadius: 7,
                 color: k === '⌫' ? '#64748b' : '#f1f5f9',
                 fontSize: k === '⌫' ? 16 : 18,
-                fontWeight: 600, cursor: !k ? 'default' : 'pointer',
-                opacity: !k ? 0 : 1, transition: 'all 0.1s',
+                fontWeight: 600, cursor: (!k || verifying) ? 'default' : 'pointer',
+                opacity: !k ? 0 : verifying ? 0.5 : 1, transition: 'all 0.1s',
               }}
-              onMouseEnter={e => { if (k) { e.currentTarget.style.background = '#131d35'; e.currentTarget.style.borderColor = '#263354' } }}
-              onMouseLeave={e => { if (k) { e.currentTarget.style.background = '#0f172a'; e.currentTarget.style.borderColor = '#1e293b' } }}
+              onMouseEnter={e => { if (k && !verifying) { e.currentTarget.style.background = '#131d35'; e.currentTarget.style.borderColor = '#263354' } }}
+              onMouseLeave={e => { if (k && !verifying) { e.currentTarget.style.background = '#0f172a'; e.currentTarget.style.borderColor = '#1e293b' } }}
             >
               {k}
             </button>
@@ -134,27 +150,31 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={handleSignIn}
+            disabled={verifying || !pin}
             style={{
               flex: 1, padding: '12px',
-              background: '#2563eb', border: 'none', borderRadius: 6,
-              color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              background: verifying ? '#1d4ed8' : '#2563eb', border: 'none', borderRadius: 6,
+              color: '#fff', fontSize: 14, fontWeight: 700,
+              cursor: (verifying || !pin) ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s',
               boxShadow: '0 0 16px rgba(37,99,235,0.25)',
+              opacity: !pin ? 0.6 : 1,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8' }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#2563eb' }}
+            onMouseEnter={e => { if (!verifying && pin) e.currentTarget.style.background = '#1d4ed8' }}
+            onMouseLeave={e => { if (!verifying) e.currentTarget.style.background = verifying ? '#1d4ed8' : '#2563eb' }}
           >
-            Sign In
+            {verifying ? 'Verifying…' : 'Sign In'}
           </button>
           <button
             onClick={onCancel}
+            disabled={verifying}
             style={{
               flex: 1, padding: '12px',
               background: 'transparent', border: '1px solid #1e293b',
-              borderRadius: 6, color: '#64748b', fontSize: 14, cursor: 'pointer',
+              borderRadius: 6, color: '#64748b', fontSize: 14, cursor: verifying ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#94a3b8' }}
+            onMouseEnter={e => { if (!verifying) { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#94a3b8' } }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
           >
             Cancel

@@ -4,17 +4,10 @@
  * Mirrors Nova POS "Receipts" module: search by number, Print Latest, Open Latest.
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { printReceipt } from '../utils/printReceipt'
-
-const SALES_KEY = 'fluxe-sales-v1'
-
-function loadSales() {
-  try {
-    const raw = localStorage.getItem(SALES_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
-}
+import { loadAllSales } from '../utils/salesStorage'
+import { fetchSales } from '../services/supabaseRead'
 
 function fmt$(n) {
   return '$' + (n || 0).toFixed(2)
@@ -49,9 +42,11 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
   const total    = invoice.total    ?? 0
 
   const statusColor = {
-    normal:  '#22c55e',
-    refund:  '#ef4444',
-    deleted: '#64748b',
+    completed: '#22c55e',  // Supabase enum value
+    voided:    '#64748b',  // Supabase enum value
+    refund:    '#ef4444',
+    normal:    '#22c55e',  // legacy localStorage fallback
+    deleted:   '#64748b',  // legacy localStorage fallback
   }[invoice.status] || '#94a3b8'
 
   return (
@@ -214,7 +209,11 @@ export default function Receipts({ onClose, posSession }) {
   // 'current' = filter by posSession.location | 'all' = no filter
   const [locScope, setLocScope]         = useState('current')
 
-  const allSales = useMemo(() => loadSales(), [])
+  // Start with localStorage data synchronously, then hydrate from Supabase.
+  const [allSales, setAllSales] = useState(() => loadAllSales())
+  useEffect(() => {
+    fetchSales().then(remote => { if (remote) setAllSales(remote) })
+  }, [])
 
   // Sales filtered by location scope
   const sales = useMemo(() => {

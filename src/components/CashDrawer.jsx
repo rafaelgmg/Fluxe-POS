@@ -8,6 +8,7 @@
  */
 
 import { useState, useMemo } from 'react'
+import { localId } from '../domain/utils/ids'
 import { loadActiveEmployees } from '../utils/usersStorage'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ function loadLog() {
 
 function appendLog(entry) {
   const log = loadLog()
-  log.push({ ...entry, id: Date.now(), timestamp: new Date().toISOString() })
+  log.push({ ...entry, id: localId('csh'), timestamp: new Date().toISOString() })
   localStorage.setItem(DRAWER_KEY, JSON.stringify(log))
 }
 

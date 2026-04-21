@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
-import { PRODUCTS as INITIAL_PRODUCTS, PRODUCT_BY_BARCODE } from './data/mockData'
-import { loadActiveCategoryNames, ensureCategoriesSeeded } from './utils/categoriesStorage'
-import { getTaxRate, loadLocationConfig } from './utils/locationConfig'
-import { parseBarcode } from './utils/parseBarcode'
+import { loadActiveCategoryNames, ensureCategoriesSeeded, buildCategoryMap } from './utils/categoriesStorage'
+import { getTaxRate, getTaxRateById, loadLocationConfig, loadLocationConfigById, resolveSpareRateForDay, resolveSpareRateForDayById } from './utils/locationConfig'
+import { localId } from './domain/utils/ids'
+import { loadFrozenSales, saveFrozenSales } from './utils/frozenSalesStorage'
+import { appendLockEntry, resolveLastLockEntry } from './utils/lockLogStorage'
+import { calcInvoiceCommission, getDayTier } from './utils/commissionEngine'
+import { loadCommissionTiers, loadSpareRate } from './utils/commissionTiersStorage'
+import { localDateKey } from './utils/dateUtils'
 import { printReceipt } from './utils/printReceipt'
+import { awaitOrgSession } from './services/supabaseAuth'
 import { useCRM } from './hooks/useCRM'
 import { useSales, nextInvoiceNumber } from './hooks/useSales'
+import { useCart } from './hooks/useCart'
+import { useProducts } from './hooks/useProducts'
 import { COLORS, DEFAULT_LOCATION, SYSTEM_NAME, LOCATIONS_CFG } from './config/branding'
 import ServiceApp from './components/service/ServiceApp'
 import AccountLoginScreen from './components/AccountLoginScreen'
@@ -30,35 +37,27 @@ import LockScreen from './components/LockScreen'
 import BarcodeModal, { BarcodeIconButton } from './components/BarcodeModal'
 import FluxeAssist from './components/FluxeAssist'
 
-const PRODUCTS_STORAGE_KEY = 'fluxe-products-v1'
-
-function loadProducts() {
-  try {
-    const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : INITIAL_PRODUCTS
-  } catch { return INITIAL_PRODUCTS }
-}
 
 // Seed categories on first run (no-op if already seeded)
 ensureCategoriesSeeded()
 
+// Phase 9: kick off machine account sign-in as early as possible.
+// Module-level call starts before React renders — by the time useEffect()s
+// fire, the token may already be ready. Fire-and-forget; app runs from
+// localStorage if the sign-in hasn't completed yet.
+awaitOrgSession()
+
 export default function App() {
   const [currentUser, setCurrentUser]   = useState(null)  // session user (LoginModal)
   const [saleEmployee, setSaleEmployee] = useState(null)  // seller confirmed for current sale
-  const [products, setProducts]         = useState(loadProducts)
+  const { products, decrementStock }    = useProducts()
   const [selectedCategory, setCategory] = useState('All')
-  const [cart, setCart]                 = useState([])
-  const [cartError, setCartError]       = useState(null)   // out-of-stock block message
   const [search, setSearch]             = useState('')
   const [showBarcodeModal, setShowBarcodeModal] = useState(false)
 
   const [showLogin, setShowLogin]       = useState(false)
-  const [showEdit, setShowEdit]         = useState(false)
   const [showPayment, setShowPayment]   = useState(false)
-  const [pendingProduct, setPendingProduct] = useState(null)
-  const [frozenSales, setFrozenSales]   = useState(() => {
-    try { return JSON.parse(localStorage.getItem('fluxe-frozen-sales-v1') || '[]') } catch { return [] }
-  })
+  const [frozenSales, setFrozenSales]   = useState(loadFrozenSales)
   const [showFrozen, setShowFrozen] = useState(false)
   const [saleComplete, setSaleComplete] = useState(null)
   const [showEndOfDay, setShowEndOfDay]     = useState(false)
@@ -75,7 +74,6 @@ export default function App() {
   const [showSellerSelect, setShowSellerSelect] = useState(false)
   const [loginReason, setLoginReason]       = useState(null) // 'sale' | null
   const [pendingInvoice, setPendingInvoice] = useState(null) // invoice waiting for CRM capture
-  const [editingCartIdx, setEditingCartIdx] = useState(null) // index of cart item being edited
   const [lockState, setLockState]           = useState(null) // null = unlocked | { lockedAt, lockedBy }
   const [showCaptureClient, setShowCaptureClient] = useState(false)
   const [showCaptureAuth,   setShowCaptureAuth]   = useState(false)
@@ -83,17 +81,39 @@ export default function App() {
   const [showCRMAuth,       setShowCRMAuth]       = useState(false)
   const [showAssist,        setShowAssist]         = useState(false)
 
-  const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSLog, getScheduled } = useCRM()
-  const { sales, saveSale, updateSale } = useSales()
+  const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSLog, getScheduled } = useCRM(posSession, currentUser)
+  const { sales, saveSale, updateSale, voidSale } = useSales()
+  const {
+    cart,
+    cartError,
+    cartSubtotal,
+    cartTotalSpare,
+    showEdit,
+    pendingProduct,
+    editingCartIdx,
+    openEditModal,
+    closeEditModal,
+    handleEditCartItem,
+    handleBarcodeScanned,
+    handleAddToCart,
+    handleExchange,
+    handleRemoveFromCart,
+    clearCart,
+    loadCartItems,
+  } = useCart({ products, location: posSession?.location || DEFAULT_LOCATION })
 
-  // Tax rate from active location config (falls back to 8.5% if not configured)
-  const taxRate = getTaxRate(posSession?.location)
+  // Tax rate — ID-first (stable), falls back to name lookup for legacy sessions without locationId
+  const taxRate = posSession?.locationId
+    ? getTaxRateById(posSession.locationId)
+    : getTaxRate(posSession?.location)
 
   // Controle de acesso: somente 'manager' acessa o CRM global
   const isAdmin = currentUser?.role === 'manager'
 
   const barcodeRef = useRef('')
   const barcodeTimer = useRef(null)
+  // Guard: prevents finalizeSale from running twice (double-click or React deferred commit)
+  const finalizingRef = useRef(false)
 
   // Global keydown: capture barcode scanner input
   useEffect(() => {
@@ -116,36 +136,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [currentUser])
 
-  const handleBarcodeScanned = (rawCode) => {
-    const { cleanBarcode, minPrice } = parseBarcode(rawCode)
-    const base = PRODUCT_BY_BARCODE[cleanBarcode]
-    if (!base) return
-    // Use live product from state so qty reflects sales already made
-    const live = products.find(p => p.barcode === cleanBarcode) || base
-    const productWithPrice = minPrice !== null ? { ...live, minPrice } : live
-    openEditModal(productWithPrice)
-  }
-
-  const openEditModal = (product) => {
-    // ── blockSaleOutOfStock: check per-location preference ──────────────────
-    const locCfg = loadLocationConfig(posSession?.location)
-    if (locCfg?.blockSaleOutOfStock && (product.qty ?? 1) <= 0) {
-      setCartError(`"${product.name}" is out of stock and cannot be added to this sale.`)
-      setTimeout(() => setCartError(null), 4000)
-      return
-    }
-    setEditingCartIdx(null)
-    setPendingProduct(product)
-    setShowEdit(true)
-  }
-
-  const handleEditCartItem = (idx) => {
-    const item = cart[idx]
-    if (!item || item.exchangeType) return // exchanges não são editáveis
-    setEditingCartIdx(idx)
-    setPendingProduct({ ...item.product, _cartPrice: item.salePrice })
-    setShowEdit(true)
-  }
 
   const handleLogin = (employee) => {
     setCurrentUser(employee)
@@ -156,35 +146,6 @@ export default function App() {
     }
   }
 
-  const handleAddToCart = (item) => {
-    if (editingCartIdx !== null) {
-      setCart(prev => prev.map((c, i) => i === editingCartIdx ? item : c))
-      setEditingCartIdx(null)
-    } else {
-      setCart(prev => [...prev, item])
-    }
-    setShowEdit(false)
-    setPendingProduct(null)
-  }
-
-  const handleExchange = ({ type, product }) => {
-    setCart(prev => [...prev, {
-      product,
-      qty: -1,
-      salePrice: 0,
-      systemPrice: product.systemPrice,
-      discount: product.systemPrice,
-      subtotal: 0,
-      spare: type === 'return' ? product.minPrice : 0,
-      exchangeType: type,
-    }])
-    setShowEdit(false)
-    setPendingProduct(null)
-  }
-
-  const handleRemoveFromCart = (idx) => {
-    setCart(prev => prev.filter((_, i) => i !== idx))
-  }
 
   const handleCompleteSale = () => {
     setShowSellerSelect(true)
@@ -212,21 +173,103 @@ export default function App() {
     notes, linkedCustomerId, receiptAction = 'none',
   }) => {
     const isSingle = !payments || payments.length <= 1
+
+    // ── Commission snapshot ────────────────────────────────────────────────────
+    // Captures the exact config and preliminary calculation at time of sale.
+    // Commission is retroactive within the day — if more sales happen today the
+    // tier may rise. The snapshot records both the rules (for accurate historical
+    // recalculation) and the value at this moment (for audit / display).
+    const commissionSnapshot = (() => {
+      try {
+        const now      = new Date()
+        const location = posSession?.location || DEFAULT_LOCATION
+        const empName  = saleEmployee.name
+
+        // ── 1. Config in effect right now ──────────────────────────────────────
+        const tiers       = loadCommissionTiers()
+        const spareRate   = loadSpareRate()
+        const categoryMap = buildCategoryMap()
+
+        // Extract only categories that have commission configured
+        // categoryId included so snapshots remain resolvable even after category renames
+        const categoryRules = {}
+        for (const [name, cat] of Object.entries(categoryMap)) {
+          if (cat.commissionType && cat.commissionType !== 'none') {
+            categoryRules[name] = {
+              categoryId:            cat.id   ?? null,
+              commissionType:        cat.commissionType,
+              commissionRate:        cat.commissionRate ?? null,
+              spareCommissionEnabled: cat.spareCommissionEnabled ?? false,
+            }
+          }
+        }
+
+        // ── 2. Day subtotal at this moment (prior sales + this invoice) ────────
+        const todayStr = localDateKey(now)
+        const isTodayValid = s => {
+          // Exclude voided/deleted sales from commission calculation.
+          // Handle both Supabase enum values ('voided') and legacy localStorage values ('deleted').
+          if (s.status === 'voided' || s.status === 'deleted') return false
+          if (s.employee !== empName) return false
+          return localDateKey(s.timestamp) === todayStr
+        }
+        const priorSubtotal = sales.filter(isTodayValid).reduce((sum, s) => sum + (s.subtotal || 0), 0)
+        const daySubtotalAtSale = priorSubtotal + subtotal
+
+        // ── 3. Spare rate: may be tiered per location ──────────────────────────
+        const priorSpare  = sales.filter(isTodayValid).reduce((sum, s) => sum + (s.totalSpare || 0), 0)
+        const thisSpare   = cartTotalSpare
+        const daySpareTotal = priorSpare + thisSpare
+        const resolvedSpareRate = posSession?.locationId
+          ? resolveSpareRateForDayById(posSession.locationId, daySpareTotal)
+          : resolveSpareRateForDay(location, daySpareTotal)
+
+        // ── 4. Tier and per-invoice commission at this moment ──────────────────
+        const tierAtSale = getDayTier(daySubtotalAtSale)
+        const { total: commissionAtSale, breakdown: itemBreakdown } = calcInvoiceCommission(
+          { items: cart, status: 'normal' },
+          categoryMap,
+          tierAtSale.rate,
+          resolvedSpareRate,
+        )
+
+        return {
+          configAt:         now.toISOString(),       // when config was snapshotted
+          employeeId:       saleEmployee.id ?? null, // stable ID — backend FK
+          employeeSnapshot: saleEmployee.name,       // name at time of sale (display / audit)
+          tiers,                                     // full tier table as it existed
+          spareRate,                                 // global spare commission %
+          categoryRules,                             // per-category rules in effect (each entry has categoryId)
+          daySubtotalAtSale,                         // employee's subtotal today incl. this invoice
+          tierAtSale,                                // { rate, label } at this moment
+          resolvedSpareRate,                         // spare rate applied (may differ from global)
+          commissionAtSale,                          // commission for THIS invoice at this tier
+          spareTotal: thisSpare,                     // spare generated in this invoice
+          itemBreakdown,                             // per-item commission breakdown
+        }
+      } catch {
+        return null   // never block a sale due to snapshot failure
+      }
+    })()
+
     const invoice = {
       number:        nextInvoiceNumber(),
       timestamp:     new Date(),
-      location:      posSession?.location || DEFAULT_LOCATION,
-      employee:      saleEmployee.name,
+      location:      posSession?.location   || DEFAULT_LOCATION,  // name snapshot (display + backward compat)
+      locationId:    posSession?.locationId || null,               // stable ID for backend relations
+      employee:      saleEmployee.name,                            // name snapshot (display + reports)
+      employeeId:    saleEmployee.id ?? null,                      // stable ID for backend relations
       items:         cart,
       subtotal,
       tax,
       total,
       tip,
-      status:        'normal',
+      status:        'completed',
       paymentMethod: method,
       payments:      payments || [],
-      totalSpare:    cart.reduce((s, i) => s + i.spare, 0),
-      notes:         notes || '',
+      totalSpare:        cartTotalSpare,
+      commissionSnapshot,
+      notes:             notes || '',
       linkedCustomerId: linkedCustomerId || null,
       receiptAction,
       // Legacy flat fields — only written for single-method sales (backward compat)
@@ -235,34 +278,28 @@ export default function App() {
       ...(isSingle && method === 'external' && { externalRef }),
       ...(isSingle && method === 'check'    && { checkNumber }),
     }
+    finalizingRef.current = false  // reset guard for this new sale
     setShowPayment(false)
     setPendingInvoice(invoice)
   }
 
-  const finalizeSale = (invoice) => {
-    // Persist sale to localStorage + backend (both Skip and Save paths)
-    saveSale(invoice)
+  const finalizeSale = async (invoice) => {
+    // Guard: if already running (double-click / React deferred commit), do nothing
+    if (finalizingRef.current) return
+    finalizingRef.current = true
 
-    // Decrement stock for each item sold — per location and total
-    const locId = posSession?.locationId || null
-    setProducts(prev => {
-      const updated = prev.map(p => {
-        const soldQty = (invoice.items || [])
-          .filter(i => (i.product?.barcode || i.barcode) === p.barcode)
-          .reduce((sum, i) => sum + Math.max(0, i.qty), 0)
-        if (soldQty === 0) return p
-        const newQty = Math.max(0, p.qty - soldQty)
-        const newQtyByLoc = locId && p.qtyByLoc
-          ? { ...p.qtyByLoc, [locId]: Math.max(0, (p.qtyByLoc[locId] || 0) - soldQty) }
-          : p.qtyByLoc
-        return { ...p, qty: newQty, qtyByLoc: newQtyByLoc }
-      })
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(updated))
-      return updated
-    })
+    // Persist sale to localStorage + Supabase; get saleId for inventory chain (Phase 4)
+    const { saleId } = await saveSale(invoice)
+
+    // Decrement stock locally + write inventory_stock/movements to Supabase via saleId
+    decrementStock(invoice.items, posSession?.locationId || null, {
+      invoiceNumber: invoice.number,
+      locationName:  invoice.location,
+      employee:      invoice.employee,
+    }, saleId)
 
     setSaleComplete(invoice)
-    setCart([])
+    clearCart()
     setSaleEmployee(null)   // clear sale-specific seller; session user (currentUser) is preserved
     setPendingInvoice(null)
 
@@ -273,12 +310,18 @@ export default function App() {
   }
 
   const handleCustomerSave = (formData) => {
-    upsertCustomer(formData, pendingInvoice)
-    finalizeSale(pendingInvoice)
+    const invoice = pendingInvoice
+    if (!invoice) return                 // already handled (stale click)
+    setPendingInvoice(null)              // close modal immediately — visual feedback
+    upsertCustomer(formData, invoice)
+    finalizeSale(invoice)
   }
 
   const handleCustomerSkip = () => {
-    finalizeSale(pendingInvoice)
+    const invoice = pendingInvoice
+    if (!invoice) return                 // already handled (stale click)
+    setPendingInvoice(null)              // close modal immediately — visual feedback
+    finalizeSale(invoice)
   }
 
   // Autenticação do captador — independente do currentUser (suporta 2 vendedores simultâneos)
@@ -303,42 +346,31 @@ export default function App() {
       lockedBy: currentUser?.name || null,
     }
     setLockState(entry)
-    // Append to audit log
-    try {
-      const log = JSON.parse(localStorage.getItem('fluxe-lock-log-v1') || '[]')
-      log.push({ id: Date.now(), ...entry, unlockedAt: null, unlockedBy: null })
-      localStorage.setItem('fluxe-lock-log-v1', JSON.stringify(log.slice(-200)))
-    } catch {}
+    appendLockEntry({ id: localId('lock'), ...entry, unlockedAt: null, unlockedBy: null })
   }
 
   const handleUnlock = ({ employee, unlockedAt }) => {
-    // Update last log entry with unlock info
-    try {
-      const log = JSON.parse(localStorage.getItem('fluxe-lock-log-v1') || '[]')
-      const last = log.findLast ? log.findLast(e => !e.unlockedAt) : [...log].reverse().find(e => !e.unlockedAt)
-      if (last) { last.unlockedAt = unlockedAt; last.unlockedBy = employee.name }
-      localStorage.setItem('fluxe-lock-log-v1', JSON.stringify(log))
-    } catch {}
+    resolveLastLockEntry(unlockedAt, employee.name)
     setCurrentUser(employee)  // define sessão com role correto (ex: manager vê CRM)
     setLockState(null)
   }
 
   const persistFrozen = (updated) => {
     setFrozenSales(updated)
-    try { localStorage.setItem('fluxe-frozen-sales-v1', JSON.stringify(updated)) } catch {}
+    saveFrozenSales(updated)
   }
 
   const handleFreezeSale = () => {
     if (cart.length === 0) return
     const entry = {
-      id:       Date.now(),
+      id:       localId('frz'),
       user:     currentUser?.name || null,
       items:    cart,
       time:     new Date().toISOString(),
-      subtotal: cart.reduce((s, i) => s + i.subtotal, 0),
+      subtotal: cartSubtotal,
     }
     persistFrozen([...frozenSales, entry])
-    setCart([])
+    clearCart()
   }
 
   const handleResumeFrozen = (id) => {
@@ -347,17 +379,17 @@ export default function App() {
     if (cart.length > 0) {
       // Se já tem itens no carrinho, congela o atual antes de retomar
       const current = {
-        id:       Date.now(),
+        id:       localId('frz'),
         user:     currentUser?.name || null,
         items:    cart,
         time:     new Date().toISOString(),
-        subtotal: cart.reduce((s, i) => s + i.subtotal, 0),
+        subtotal: cartSubtotal,
       }
       persistFrozen([...frozenSales.filter(s => s.id !== id), current])
     } else {
       persistFrozen(frozenSales.filter(s => s.id !== id))
     }
-    setCart(sale.items)
+    loadCartItems(sale.items)
     setShowFrozen(false)
   }
 
@@ -694,19 +726,25 @@ export default function App() {
                 <span style={{ fontSize: 13, color: '#64748b' }}>{product.size}</span>
 
                 {/* Qty */}
-                <span style={{
-                  textAlign: 'right', fontSize: 15, fontWeight: 700,
-                  color: product.qty <= 2 ? '#ef4444' : product.qty <= 5 ? '#f59e0b' : '#94a3b8'
-                }}>
-                  {product.qty}
-                </span>
+                {(() => {
+                  const locQty = product.qtyByLoc?.[posSession?.locationId] ?? product.qty
+                  return (
+                    <>
+                      <span style={{
+                        textAlign: 'right', fontSize: 15, fontWeight: 700,
+                        color: locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#94a3b8'
+                      }}>
+                        {locQty}
+                      </span>
+                      <div style={{
+                        width: 7, height: 7, borderRadius: '50%', margin: '0 auto',
+                        background: locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#22c55e',
+                        boxShadow: locQty <= 2 ? '0 0 6px #ef4444' : locQty <= 5 ? '0 0 6px #f59e0b' : '0 0 6px #22c55e',
+                      }} />
+                    </>
+                  )
+                })()}
 
-                {/* Stock indicator */}
-                <div style={{
-                  width: 7, height: 7, borderRadius: '50%', margin: '0 auto',
-                  background: product.qty <= 2 ? '#ef4444' : product.qty <= 5 ? '#f59e0b' : '#22c55e',
-                  boxShadow: product.qty <= 2 ? '0 0 6px #ef4444' : product.qty <= 5 ? '0 0 6px #f59e0b' : '0 0 6px #22c55e',
-                }} />
 
                 {/* Add button */}
                 <button
@@ -783,7 +821,7 @@ export default function App() {
       {showLogin && (
         <LoginModal
           onLogin={handleLogin}
-          onCancel={() => { setShowLogin(false); setPendingProduct(null) }}
+          onCancel={() => { setShowLogin(false); closeEditModal() }}
         />
       )}
 
@@ -802,7 +840,7 @@ export default function App() {
           product={pendingProduct}
           onAdd={handleAddToCart}
           onExchange={handleExchange}
-          onCancel={() => { setShowEdit(false); setPendingProduct(null) }}
+          onCancel={closeEditModal}
         />
       )}
 
@@ -812,7 +850,7 @@ export default function App() {
           taxRate={taxRate}
           currentUser={saleEmployee}
           customers={customers}
-          locationPrefs={loadLocationConfig(posSession?.location) || {}}
+          locationPrefs={loadLocationConfigById(posSession?.locationId) || loadLocationConfig(posSession?.location) || {}}
           onConfirm={handleConfirmPayment}
           onCancel={() => setShowPayment(false)}
         />
@@ -828,7 +866,7 @@ export default function App() {
       )}
 
       {showEndOfDay    && <EndOfDayReport onClose={() => setShowEndOfDay(false)}   sales={sales} posSession={posSession} />}
-      {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} />}
+      {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} />}
       {showCompetition && <Competition   onClose={() => setShowCompetition(false)} sales={sales} posSession={posSession} />}
       {showAssist && (
         <FluxeAssist
@@ -840,7 +878,7 @@ export default function App() {
         />
       )}
       {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}   />}
-      {showInventory   && <Inventory     onClose={() => setShowInventory(false)}    />}
+      {showInventory   && <Inventory     onClose={() => setShowInventory(false)} products={products} />}
       {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} />}
       {showReceipts    && <Receipts      onClose={() => setShowReceipts(false)}    posSession={posSession} />}
       {showCashDrawer  && <CashDrawer   onClose={() => setShowCashDrawer(false)} />}

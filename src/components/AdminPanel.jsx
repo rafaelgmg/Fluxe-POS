@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
-import { PRODUCTS } from '../data/mockData'
 import { buildBarcode } from '../utils/parseBarcode'
 import { BUSINESS_SHORT, COLORS, SYSTEM_NAME, LOCATIONS_CFG } from '../config/branding'
 import { loadActiveCategoryNames } from '../utils/categoriesStorage'
+import { loadAllProducts, saveAllProducts } from '../utils/productsStorage'
+import { writeProductToSupabase, updateProductInSupabase } from '../services/supabaseWrite'
 import UsersScreen        from './UsersScreen'
 import UserReport         from './UserReport'
 import InventoryAdmin     from './InventoryAdmin'
@@ -18,19 +19,6 @@ import CRMSettings    from './CRMSettings'
 const ADMIN_PIN    = '1234'
 const PURPLE       = COLORS.admin
 const GOLD         = COLORS.accent
-const PRODUCTS_KEY = 'fluxe-products-v1'
-
-function loadProductsLS() {
-  try {
-    const raw = localStorage.getItem(PRODUCTS_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {}
-  return PRODUCTS.map(p => ({ ...p, supplierName: p.supplierName || '', updatedAt: null }))
-}
-
-function saveProductsLS(list) {
-  try { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(list)) } catch {}
-}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -601,21 +589,33 @@ function ProductsScreen({ products, setProducts, onBack }) {
 
   const handleSaveProduct = (data) => {
     if (isNewProduct) {
-      const newId = Math.max(...products.map(p => p.id), 0) + 1
-      setProducts(prev => { const u = [...prev, { ...data, id: newId }]; saveProductsLS(u); return u })
+      const tempId = Math.max(...products.map(p => typeof p.id === 'number' ? p.id : 0), 0) + 1
+      const newProduct = { ...data, id: tempId }
+      setProducts(prev => { const u = [...prev, newProduct]; saveAllProducts(u); return u })
+      // Write to Supabase and swap temp ID for UUID
+      writeProductToSupabase(newProduct).then(uuid => {
+        if (!uuid) return
+        setProducts(prev => {
+          const u = prev.map(p => p.id === tempId ? { ...p, id: uuid } : p)
+          saveAllProducts(u)
+          return u
+        })
+      })
     } else {
-      setProducts(prev => { const u = prev.map(p => p.id === editingProduct.id ? { ...p, ...data } : p); saveProductsLS(u); return u })
+      const updated = { ...editingProduct, ...data }
+      setProducts(prev => { const u = prev.map(p => p.id === editingProduct.id ? updated : p); saveAllProducts(u); return u })
+      updateProductInSupabase(updated)
     }
     setEditingProduct(null); setIsNewProduct(false)
   }
 
   const handleDeactivateProduct = (p) => {
-    setProducts(prev => { const u = prev.map(x => x.id === p.id ? { ...x, status: 'inactive', updatedAt: new Date().toISOString() } : x); saveProductsLS(u); return u })
+    setProducts(prev => { const u = prev.map(x => x.id === p.id ? { ...x, status: 'inactive', updatedAt: new Date().toISOString() } : x); saveAllProducts(u); return u })
     setEditingProduct(null)
   }
 
   const handleReactivateProduct = (p) => {
-    setProducts(prev => { const u = prev.map(x => x.id === p.id ? { ...x, status: 'active', updatedAt: new Date().toISOString() } : x); saveProductsLS(u); return u })
+    setProducts(prev => { const u = prev.map(x => x.id === p.id ? { ...x, status: 'active', updatedAt: new Date().toISOString() } : x); saveAllProducts(u); return u })
     setEditingProduct(null)
   }
 
@@ -997,7 +997,7 @@ function AdminHeader({ goBack, onClose, backLabel = '← Back' }) {
 export default function AdminPanel({ onClose, sales = [], updateSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer }) {
   const [unlocked, setUnlocked] = useState(false)
 
-  const [products, setProducts] = useState(loadProductsLS)
+  const [products, setProducts] = useState(loadAllProducts)
 
   const [activeModule, setActiveModule] = useState(null)   // id of selected module tile
   const [activeScreen, setActiveScreen] = useState(null)   // id of selected submenu item + optional screen key

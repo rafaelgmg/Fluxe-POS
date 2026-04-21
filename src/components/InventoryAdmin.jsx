@@ -1,48 +1,17 @@
-import { useState, useMemo } from 'react'
-import { PRODUCTS as MOCK_PRODUCTS, CATEGORIES } from '../data/mockData'
+import { useState, useMemo, useEffect } from 'react'
+import { CATEGORIES } from '../data/mockData'
 import { LOCATIONS_CFG } from '../config/branding'
 import BarcodeModal, { BarcodeIconButton } from './BarcodeModal'
-
-// ─── Storage ──────────────────────────────────────────────────────────────────
-const PRODUCTS_KEY = 'fluxe-products-v1'
-const HISTORY_KEY  = 'fluxe-inv-history-v1'
-const SALES_KEY    = 'fluxe-sales-v1'
-
-function loadInvProducts() {
-  try {
-    const raw = localStorage.getItem(PRODUCTS_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {}
-  return MOCK_PRODUCTS
-}
-
-function saveInvProducts(products) {
-  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products))
-}
-
-function loadHistory() {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {}
-  return []
-}
-
-function saveHistory(history) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
-}
-
-function loadSales() {
-  try {
-    const raw = localStorage.getItem(SALES_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
-}
+import { loadAllProducts, saveAllProducts } from '../utils/productsStorage'
+import { loadInventoryHistory, saveInventoryHistory } from '../utils/inventoryHistoryStorage'
+import { loadAllSales } from '../utils/salesStorage'
+import { localId } from '../domain/utils/ids'
+import { fetchProducts, fetchInventoryMovements } from '../services/supabaseRead'
 
 function addEntry(setHistory, entry) {
   setHistory(prev => {
-    const updated = [{ ...entry, id: Date.now(), timestamp: new Date().toISOString() }, ...prev]
-    saveHistory(updated)
+    const updated = [{ ...entry, id: localId('inv'), timestamp: new Date().toISOString() }, ...prev]
+    saveInventoryHistory(updated)
     return updated
   })
 }
@@ -388,7 +357,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
   const updateProduct = (id, patch) => {
     setProducts(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, ...patch, updatedAt: new Date().toISOString() } : p)
-      saveInvProducts(updated)
+      saveAllProducts(updated)
       return updated
     })
   }
@@ -445,7 +414,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
     addEntry(setHistory, { type: 'removal', productId: p.id, productName: p.name, barcode: p.barcode, locationId: '', locationName: 'All', before: totalQty, after: 0, delta: -totalQty, note: 'Product removed from inventory' })
     setProducts(prev => {
       const updated = prev.filter(x => x.id !== p.id)
-      saveInvProducts(updated)
+      saveAllProducts(updated)
       return updated
     })
     setConfirmRemove(null)
@@ -695,7 +664,7 @@ function TransfersView({ products, setProducts, history, setHistory }) {
         const newTotal = Object.values(newQtyByLoc).reduce((s, v) => s + (parseInt(v) || 0), 0)
         return { ...p, qty: newTotal, qtyByLoc: newQtyByLoc }
       })
-      saveInvProducts(updated)
+      saveAllProducts(updated)
       return updated
     })
 
@@ -934,10 +903,16 @@ const VIEWS = [
 
 export default function InventoryAdmin({ onClose, defaultView = 'management' }) {
   const [view, setView]           = useState(defaultView)
-  const [products, setProducts]   = useState(loadInvProducts)
-  const [history,  setHistory]    = useState(loadHistory)
-  const [sales]                   = useState(loadSales)   // read-only — for DeactivateModal stats
+  const [products, setProducts]   = useState(loadAllProducts)
+  const [history,  setHistory]    = useState(loadInventoryHistory)
+  const [sales]                   = useState(loadAllSales)   // read-only — for DeactivateModal stats
   const [historyProductFilter, setHistoryProductFilter] = useState(null)
+
+  // Phase 4: hydrate from Supabase (localStorage is already rendered above)
+  useEffect(() => {
+    fetchProducts().then(remote => { if (remote) setProducts(remote) })
+    fetchInventoryMovements().then(remote => { if (remote) setHistory(remote) })
+  }, [])
 
   const goToHistory = (productId) => {
     setHistoryProductFilter(productId)

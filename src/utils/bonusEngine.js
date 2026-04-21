@@ -31,14 +31,18 @@ import { findBonusRule, getManualBonus } from './bonusStorage'
  * @param {number} daySubtotal  - seller's total subtotal for the day
  * @param {string} date         - 'YYYY-MM-DD'
  * @param {string} location     - location name (e.g. 'Perfume Passage')
+ * @param {object} [opts]
+ * @param {object} [opts.rule]  - pre-loaded bonus rule { tiers: [...] }.
+ *   If omitted, falls back to findBonusRule(date, location) from storage.
+ *   Pass this when calling from backend context to avoid storage reads.
  * @returns {number} autoBonus in dollars
  */
-export function calcAutoBonus(daySubtotal, date, location) {
-  const rule = findBonusRule(date, location)
-  if (!rule || !rule.tiers || rule.tiers.length === 0) return 0
+export function calcAutoBonus(daySubtotal, date, location, { rule } = {}) {
+  const bonusRule = rule ?? findBonusRule(date, location)
+  if (!bonusRule || !bonusRule.tiers || bonusRule.tiers.length === 0) return 0
 
   // Sort highest threshold first, pick the first one met
-  const sorted = [...rule.tiers].sort((a, b) => b.threshold - a.threshold)
+  const sorted = [...bonusRule.tiers].sort((a, b) => b.threshold - a.threshold)
   const match  = sorted.find(t => daySubtotal >= t.threshold)
   return match ? match.bonusAmount : 0
 }
@@ -50,6 +54,10 @@ export function calcAutoBonus(daySubtotal, date, location) {
  * @param {string} date         - 'YYYY-MM-DD'
  * @param {string} location
  * @param {string} employee     - employee full name
+ * @param {object} [opts]
+ * @param {object} [opts.rule]           - pre-loaded bonus rule (see calcAutoBonus)
+ * @param {object} [opts.manualBonusEntry] - pre-loaded manual bonus { adjustment, note }.
+ *   If omitted, falls back to getManualBonus(employee, date) from storage.
  * @returns {{
  *   autoBonus:    number,
  *   manualBonus:  number,
@@ -57,9 +65,9 @@ export function calcAutoBonus(daySubtotal, date, location) {
  *   finalBonus:   number,
  * }}
  */
-export function getDayBonusResult(daySubtotal, date, location, employee) {
-  const autoBonus  = calcAutoBonus(daySubtotal, date, location)
-  const manual     = getManualBonus(employee, date)
+export function getDayBonusResult(daySubtotal, date, location, employee, { rule, manualBonusEntry } = {}) {
+  const autoBonus  = calcAutoBonus(daySubtotal, date, location, { rule })
+  const manual     = manualBonusEntry ?? getManualBonus(employee, date)
   const finalBonus = autoBonus + (manual.adjustment ?? 0)
   return {
     autoBonus,

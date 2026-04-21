@@ -9,6 +9,9 @@ import { getDayBonusResult, calcFinalDailyPay } from '../utils/bonusEngine'
 import { setManualBonus } from '../utils/bonusStorage'
 import { loadUsers } from '../utils/usersStorage'
 import { calcDayCompetitionBonus } from '../utils/competitionBonusEngine'
+import { localDateKey } from '../utils/dateUtils'
+import { loadClockRecords } from '../utils/clockStorage'
+import { loadLocationConfig } from '../utils/locationConfig'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const BG     = '#020817'
@@ -42,16 +45,9 @@ const toLocalInputVal = (ts) => {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/**
- * Returns "YYYY-MM-DD" using LOCAL date parts (not UTC).
- * new Date().toISOString() returns UTC — in Las Vegas (UTC-7) isso pode
- * dar o dia anterior ou posterior dependendo do horário.
- */
+// localDateKey imported from dateUtils — see src/utils/dateUtils.js
 function localDateStr(d = new Date()) {
-  const y   = d.getFullYear()
-  const m   = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return localDateKey(d)
 }
 
 /**
@@ -371,7 +367,7 @@ function InvoiceCommissionSection({ invoice }) {
 }
 
 // ─── Invoice Detail Modal ─────────────────────────────────────────────────────
-function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale }) {
+function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, voidSale }) {
   const [invoice, setInvoice]       = useState(initialInvoice)
   const [confirmAction, setConfirm] = useState(null) // 'delete' | 'refund'
   const [changingDate, setChangingDate] = useState(false)
@@ -381,7 +377,7 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale }) {
   const [toast, setToast]               = useState('')
 
   const isRefunded = invoice.status === 'refunded'
-  const isDeleted  = invoice.status === 'deleted'
+  const isDeleted  = invoice.status === 'voided'
 
   const showToast = (msg) => {
     setToast(msg)
@@ -406,14 +402,22 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale }) {
   }
 
   const handleDelete = () => {
-    applyPatch({ status: 'deleted' })
+    // Update local UI immediately
+    setInvoice(prev => ({ ...prev, status: 'voided' }))
+    // Local localStorage + Supabase void + inventory restore
+    if (voidSale) voidSale(invoice)
+    else updateSale(invoice.number, { status: 'voided' })
     setConfirm(null)
     showToast(`Invoice #${invoice.number} deleted`)
     setTimeout(onClose, 1200)
   }
 
   const handleRefund = () => {
-    applyPatch({ status: 'refunded' })
+    // Supabase only has 'voided' — unify both actions to voided.
+    // UI shows 'refunded' label but backend stores 'voided'.
+    setInvoice(prev => ({ ...prev, status: 'voided' }))
+    if (voidSale) voidSale(invoice)
+    else updateSale(invoice.number, { status: 'voided' })
     setConfirm(null)
     showToast(`Invoice #${invoice.number} marked as refunded`)
   }
@@ -675,9 +679,9 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
     whiteSpace: 'nowrap', letterSpacing: 0.4,
   }
 
-  const totalSales = invoices.reduce((s, i) => s + (i.status !== 'deleted' ? i.total : 0), 0)
+  const totalSales = invoices.reduce((s, i) => s + (i.status !== 'voided' ? i.total : 0), 0)
   const avgDaily   = (() => {
-    const days = [...new Set(invoices.filter(i => i.status !== 'deleted').map(i => fmtDateOnly(i.timestamp)))]
+    const days = [...new Set(invoices.filter(i => i.status !== 'voided').map(i => fmtDateOnly(i.timestamp)))]
     return days.length > 0 ? totalSales / days.length : 0
   })()
 
@@ -688,7 +692,7 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
         {[
           { label: 'Total Sales',       value: fmt$(totalSales),         color: GREEN },
           { label: 'Average Daily',     value: fmt$(avgDaily),           color: BLUE  },
-          { label: 'Transactions',      value: invoices.filter(i => i.status !== 'deleted').length, color: DIM, isCount: true },
+          { label: 'Transactions',      value: invoices.filter(i => i.status !== 'voided').length, color: DIM, isCount: true },
         ].map(s => (
           <div key={s.label} style={{
             flex: 1, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 6,
@@ -722,7 +726,7 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
             )}
             {[...invoices].reverse().map((inv, i) => {
               const isRef = inv.status === 'refunded'
-              const isDel = inv.status === 'deleted'
+              const isDel = inv.status === 'voided'
               return (
                 <tr key={inv.number}
                   style={{
@@ -772,7 +776,7 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 const TABS = ['Summary', 'Invoices', 'Product Commission', 'Products Sold', 'Hours', 'Spare', 'Deductions', 'Reimbursements', 'My Clients']
 
-export default function UserReport({ onClose, sales = [], updateSale, mode = 'self' }) {
+export default function UserReport({ onClose, sales = [], updateSale, voidSale, mode = 'self' }) {
   const employees = loadActiveEmployees()
 
   const [unlockedEmployee, setUnlockedEmployee] = useState(
@@ -810,8 +814,7 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
   // ── Clock records (deve ficar ANTES de dailySales que o consome) ─────────
   const clockRecords = useMemo(() => {
     try {
-      const raw  = localStorage.getItem('pp_clock_records')
-      const all  = raw ? JSON.parse(raw) : []
+      const all  = loadClockRecords()
       const from = parseLocalDate(fromDate)
       const to   = parseLocalDate(toDate); to.setHours(23, 59, 59, 999)
       const name = selectedName || unlockedEmployee?.name
@@ -838,7 +841,7 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
     } catch {}
 
     // ── Commission per invoice ────────────────────────────────────────────────
-    const valid = employeeSales.filter(s => s.status !== 'deleted')
+    const valid = employeeSales.filter(s => s.status !== 'voided')
     const commMap = {}
     try {
       const { byInvoice } = calcPeriodCommissionFresh(valid)
@@ -855,7 +858,7 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
     // ── Location per day (first sale's location for that day) ─────────────────
     const locationMap = {}
     employeeSales.forEach(s => {
-      if (s.status !== 'deleted' && s.location) {
+      if (s.status !== 'voided' && s.location) {
         const key = localDateStr(new Date(s.timestamp))
         if (!locationMap[key]) locationMap[key] = s.location
       }
@@ -879,7 +882,7 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
     }
 
     employeeSales.forEach(s => {
-      if (s.status === 'deleted') return
+      if (s.status === 'voided') return
       const key = localDateStr(new Date(s.timestamp))
       const d   = ensureDay(key, s.timestamp)
       if (s.status === 'refunded') {
@@ -917,17 +920,11 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
       // ── Competition placement bonus ───────────────────────────────────────
       // Requires all sales at this location on this day (not just this employee)
       const allSalesForDay = sales.filter(s =>
-        s.status !== 'deleted' &&
+        s.status !== 'voided' &&
         s.location === d.location &&
         localDateStr(new Date(s.timestamp)) === d.dateKey
       )
-      const locCfg         = d.location ? (() => {
-        try {
-          const raw = localStorage.getItem('fluxe-locations-v1')
-          const list = raw ? JSON.parse(raw) : []
-          return list.find(l => l.name === d.location) || null
-        } catch { return null }
-      })() : null
+      const locCfg         = loadLocationConfig(d.location)
       const hybridMult     = Number(locCfg?.competitionHybridMultiplier ?? 1.0)
       const compBonus      = calcDayCompetitionBonus(empName, d.dateKey, d.location, allSalesForDay, hybridMult)
       d.compBonusSales     = compBonus.salesBonus
@@ -944,7 +941,7 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
     return days
   }, [employeeSales, clockRecords, selectedName, unlockedEmployee, bonusVersion, sales])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  const validSales    = employeeSales.filter(s => s.status !== 'deleted')
+  const validSales    = employeeSales.filter(s => s.status !== 'voided')
 
   // Derived period totals — pulled from the rich dailySales structure
   const totalSales    = dailySales.reduce((s, d) => s + d.salesTotal, 0)
@@ -2001,6 +1998,7 @@ export default function UserReport({ onClose, sales = [], updateSale, mode = 'se
           invoice={openedInvoice}
           onClose={() => setOpenedInvoice(null)}
           updateSale={updateSale}
+          voidSale={voidSale}
         />
       )}
     </div>
