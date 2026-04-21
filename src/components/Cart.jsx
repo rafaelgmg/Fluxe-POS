@@ -98,7 +98,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
                   <p style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>⚠ Damaged</p>
                 )}
                 {!isExchange && item.discount > 0 && (
-                  <p style={{ fontSize: 11, color: '#f59e0b', marginTop: 2 }}>
+                  <p style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
                     −${item.discount.toFixed(2)} disc
                   </p>
                 )}
@@ -132,7 +132,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       <div style={{ padding: '14px 16px', borderTop: '1px solid #1e293b', background: '#0f172a' }}>
         {[
           { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#94a3b8' },
-          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#f59e0b' }] : []),
+          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#64748b' }] : []),
         ].map(row => (
           <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ color: '#475569', fontSize: 13 }}>{row.label}</span>
