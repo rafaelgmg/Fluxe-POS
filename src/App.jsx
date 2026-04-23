@@ -36,6 +36,7 @@ import FrozenSalesModal from './components/FrozenSalesModal'
 import LockScreen from './components/LockScreen'
 import BarcodeModal, { BarcodeIconButton } from './components/BarcodeModal'
 import FluxeAssist from './components/FluxeAssist'
+import Dashboard from './components/Dashboard'
 
 
 // Seed categories on first run (no-op if already seeded)
@@ -65,6 +66,7 @@ export default function App() {
   const [frozenSales, setFrozenSales]   = useState(loadFrozenSales)
   const [showFrozen, setShowFrozen] = useState(false)
   const [saleComplete, setSaleComplete] = useState(null)
+  const [showDashboard, setShowDashboard]   = useState(false)
   const [showEndOfDay, setShowEndOfDay]     = useState(false)
   const [showUserReport, setShowUserReport] = useState(false)
   const [showCompetition, setShowCompetition] = useState(false)
@@ -471,9 +473,10 @@ export default function App() {
 
         {/* Nav icons */}
         {[
+          ...(isAdmin ? [{ icon: '📊', label: 'Dashboard', action: () => setShowDashboard(true) }] : []),
           { icon: '⏰', label: 'Clock',       action: () => setShowClockInOut(true)  },
           { icon: '📦', label: 'Inventory',   action: () => setShowInventory(true)   },
-          { icon: '📊', label: 'End of Day',  action: () => setShowEndOfDay(true)    },
+          { icon: '🗓️', label: 'End of Day',  action: () => setShowEndOfDay(true)    },
           { icon: '👤', label: 'My Report',   action: () => setShowUserReport(true)  },
           { icon: '🏆', label: 'Competition', action: () => setShowCompetition(true) },
           { icon: '🧾', label: 'Receipts',    action: () => setShowReceipts(true)    },
@@ -892,6 +895,7 @@ export default function App() {
         />
       )}
 
+      {showDashboard   && <Dashboard       onClose={() => setShowDashboard(false)}  sales={sales} products={products} />}
       {showEndOfDay    && <EndOfDayReport onClose={() => setShowEndOfDay(false)}   sales={sales} posSession={posSession} />}
       {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} />}
       {showCompetition && <Competition   onClose={() => setShowCompetition(false)} sales={sales} posSession={posSession} />}
