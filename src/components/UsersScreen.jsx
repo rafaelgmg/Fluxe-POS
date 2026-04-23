@@ -1,5 +1,6 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { loadUsers, saveUsers, hadStorageError } from '../utils/usersStorage'
+import { upsertUserToSupabase } from '../services/supabaseWrite'
 
 const POSITIONS = ['Sales', 'Manager', 'Admin']
 
@@ -313,6 +314,26 @@ export default function UsersScreen({ onBack }) {
   const [editingUser,  setEditingUser]  = useState(null)
   const [isNew,        setIsNew]        = useState(false)
 
+  // On mount: sync from Supabase, merge with local to preserve PINs
+  useEffect(() => {
+    import('../services/supabaseRead').then(({ fetchUsers }) =>
+      fetchUsers().then(remote => {
+        if (!remote || remote.length === 0) return
+        const local = loadUsers()
+        const merged = remote.map(r => {
+          const match = local.find(l =>
+            l.supabaseId === r.id ||
+            `${l.firstName} ${l.lastName}`.trim().toLowerCase() ===
+            `${r.firstName} ${r.lastName}`.trim().toLowerCase()
+          )
+          return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '' }
+        })
+        saveUsers(merged)
+        setUsers(merged)
+      }).catch(() => {})
+    )
+  }, [])
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return users.filter(u => {
@@ -337,20 +358,40 @@ export default function UsersScreen({ onBack }) {
   })
 
   const handleAdd = (form) => {
-    const newId = Math.max(...users.map(u => u.id), 0) + 1
-    persist([...users, { ...normalizeForm(form), id: newId, createdAt: new Date().toISOString() }])
+    const numericIds = users.map(u => (typeof u.id === 'number' ? u.id : 0))
+    const newId = Math.max(0, ...numericIds) + 1
+    const newUser = { ...normalizeForm(form), id: newId, createdAt: new Date().toISOString() }
+    persist([...users, newUser])
     setIsNew(false)
     setEditingUser(null)
+    // Sync to Supabase — store returned UUID as supabaseId
+    upsertUserToSupabase(newUser).then(supabaseId => {
+      if (!supabaseId) return
+      setUsers(prev => {
+        const updated = prev.map(u => u.id === newId ? { ...u, supabaseId } : u)
+        saveUsers(updated)
+        return updated
+      })
+    }).catch(() => {})
   }
 
   const handleUpdate = (form) => {
-    persist(users.map(u => u.id === editingUser.id ? { ...u, ...normalizeForm(form), updatedAt: new Date().toISOString() } : u))
+    const updated = users.map(u =>
+      u.id === editingUser.id ? { ...u, ...normalizeForm(form), updatedAt: new Date().toISOString() } : u
+    )
+    persist(updated)
     setEditingUser(null)
+    // Sync to Supabase
+    const target = updated.find(u => u.id === editingUser.id)
+    if (target) upsertUserToSupabase(target).catch(() => {})
   }
 
   const handleDelete = (id) => {
+    const target = users.find(u => u.id === id)
     persist(users.filter(u => u.id !== id))
     setEditingUser(null)
+    // Soft-delete in Supabase if linked
+    if (target?.supabaseId) upsertUserToSupabase({ ...target, status: 'inactive' }).catch(() => {})
   }
 
   const openNew  = () => { setEditingUser(null); setIsNew(true) }

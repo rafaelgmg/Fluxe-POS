@@ -618,3 +618,39 @@ export async function updateProductInSupabase(product) {
     console.warn('[Fluxe] updateProductInSupabase failed — local copy preserved:', err.message)
   }
 }
+
+// ── User CRUD ─────────────────────────────────────────────────────────────────
+
+/**
+ * Create or update a user in Supabase.
+ * - New user (no supabaseId): POST → returns Supabase UUID to store locally
+ * - Existing user (has supabaseId): PATCH by UUID → returns existing UUID
+ * Silently no-ops when Supabase is not configured.
+ * @returns {Promise<string|null>} Supabase UUID, or null on failure
+ */
+export async function upsertUserToSupabase(user) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId = await getOrgId()
+    const row = {
+      organization_id: orgId,
+      first_name:      user.firstName  || '',
+      last_name:       user.lastName   || '',
+      position:        user.position   || 'Sales',
+      email:           user.email      || '',
+      phone:           user.phone      || '',
+      pin:             user.pin        || '',
+      status:          user.status     || 'active',
+      hourly_rate:     user.hourlyRate || 0,
+    }
+    if (user.supabaseId) {
+      await sbPatch(`/users?id=eq.${user.supabaseId}`, row)
+      return user.supabaseId
+    }
+    const inserted = await sbPost('/users', row, 'return=representation')
+    return inserted?.id ?? null
+  } catch (err) {
+    console.warn('[Fluxe] upsertUserToSupabase failed:', err.message)
+    return null
+  }
+}
