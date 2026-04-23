@@ -1,9 +1,82 @@
 import { useState } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
+import { loadClockRecords }    from '../utils/clockStorage'
+
+// Returns a Set of employee names that are clocked in right now (today, no clockOut)
+function getClockedInNames() {
+  const today   = new Date().toDateString()
+  const records = loadClockRecords()
+  const names   = new Set()
+  records.forEach(r => {
+    if (new Date(r.clockIn).toDateString() === today && !r.clockOut) {
+      names.add(r.employee)
+    }
+  })
+  return names
+}
+
+function EmployeeButton({ emp, isActive, onClick }) {
+  return (
+    <button
+      onClick={() => onClick(emp)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 14,
+        padding: '13px 16px',
+        background: isActive ? 'rgba(37,99,235,0.15)' : '#0f172a',
+        border: `1px solid ${isActive ? '#2563eb' : '#1e293b'}`,
+        borderRadius: 8, cursor: 'pointer', textAlign: 'left', width: '100%',
+        transition: 'all 0.2s ease',
+        boxShadow: isActive ? '0 0 16px rgba(37,99,235,0.15)' : 'none',
+      }}
+      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(37,99,235,0.06)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.3)' } }}
+      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = '#0f172a'; e.currentTarget.style.borderColor = '#1e293b' } }}
+    >
+      {emp.photo
+        ? <img src={emp.photo} alt={emp.name[0]} style={{
+            width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
+            border: `2px solid ${isActive ? '#2563eb' : '#334155'}`,
+          }} />
+        : <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: isActive ? 'rgba(37,99,235,0.25)' : '#1e293b',
+            border: `2px solid ${isActive ? '#2563eb' : '#334155'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 800,
+            color: isActive ? '#93c5fd' : '#64748b',
+            flexShrink: 0,
+          }}>
+            {emp.name[0]}
+          </div>
+      }
+      <div style={{ flex: 1 }}>
+        <p style={{ color: isActive ? '#f1f5f9' : '#94a3b8', fontWeight: isActive ? 700 : 500, fontSize: 14 }}>
+          {emp.name}
+        </p>
+        <p style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>{emp.role}</p>
+      </div>
+      {isActive && (
+        <div style={{
+          width: 20, height: 20, borderRadius: '50%',
+          background: '#2563eb', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontSize: 12, color: '#fff',
+        }}>✓</div>
+      )}
+    </button>
+  )
+}
 
 export default function SellerSelectModal({ total, onConfirm, onCancel }) {
-  const employees = loadActiveEmployees()
-  const [selected, setSelected] = useState(null)
+  const employees      = loadActiveEmployees()
+  const clockedInNames = getClockedInNames()
+
+  const clocked = employees.filter(e => clockedInNames.has(e.name))
+  const others  = employees.filter(e => !clockedInNames.has(e.name))
+
+  const [selected,     setSelected]     = useState(null)
+  const [showAll,      setShowAll]      = useState(clocked.length === 0)
+
+  // Which list to render in the main body
+  const listToShow = showAll ? employees : clocked
 
   return (
     <div style={{
@@ -14,15 +87,15 @@ export default function SellerSelectModal({ total, onConfirm, onCancel }) {
       <div style={{
         background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)',
         border: '1px solid #1e293b', borderRadius: 10,
-        width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
-        display: 'flex', flexDirection: 'column',
+        width: 380, maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
       }}>
 
         {/* Header */}
         <div style={{
           padding: '16px 20px', background: '#0f172a',
           borderBottom: '1px solid #1e293b', borderRadius: '10px 10px 0 0',
-          display: 'flex', alignItems: 'center', gap: 10,
+          display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
         }}>
           <div style={{
             width: 32, height: 32, background: 'rgba(37,99,235,0.15)',
@@ -31,7 +104,9 @@ export default function SellerSelectModal({ total, onConfirm, onCancel }) {
           }}>👤</div>
           <div>
             <p style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 15 }}>Select Seller</p>
-            <p style={{ color: '#475569', fontSize: 11, marginTop: 1 }}>Who is making this sale?</p>
+            <p style={{ color: '#475569', fontSize: 11, marginTop: 1 }}>
+              {showAll ? 'All active sellers' : 'Clocked in today'}
+            </p>
           </div>
           <div style={{
             marginLeft: 'auto', background: '#0f172a',
@@ -43,68 +118,56 @@ export default function SellerSelectModal({ total, onConfirm, onCancel }) {
           </div>
         </div>
 
+        {/* Clocked-in badge — only shown when in clock-in view */}
+        {!showAll && clocked.length > 0 && (
+          <div style={{
+            padding: '8px 16px 4px',
+            display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+            <span style={{ color: '#475569', fontSize: 11 }}>
+              {clocked.length} seller{clocked.length > 1 ? 's' : ''} clocked in
+            </span>
+          </div>
+        )}
+
         {/* Employee list */}
-        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {employees.map(emp => {
-            const isActive = selected?.id === emp.id
-            return (
-              <button
-                key={emp.id}
-                onClick={() => setSelected(emp)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '13px 16px',
-                  background: isActive ? 'rgba(37,99,235,0.15)' : '#0f172a',
-                  border: `1px solid ${isActive ? '#2563eb' : '#1e293b'}`,
-                  borderRadius: 8, cursor: 'pointer', textAlign: 'left',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isActive ? '0 0 16px rgba(37,99,235,0.15)' : 'none',
-                }}
-                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(37,99,235,0.06)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.3)' } }}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = '#0f172a'; e.currentTarget.style.borderColor = '#1e293b' } }}
-              >
-                {/* Avatar */}
-                {emp.photo
-                  ? <img src={emp.photo} alt={emp.name[0]} style={{
-                      width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
-                      border: `2px solid ${isActive ? '#2563eb' : '#334155'}`,
-                      transition: 'border-color 0.2s ease',
-                    }} />
-                  : <div style={{
-                      width: 40, height: 40, borderRadius: '50%',
-                      background: isActive ? 'rgba(37,99,235,0.25)' : '#1e293b',
-                      border: `2px solid ${isActive ? '#2563eb' : '#334155'}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: 800, color: isActive ? '#93c5fd' : '#64748b',
-                      flexShrink: 0, transition: 'all 0.2s ease',
-                    }}>
-                      {emp.name[0]}
-                    </div>
-                }
-
-                <div style={{ flex: 1 }}>
-                  <p style={{ color: isActive ? '#f1f5f9' : '#94a3b8', fontWeight: isActive ? 700 : 500, fontSize: 14 }}>
-                    {emp.name}
-                  </p>
-                  <p style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>{emp.role}</p>
-                </div>
-
-                {isActive && (
-                  <div style={{
-                    width: 20, height: 20, borderRadius: '50%',
-                    background: '#2563eb', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: 12, color: '#fff',
-                  }}>✓</div>
-                )}
-              </button>
-            )
-          })}
+        <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', flex: 1 }}>
+          {listToShow.map(emp => (
+            <EmployeeButton
+              key={emp.id}
+              emp={emp}
+              isActive={selected?.id === emp.id}
+              onClick={setSelected}
+            />
+          ))}
         </div>
+
+        {/* "Not on that list?" — only when showing clocked-in and there are others */}
+        {!showAll && others.length > 0 && (
+          <div style={{ padding: '4px 16px 8px', flexShrink: 0 }}>
+            <button
+              onClick={() => setShowAll(true)}
+              style={{
+                width: '100%', padding: '10px',
+                background: 'transparent',
+                border: '1px dashed #1e293b',
+                borderRadius: 6, cursor: 'pointer',
+                color: '#475569', fontSize: 12,
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#475569' }}
+            >
+              Not on that list? → Select another seller
+            </button>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{
           padding: '12px 16px', borderTop: '1px solid #1e293b',
-          display: 'flex', gap: 10,
+          display: 'flex', gap: 10, flexShrink: 0,
         }}>
           <button
             onClick={() => { if (selected) onConfirm(selected) }}
