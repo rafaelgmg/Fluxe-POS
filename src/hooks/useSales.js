@@ -26,10 +26,15 @@ export function useSales() {
     fetchCategories().then(remote => { if (remote) categoriesRef.current = remote })
   }, [])
 
-  // Hydrate sales from Supabase after initial localStorage render (Phase 1).
-  // saveSale writes locally first then to Supabase (Phase 3 — writeSaleToSupabase).
+  // Hydrate sales from Supabase after initial localStorage render, then poll
+  // every 30s so Competition stays current across both kiosks.
   useEffect(() => {
     fetchSales().then(remote => { if (remote) setSales(remote) })
+    const id = setInterval(
+      () => fetchSales().then(remote => { if (remote) setSales(remote) }),
+      30_000
+    )
+    return () => clearInterval(id)
   }, [])
 
   const saveSale = useCallback(async (invoice) => {
