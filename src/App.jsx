@@ -115,7 +115,7 @@ export default function App() {
     : getTaxRate(posSession?.location)
 
   // Controle de acesso: somente 'manager' acessa o CRM global
-  const isAdmin = currentUser?.role === 'manager'
+  const isAdmin = currentUser?.role === 'manager' || currentUser?.role === 'admin'
 
   const barcodeRef = useRef('')
   const barcodeTimer = useRef(null)
