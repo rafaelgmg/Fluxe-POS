@@ -108,7 +108,7 @@ export function useCRM(posSession = null, currentUser = null) {
   const userRef = useRef(currentUser)
   useEffect(() => { userRef.current = currentUser }, [currentUser])
 
-  // ── Supabase hydration on mount ─────────────────────────────────────────────
+  // ── Supabase hydration — runs when orgId becomes available after login ────────
   useEffect(() => {
     if (!isSupabaseConfigured()) return
     const orgId = posSession?.orgId
@@ -124,7 +124,7 @@ export function useCRM(posSession = null, currentUser = null) {
         })
       })
       .catch(err => console.warn('[CRM] Supabase hydration failed:', err.message))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [posSession?.orgId]) // re-runs when session (orgId) changes from null → UUID after login
 
   // capturedByOverride — usado em capturas standalone (sem venda)
   const upsertCustomer = useCallback(async (formData, invoice, capturedByOverride = null) => {
