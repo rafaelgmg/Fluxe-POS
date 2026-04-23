@@ -79,7 +79,6 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
     if (!form.firstName.trim()) e.firstName = 'Required'
     if (!form.pin.trim())       e.pin       = 'Required'
     else if (form.pin.length < 4 || isNaN(form.pin)) e.pin = '4-digit number'
-    else if (allUsers.some(u => u.pin === form.pin && u.id !== user?.id)) e.pin = 'PIN already in use by another user'
     setErrors(e)
     return Object.keys(e).length === 0
   }

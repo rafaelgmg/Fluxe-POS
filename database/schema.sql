@@ -238,12 +238,9 @@ COMMENT ON COLUMN users.pin IS
 
 CREATE INDEX idx_users_org ON users (organization_id);
 
--- PIN único por org apenas para usuários ativos.
--- Usuários inativados não conflitam com reutilização de PINs.
--- Este índice também serve de lookup de login — não criar índice duplicado.
-CREATE UNIQUE INDEX idx_users_pin_active
-  ON users (organization_id, pin)
-  WHERE status = 'active';
+-- PIN não é único por design: múltiplos usuários podem ter o mesmo PIN.
+-- Autenticação é sempre por perfil selecionado + PIN, nunca por PIN sozinho.
+CREATE INDEX idx_users_pin ON users (organization_id, pin);
 
 CREATE TRIGGER trg_users_updated_at
   BEFORE UPDATE ON users
