@@ -54,6 +54,11 @@ export default function App() {
   const [selectedCategory, setCategory] = useState('All')
   const [search, setSearch]             = useState('')
   const [showBarcodeModal, setShowBarcodeModal] = useState(false)
+  const [viewMode,  setViewMode]  = useState(() => localStorage.getItem('fluxe-view-mode')  || 'list')
+  const [sortOrder, setSortOrder] = useState(() => localStorage.getItem('fluxe-sort-order') || 'default')
+
+  const setView = (v) => { setViewMode(v);  localStorage.setItem('fluxe-view-mode',  v) }
+  const setSort = (v) => { setSortOrder(v); localStorage.setItem('fluxe-sort-order', v) }
 
   const [showLogin, setShowLogin]       = useState(false)
   const [showPayment, setShowPayment]   = useState(false)
@@ -407,6 +412,10 @@ export default function App() {
     return matchCat && matchSearch
   })
 
+  const sorted = sortOrder === 'az' ? [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+               : sortOrder === 'za' ? [...filtered].sort((a, b) => b.name.localeCompare(a.name))
+               : filtered
+
   if (!accountSession) {
     return <AccountLoginScreen onLogin={(session) => setAccountSession(session)} />
   }
@@ -644,10 +653,11 @@ export default function App() {
 
         {/* PRODUCT LIST */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Search bar */}
+
+          {/* Search + controls bar */}
           <div style={{
             padding: '8px 12px', background: '#0a0f1e', borderBottom: '1px solid #1e293b',
-            display: 'flex', alignItems: 'center', gap: 10
+            display: 'flex', alignItems: 'center', gap: 8,
           }}>
             <input
               value={search}
@@ -661,108 +671,125 @@ export default function App() {
               onFocus={e => { e.target.style.borderColor = '#2563eb' }}
               onBlur={e => { e.target.style.borderColor = '#1e293b' }}
             />
-            <BarcodeIconButton
-              active={showBarcodeModal}
-              onClick={() => setShowBarcodeModal(true)}
-            />
-            <span style={{ color: '#334155', fontSize: 12 }}>
-              {filtered.length} items
+            <BarcodeIconButton active={showBarcodeModal} onClick={() => setShowBarcodeModal(true)} />
+
+            {/* Sort toggle */}
+            <div style={{ display: 'flex', gap: 2 }}>
+              {[['default', '—'], ['az', 'A→Z'], ['za', 'Z→A']].map(([val, label]) => (
+                <button key={val} onClick={() => setSort(val)} style={{
+                  padding: '5px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  borderRadius: 5, border: '1px solid',
+                  borderColor: sortOrder === val ? '#2563eb' : '#1e293b',
+                  background:  sortOrder === val ? 'rgba(37,99,235,0.15)' : 'transparent',
+                  color:       sortOrder === val ? '#93c5fd' : '#475569',
+                  transition: 'all 0.15s',
+                }}>{label}</button>
+              ))}
+            </div>
+
+            {/* View mode toggle */}
+            <div style={{ display: 'flex', gap: 2 }}>
+              {[['list', '☰'], ['grid', '⊞']].map(([val, icon]) => (
+                <button key={val} onClick={() => setView(val)} style={{
+                  padding: '5px 9px', fontSize: 14, cursor: 'pointer',
+                  borderRadius: 5, border: '1px solid',
+                  borderColor: viewMode === val ? '#2563eb' : '#1e293b',
+                  background:  viewMode === val ? 'rgba(37,99,235,0.15)' : 'transparent',
+                  color:       viewMode === val ? '#93c5fd' : '#475569',
+                  transition: 'all 0.15s',
+                }}>{icon}</button>
+              ))}
+            </div>
+
+            <span style={{ color: '#334155', fontSize: 12, whiteSpace: 'nowrap' }}>
+              {sorted.length} items
             </span>
           </div>
 
-          {/* Table header */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '52px 1fr 180px 70px 60px 50px 60px',
-            padding: '9px 12px', background: '#0f172a',
-            borderBottom: '1px solid #1e293b', fontSize: 12, color: '#475569',
-            fontWeight: 600, letterSpacing: 0.4, flexShrink: 0
-          }}>
-            <span>Photo</span>
-            <span>Product</span>
-            <span>Barcode</span>
-            <span>Size</span>
-            <span style={{ textAlign: 'right' }}>Qty</span>
-            <span></span>
-            <span style={{ textAlign: 'center' }}>Add</span>
-          </div>
+          {/* ── LIST MODE ── */}
+          {viewMode === 'list' && <>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '52px 1fr 180px 70px 60px 50px 60px',
+              padding: '9px 12px', background: '#0f172a',
+              borderBottom: '1px solid #1e293b', fontSize: 12, color: '#475569',
+              fontWeight: 600, letterSpacing: 0.4, flexShrink: 0,
+            }}>
+              <span>Photo</span><span>Product</span><span>Barcode</span>
+              <span>Size</span><span style={{ textAlign: 'right' }}>Qty</span>
+              <span /><span style={{ textAlign: 'center' }}>Add</span>
+            </div>
 
-          {/* Product rows */}
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {filtered.map(product => (
-              <div
-                key={product.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '52px 1fr 180px 70px 60px 50px 60px',
-                  padding: '11px 12px', borderBottom: '1px solid rgba(30,41,59,0.6)',
-                  alignItems: 'center', cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.05)'; e.currentTarget.style.borderBottomColor = 'rgba(37,99,235,0.15)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderBottomColor = 'rgba(30,41,59,0.6)' }}
-              >
-                {/* Photo */}
-                <div style={{
-                  width: 36, height: 36, background: '#0f172a', borderRadius: 6,
-                  border: '1px solid #1e293b',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18
-                }}>🧴</div>
-
-                {/* Name + desc */}
-                <div>
-                  <p style={{ fontSize: 15, color: '#f1f5f9', fontWeight: 600 }}>{product.name}</p>
-                  {product.description && (
-                    <p style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>{product.description}</p>
-                  )}
-                </div>
-
-                {/* Barcode */}
-                <span style={{ fontSize: 15, color: '#475569', fontFamily: "'Courier New', Courier, monospace", letterSpacing: 0.5 }}>
-                  {product.barcode}
-                </span>
-
-                {/* Size */}
-                <span style={{ fontSize: 13, color: '#64748b' }}>{product.size}</span>
-
-                {/* Qty */}
-                {(() => {
-                  const locQty = product.qtyByLoc?.[posSession?.locationId] ?? product.qty
-                  return (
-                    <>
-                      <span style={{
-                        textAlign: 'right', fontSize: 15, fontWeight: 700,
-                        color: locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#94a3b8'
-                      }}>
-                        {locQty}
-                      </span>
-                      <div style={{
-                        width: 7, height: 7, borderRadius: '50%', margin: '0 auto',
-                        background: locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#22c55e',
-                        boxShadow: locQty <= 2 ? '0 0 6px #ef4444' : locQty <= 5 ? '0 0 6px #f59e0b' : '0 0 6px #22c55e',
-                      }} />
-                    </>
-                  )
-                })()}
-
-
-                {/* Add button */}
-                <button
-                  onClick={() => openEditModal(product)}
-                  style={{
-                    padding: '7px 14px', background: '#2563eb', border: 'none',
-                    borderRadius: 7, color: '#fff', fontSize: 13, fontWeight: 700,
-                    cursor: 'pointer', margin: '0 auto', display: 'block',
-                    transition: 'background 0.15s',
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {sorted.map(product => {
+                const locQty = product.qtyByLoc?.[posSession?.locationId] ?? product.qty
+                const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#94a3b8'
+                const dColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#22c55e'
+                return (
+                  <div key={product.id} style={{
+                    display: 'grid',
+                    gridTemplateColumns: '52px 1fr 180px 70px 60px 50px 60px',
+                    padding: '11px 12px', borderBottom: '1px solid rgba(30,41,59,0.6)',
+                    alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s ease',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#2563eb' }}
-                >
-                  Add
-                </button>
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.05)'; e.currentTarget.style.borderBottomColor = 'rgba(37,99,235,0.15)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderBottomColor = 'rgba(30,41,59,0.6)' }}
+                  >
+                    <div style={{ width: 36, height: 36, background: '#0f172a', borderRadius: 6, border: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🧴</div>
+                    <div>
+                      <p style={{ fontSize: 15, color: '#f1f5f9', fontWeight: 600 }}>{product.name}</p>
+                      {product.description && <p style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>{product.description}</p>}
+                    </div>
+                    <span style={{ fontSize: 15, color: '#475569', fontFamily: "'Courier New', Courier, monospace", letterSpacing: 0.5 }}>{product.barcode}</span>
+                    <span style={{ fontSize: 13, color: '#64748b' }}>{product.size}</span>
+                    <span style={{ textAlign: 'right', fontSize: 15, fontWeight: 700, color: qColor }}>{locQty}</span>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', margin: '0 auto', background: dColor, boxShadow: `0 0 6px ${dColor}` }} />
+                    <button onClick={() => openEditModal(product)} style={{
+                      padding: '7px 14px', background: '#2563eb', border: 'none',
+                      borderRadius: 7, color: '#fff', fontSize: 13, fontWeight: 700,
+                      cursor: 'pointer', margin: '0 auto', display: 'block', transition: 'background 0.15s',
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#2563eb' }}
+                    >Add</button>
+                  </div>
+                )
+              })}
+            </div>
+          </>}
+
+          {/* ── GRID MODE ── */}
+          {viewMode === 'grid' && (
+            <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
+                {sorted.map(product => {
+                  const locQty = product.qtyByLoc?.[posSession?.locationId] ?? product.qty
+                  const dColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#22c55e'
+                  const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#94a3b8'
+                  return (
+                    <button key={product.id} onClick={() => openEditModal(product)} style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                      padding: '14px 12px', background: '#0f172a',
+                      border: '1px solid #1e293b', borderRadius: 8,
+                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
+                      gap: 6,
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.08)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.35)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#0f172a'; e.currentTarget.style.borderColor = '#1e293b' }}
+                    >
+                      <p style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 700, lineHeight: 1.3 }}>{product.name}</p>
+                      {product.size && <p style={{ fontSize: 11, color: '#475569' }}>{product.size}</p>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: dColor, boxShadow: `0 0 5px ${dColor}`, flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: qColor, fontWeight: 700 }}>{locQty} in stock</span>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
         </div>
 
         {/* CART */}
