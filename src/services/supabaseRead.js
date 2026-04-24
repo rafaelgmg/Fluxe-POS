@@ -12,11 +12,12 @@
  *   VITE_SUPABASE_ORG_ID    organization UUID (auto-detected from DB if blank)
  */
 
-import { normalizeProduct } from '../domain/adapters/legacyProduct'
-import { normalizeSale }    from '../domain/adapters/legacySale'
-import { normalizeUser }    from '../domain/adapters/legacyUser'
-import { LOCATIONS_CFG }   from '../config/branding'
-import { getAccessToken }  from './supabaseSession'
+import { normalizeProduct }    from '../domain/adapters/legacyProduct'
+import { normalizeSale }       from '../domain/adapters/legacySale'
+import { normalizeUser }       from '../domain/adapters/legacyUser'
+import { LOCATIONS_CFG }      from '../config/branding'
+import { getAccessToken }     from './supabaseSession'
+import { KEY_INVOICE_COUNTER } from '../utils/storageKeys'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL     || ''
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -33,7 +34,24 @@ function authBearer() {
   return getAccessToken() || SUPABASE_KEY
 }
 
-// ── Base fetch ────────────────────────────────────────────────────────────────
+// ── Base fetch + RPC ─────────────────────────────────────────────────────────
+
+async function sbRpc(fnName, params = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+    method:  'POST',
+    headers: {
+      apikey:         SUPABASE_KEY,
+      Authorization:  `Bearer ${authBearer()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`RPC ${fnName} ${res.status}: ${text}`)
+  }
+  return res.json()
+}
 
 async function sbFetch(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
@@ -70,6 +88,33 @@ async function getOrgId() {
  * Phase 9: initOrgSession() calls this after extracting org_id from the JWT.
  */
 export function setOrgIdCache(id) { if (id) _orgId = id }
+
+/**
+ * Get the next invoice number from the shared Postgres sequence (cross-kiosk safe).
+ *
+ * - Online:  calls next_invoice_number() RPC → atomic, collision-free between kiosks.
+ *            Also updates the local counter so offline sales continue from the right range.
+ * - Offline: returns localFallback (the locally-generated temp number).
+ *
+ * @param {number|null} localFallback  — locally-generated number to use if RPC fails
+ * @returns {Promise<number>}
+ */
+export async function getNextInvoiceNumber(localFallback = null) {
+  if (!isSupabaseConfigured()) return localFallback
+  try {
+    const result = await sbRpc('next_invoice_number')
+    if (typeof result === 'number' && result > 0) {
+      // Keep local counter in sync — if we go offline, the next local number
+      // continues from where the shared sequence left off.
+      const stored = parseInt(localStorage.getItem(KEY_INVOICE_COUNTER) || '0', 10)
+      if (result >= stored) localStorage.setItem(KEY_INVOICE_COUNTER, String(result))
+      return result
+    }
+  } catch (err) {
+    console.warn('[Fluxe] getNextInvoiceNumber RPC failed — using local fallback:', err.message)
+  }
+  return localFallback
+}
 
 // Exported so Phase 3 write functions can get the org ID without fetching again.
 export { getOrgId }
@@ -119,13 +164,14 @@ function fromSupabaseSaleItem(row) {
     productId:    row.product_id    ?? null,
     categoryId:   row.category_id   ?? null,
     // resolveItem() in Receipts uses item.name or item.product.name
-    name:         row.product_name  || '',
+    name:         row.name || row.product_name || '',
     salePrice:    row.sale_price    ?? 0,
     unitPrice:    row.unit_price    ?? 0,
     systemPrice:  row.system_price  ?? row.sale_price ?? 0,
     minPrice:     row.min_price     ?? 0,
     discount:     row.discount      ?? 0,
     spare:        row.spare         ?? 0,
+    costPrice:    row.cost_price    ?? 0,
     category:     row.category_name || '',
     description:  row.description   || '',
     size:         row.size          || '',
@@ -266,7 +312,7 @@ export async function fetchUsers() {
   try {
     const orgId = await getOrgId()
     const rows  = await sbFetch(
-      `/users?select=*&organization_id=eq.${orgId}&order=first_name.asc`
+      `/v_users?select=*&organization_id=eq.${orgId}&order=first_name.asc`
     )
     return rows.map(r => normalizeUser(fromSupabaseUser(r)))
   } catch (err) {
@@ -322,6 +368,178 @@ export async function fetchCategories() {
     return rows.map(fromSupabaseCategory)
   } catch (err) {
     console.warn('[Fluxe] fetchCategories failed — using local fallback:', err.message)
+    return null
+  }
+}
+
+/**
+ * Fetch clock records for a specific employee within a date range.
+ * Used by UserReport to calculate worked hours across periods.
+ *
+ * @param {{ employeeName: string, from: Date, to: Date }}
+ * @returns {Promise<Array<{ id, employee, location, clockIn, clockOut }> | null>}
+ */
+export async function fetchClockRecordsByEmployee({ employeeName, from, to }) {
+  if (!isSupabaseConfigured() || !employeeName) return null
+  try {
+    const orgId   = await getOrgId()
+    const fromISO = from instanceof Date ? from.toISOString() : new Date(from).toISOString()
+    const toISO   = to   instanceof Date ? to.toISOString()   : new Date(to).toISOString()
+
+    const rows = await sbFetch(
+      `/clock_records?organization_id=eq.${orgId}` +
+      `&employee_name=eq.${encodeURIComponent(employeeName)}` +
+      `&clock_in=gte.${encodeURIComponent(fromISO)}` +
+      `&clock_in=lte.${encodeURIComponent(toISO)}` +
+      `&order=clock_in.asc`
+    )
+    return rows.map(r => ({
+      id:       r.id,
+      employee: r.employee_name || '',
+      location: r.location_name || '',
+      clockIn:  r.clock_in      || '',
+      clockOut: r.clock_out     || null,
+    }))
+  } catch (err) {
+    console.warn('[Fluxe] fetchClockRecordsByEmployee failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Fetch today's clock records for the org (all locations).
+ * Returns normalized frontend objects or null on failure.
+ * Filtered server-side to clock_in >= start of today (UTC midnight).
+ *
+ * @returns {Promise<Array<{ id, employee, location, clockIn, clockOut }> | null>}
+ */
+export async function fetchTodayClockRecords() {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId    = await getOrgId()
+    const today    = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayISO = today.toISOString()
+
+    const rows = await sbFetch(
+      `/clock_records?organization_id=eq.${orgId}` +
+      `&clock_in=gte.${encodeURIComponent(todayISO)}` +
+      `&order=clock_in.asc`
+    )
+    return rows.map(r => ({
+      id:       r.id,
+      employee: r.employee_name || '',
+      location: r.location_name || '',
+      clockIn:  r.clock_in      || '',
+      clockOut: r.clock_out     || null,
+    }))
+  } catch (err) {
+    console.warn('[Fluxe] fetchTodayClockRecords failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Fetch pending (status='sent') transfers destined for a given location.
+ * Returns [] when none found, null on error.
+ */
+/**
+ * Fetch the most recent transfers for the org (all statuses, all locations).
+ * Used by InventoryAdmin to show a unified transfer history.
+ */
+export async function fetchRecentTransfers(limit = 20) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId = await getOrgId()
+    const rows  = await sbFetch(
+      `/inventory_transfers?organization_id=eq.${orgId}&order=sent_at.desc&limit=${limit}`
+    )
+    return rows || []
+  } catch (err) {
+    console.warn('[Fluxe] fetchRecentTransfers failed:', err.message)
+    return null
+  }
+}
+
+export async function fetchPendingTransfers(toLocationUUID) {
+  if (!isSupabaseConfigured() || !toLocationUUID) return null
+  try {
+    const orgId = await getOrgId()
+    const rows  = await sbFetch(
+      `/inventory_transfers?organization_id=eq.${orgId}` +
+      `&to_location_id=eq.${toLocationUUID}&status=eq.sent&order=sent_at.desc`
+    )
+    return rows || []
+  } catch (err) {
+    console.warn('[Fluxe] fetchPendingTransfers failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Fetch all sales (including voided) for a specific location and calendar date.
+ * Used by EndOfDayReport for accurate daily totals filtered by location.
+ * Passing no locationName returns all sales for the org on that date.
+ *
+ * @param {{ locationName?: string, date?: Date }}
+ * @returns {Promise<import('../domain/models/sale').Sale[] | null>}
+ */
+export async function fetchSalesByLocationAndDate({ locationName, date = new Date() } = {}) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId     = await getOrgId()
+    const start     = new Date(date); start.setHours(0, 0, 0, 0)
+    const end       = new Date(date); end.setHours(23, 59, 59, 999)
+    const locFilter = locationName
+      ? `&location_name=eq.${encodeURIComponent(locationName)}`
+      : ''
+    const rows = await sbFetch(
+      `/sales?select=*,sale_items(*),payments(*)` +
+      `&organization_id=eq.${orgId}` +
+      locFilter +
+      `&sold_at=gte.${encodeURIComponent(start.toISOString())}` +
+      `&sold_at=lte.${encodeURIComponent(end.toISOString())}` +
+      `&order=number.desc`
+    )
+    return rows.map(r => normalizeSale(fromSupabaseSale(r)))
+  } catch (err) {
+    console.warn('[Fluxe] fetchSalesByLocationAndDate failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Fetch clock records for a specific location and calendar date.
+ * Used by EndOfDayReport to calculate employee hours worked on a given day.
+ *
+ * @param {{ locationName?: string, date?: Date }}
+ * @returns {Promise<Array<{ id, employee, location, clockIn, clockOut }> | null>}
+ */
+export async function fetchClockRecordsByDate({ locationName, date = new Date() } = {}) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId     = await getOrgId()
+    const start     = new Date(date); start.setHours(0, 0, 0, 0)
+    const end       = new Date(date); end.setHours(23, 59, 59, 999)
+    const locFilter = locationName
+      ? `&location_name=eq.${encodeURIComponent(locationName)}`
+      : ''
+    const rows = await sbFetch(
+      `/clock_records?organization_id=eq.${orgId}` +
+      locFilter +
+      `&clock_in=gte.${encodeURIComponent(start.toISOString())}` +
+      `&clock_in=lte.${encodeURIComponent(end.toISOString())}` +
+      `&order=clock_in.asc`
+    )
+    return rows.map(r => ({
+      id:       r.id,
+      employee: r.employee_name || '',
+      location: r.location_name || '',
+      clockIn:  r.clock_in      || '',
+      clockOut: r.clock_out     || null,
+    }))
+  } catch (err) {
+    console.warn('[Fluxe] fetchClockRecordsByDate failed:', err.message)
     return null
   }
 }

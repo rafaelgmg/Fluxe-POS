@@ -2,59 +2,61 @@
 -- Phase 9: Row Level Security
 -- Fluxe POS — multi-tenant isolation via Supabase Auth JWT claims
 --
--- ── PRE-REQUISITES (run before this file) ────────────────────────────────────
+-- Tabelas cobertas (14):
+--   organizations · locations · users · user_location_access
+--   categories · products · inventory_stock
+--   sales · sale_items · payments · inventory_movements
+--   clock_records · inventory_transfers · customers
 --
---  1. Create a Supabase Auth machine account for the organization:
+-- ── PRÉ-REQUISITOS (execute ANTES deste arquivo) ─────────────────────────────
+--
+--  1. Criar a conta machine no Supabase Auth:
 --       Dashboard → Authentication → Users → Add user
---       Email: pos-machine@perfumepassage.local  (any email, never used for email)
---       Password: <strong random password>
+--       Email:    pos-machine@perfumepassage.local
+--       Password: <senha forte aleatória>
 --
---  2. Set org_id in app_metadata via Supabase Auth API or SQL:
+--  2. Injetar org_id no app_metadata da conta machine:
 --
 --       UPDATE auth.users
---       SET    raw_app_meta_data = raw_app_meta_data || '{"org_id": "<ORG_UUID>"}'::jsonb
+--       SET    raw_app_meta_data = raw_app_meta_data
+--                               || '{"org_id": "<ORG_UUID>"}'::jsonb
 --       WHERE  email = 'pos-machine@perfumepassage.local';
 --
---       Verify: SELECT raw_app_meta_data FROM auth.users WHERE email = '...';
---       Expected: {"provider": "email", "providers": ["email"], "org_id": "<ORG_UUID>"}
+--       Verificar:
+--       SELECT raw_app_meta_data FROM auth.users
+--       WHERE  email = 'pos-machine@perfumepassage.local';
+--       -- Esperado: {"provider": "email", "providers": ["email"], "org_id": "<ORG_UUID>"}
 --
---  3. Add to .env (REQUIRED — getOrgId() must not need a DB query with RLS):
+--  3. Adicionar ao .env (VITE_SUPABASE_ORG_ID torna-se OBRIGATÓRIO):
 --
 --       VITE_ORG_MACHINE_EMAIL=pos-machine@perfumepassage.local
---       VITE_ORG_MACHINE_PASSWORD=<strong-password>
---       VITE_SUPABASE_ORG_ID=<org-uuid>    ← becomes REQUIRED in Phase 9
+--       VITE_ORG_MACHINE_PASSWORD=<senha-do-passo-1>
+--       VITE_SUPABASE_ORG_ID=<org-uuid>
 --
---  4. Deploy the frontend with initOrgSession() changes FIRST.
---     Verify the app loads and data appears correctly.
---     ONLY THEN run this SQL file.
+--  4. Deploy do frontend com VITE_SUPABASE_ORG_ID definido.
+--     Testar que o app abre, dados aparecem e PIN funciona.
+--     SÓ DEPOIS executar este SQL.
 --
--- ── APPLY ORDER ──────────────────────────────────────────────────────────────
---  1. Run Step 1 (auth_org_id function)
---  2. Run Step 2 (ENABLE RLS — idempotent)
---  3. Run Step 3 (DROP old policies — clean slate)
---  4. Run Step 4 (CREATE policies)
---  5. Validate with Step 5
+-- ── ORDEM DE APLICAÇÃO ───────────────────────────────────────────────────────
+--  Execute Steps 1 → 5 em sequência na mesma sessão do SQL Editor.
 --
--- ── ATOMICITY RISK ───────────────────────────────────────────────────────────
---  If you apply Step 2 without Step 4, ALL reads from anon/authenticated
---  are blocked immediately. Run Steps 2–4 in a single SQL Editor session.
+-- ── RISCO DE ATOMICIDADE ─────────────────────────────────────────────────────
+--  Se executar Step 2 sem o Step 4, TODAS as leituras authenticated/anon
+--  são bloqueadas imediatamente. Execute Steps 2–4 sem interrupção.
 --
 -- ── service_role bypass ──────────────────────────────────────────────────────
---  Supabase service_role key always bypasses RLS. Migrations and admin
---  operations using service_role are unaffected by these policies.
+--  A chave service_role sempre bypassa RLS. Migrations e operações admin
+--  via service_role não são afetadas por estas policies.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- Step 1: Auth helper — extract org_id from JWT app_metadata
+-- Step 1: Helper auth_org_id() + GRANT no RPC de PIN
 -- ═══════════════════════════════════════════════════════════════════════════
--- Returns the org UUID from the machine account JWT claim.
--- Returns NULL when:
---   · caller is anon (no user JWT, or JWT has no app_metadata.org_id)
---   · app_metadata.org_id is missing or malformed
---
--- SECURITY DEFINER is NOT needed here because auth.jwt() is a built-in
--- Supabase function accessible to all roles.
+
+-- Extrai org_id do JWT app_metadata da conta machine.
+-- Retorna NULL para anon (sem JWT) ou JWT sem app_metadata.org_id.
+-- Não precisa de SECURITY DEFINER — auth.jwt() é acessível a todos os roles.
 
 CREATE OR REPLACE FUNCTION auth_org_id()
 RETURNS UUID
@@ -70,35 +72,41 @@ AS $$
   )::UUID
 $$;
 
--- Grant execute to authenticated and anon so it can be used in policies
 GRANT EXECUTE ON FUNCTION auth_org_id() TO authenticated, anon;
 
+-- verify_employee_pin é SECURITY DEFINER (bypassa RLS para ler users.pin).
+-- Precisa ser callable pelo role anon para o fallback offline funcionar
+-- (quando initOrgSession() ainda não completou, o app usa a anon key).
+GRANT EXECUTE ON FUNCTION verify_employee_pin(uuid, text, text) TO anon, authenticated;
+
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- Step 2: Enable RLS on all tables
--- (ALTER TABLE ... ENABLE ROW LEVEL SECURITY is idempotent — safe to re-run)
+-- Step 2: Habilitar RLS em todas as tabelas
+-- (ALTER TABLE ... ENABLE ROW LEVEL SECURITY é idempotente — seguro re-executar)
 -- ═══════════════════════════════════════════════════════════════════════════
 
-ALTER TABLE organizations       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE locations           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE users               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE organizations        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE locations            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_location_access ENABLE ROW LEVEL SECURITY;
-ALTER TABLE categories          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE products            ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inventory_stock     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sales               ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sale_items          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payments            ENABLE ROW LEVEL SECURITY;
-ALTER TABLE inventory_movements ENABLE ROW LEVEL SECURITY;
-ALTER TABLE customers           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_stock      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sale_items           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payments             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_movements  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clock_records        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_transfers  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customers            ENABLE ROW LEVEL SECURITY;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- Step 3: Drop existing policies (clean slate before recreating)
+-- Step 3: Remover policies existentes (slate limpo antes de recriar)
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- organizations
-DROP POLICY IF EXISTS "org_select"  ON organizations;
+DROP POLICY IF EXISTS "org_select"           ON organizations;
 
 -- locations
 DROP POLICY IF EXISTS "org_isolation_select" ON locations;
@@ -140,17 +148,28 @@ DROP POLICY IF EXISTS "org_isolation_select" ON sales;
 DROP POLICY IF EXISTS "org_isolation_insert" ON sales;
 DROP POLICY IF EXISTS "org_isolation_update" ON sales;
 
--- sale_items (no organization_id column — join to sales)
+-- sale_items
 DROP POLICY IF EXISTS "org_isolation_select" ON sale_items;
 DROP POLICY IF EXISTS "org_isolation_insert" ON sale_items;
 
--- payments (no organization_id column — join to sales)
+-- payments
 DROP POLICY IF EXISTS "org_isolation_select" ON payments;
 DROP POLICY IF EXISTS "org_isolation_insert" ON payments;
 
 -- inventory_movements
 DROP POLICY IF EXISTS "org_isolation_select" ON inventory_movements;
 DROP POLICY IF EXISTS "org_isolation_insert" ON inventory_movements;
+
+-- clock_records
+DROP POLICY IF EXISTS "org_isolation_select" ON clock_records;
+DROP POLICY IF EXISTS "org_isolation_insert" ON clock_records;
+DROP POLICY IF EXISTS "org_isolation_update" ON clock_records;
+DROP POLICY IF EXISTS "org_isolation_delete" ON clock_records;
+
+-- inventory_transfers
+DROP POLICY IF EXISTS "org_isolation_select" ON inventory_transfers;
+DROP POLICY IF EXISTS "org_isolation_insert" ON inventory_transfers;
+DROP POLICY IF EXISTS "org_isolation_update" ON inventory_transfers;
 
 -- customers
 DROP POLICY IF EXISTS "org_isolation_select" ON customers;
@@ -160,20 +179,19 @@ DROP POLICY IF EXISTS "org_isolation_delete" ON customers;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- Step 4: Create RLS policies
+-- Step 4: Criar policies RLS
 -- ═══════════════════════════════════════════════════════════════════════════
+-- Estratégia uniforme: organization_id = auth_org_id()
+-- auth_org_id() retorna NULL para anon → nenhuma row é visível para anon.
+-- Apenas a conta machine (authenticated com org_id no JWT) acessa os dados.
 
 
 -- ── organizations ─────────────────────────────────────────────────────────────
--- A tenant can only see their own organization row.
--- INSERT/UPDATE/DELETE on organizations is service_role only (admin/infra).
+-- Um tenant vê apenas sua própria row. INSERT/UPDATE/DELETE = service_role only.
 
 CREATE POLICY "org_select" ON organizations
   FOR SELECT TO authenticated
   USING (id = auth_org_id());
-
--- anon: no policy → blocked. verify_employee_pin RPC (SECURITY DEFINER)
--- can read users without needing anon access to this table.
 
 
 -- ── locations ─────────────────────────────────────────────────────────────────
@@ -191,13 +209,15 @@ CREATE POLICY "org_isolation_update" ON locations
   USING  (organization_id = auth_org_id())
   WITH CHECK (organization_id = auth_org_id());
 
--- DELETE on locations: not expected from client (admin/service_role only)
--- Omitted intentionally.
+-- DELETE em locations: não esperado do client — service_role only.
 
 
 -- ── users ─────────────────────────────────────────────────────────────────────
--- SELECT includes the pin column — the app's fromSupabaseUser() strips it.
--- A future phase should add column-level security or a view that excludes pin.
+-- ATENÇÃO: SELECT inclui a coluna pin.
+--   · A função verify_employee_pin() (SECURITY DEFINER) faz a comparação no banco.
+--   · O app client-side nunca recebe pin via fetchUsers() — fromSupabaseUser() o remove.
+--   · Para proteção completa no banco, criar uma view v_users sem a coluna pin
+--     e revogar SELECT direta na tabela (melhoria futura, não bloqueante).
 
 CREATE POLICY "org_isolation_select" ON users
   FOR SELECT TO authenticated
@@ -212,8 +232,8 @@ CREATE POLICY "org_isolation_update" ON users
   USING  (organization_id = auth_org_id())
   WITH CHECK (organization_id = auth_org_id());
 
--- DELETE on users: app only deactivates (status='inactive'), not hard deletes.
--- Omitted intentionally — use service_role for admin user deletion.
+-- DELETE: app só desativa (status='inactive'), não hard delete.
+-- Usar service_role para deleção admin.
 
 
 -- ── user_location_access ──────────────────────────────────────────────────────
@@ -226,7 +246,7 @@ CREATE POLICY "org_isolation_insert" ON user_location_access
   FOR INSERT TO authenticated
   WITH CHECK (organization_id = auth_org_id());
 
--- DELETE cascades from users/locations. Direct DELETE from client not expected.
+-- DELETE: cascade a partir de users/locations. DELETE direto não esperado.
 
 
 -- ── categories ────────────────────────────────────────────────────────────────
@@ -279,17 +299,18 @@ CREATE POLICY "org_isolation_insert" ON inventory_stock
   FOR INSERT TO authenticated
   WITH CHECK (organization_id = auth_org_id());
 
--- Phase 4: stock is updated via PATCH after each sale.
+-- UPDATE: atualizado a cada venda e ajuste de estoque.
 CREATE POLICY "org_isolation_update" ON inventory_stock
   FOR UPDATE TO authenticated
   USING  (organization_id = auth_org_id())
   WITH CHECK (organization_id = auth_org_id());
 
--- DELETE cascades from products/locations. Direct DELETE not expected from client.
+-- DELETE: cascade de products/locations. Não esperado do client.
 
 
 -- ── sales ─────────────────────────────────────────────────────────────────────
--- UPDATE allowed for status changes (void). No DELETE (ledger-style).
+-- UPDATE permitido apenas para anulação de venda (status = 'voided').
+-- DELETE bloqueado — sales são ledger imutável.
 
 CREATE POLICY "org_isolation_select" ON sales
   FOR SELECT TO authenticated
@@ -299,18 +320,15 @@ CREATE POLICY "org_isolation_insert" ON sales
   FOR INSERT TO authenticated
   WITH CHECK (organization_id = auth_org_id());
 
--- UPDATE only: voiding a sale (status = 'voided'). Financials are immutable.
 CREATE POLICY "org_isolation_update" ON sales
   FOR UPDATE TO authenticated
   USING  (organization_id = auth_org_id())
   WITH CHECK (organization_id = auth_org_id());
 
--- No DELETE policy on sales — sales are never hard deleted.
-
 
 -- ── sale_items ────────────────────────────────────────────────────────────────
--- No organization_id column — isolation enforced via parent sale FK.
--- Correlated subquery: PostgreSQL optimizes this with the idx_sale_items_sale index.
+-- Sem coluna organization_id — isolamento via FK para sales.
+-- Subquery correlacionada: eficiente com o índice idx_sale_items_sale.
 
 CREATE POLICY "org_isolation_select" ON sale_items
   FOR SELECT TO authenticated
@@ -332,12 +350,11 @@ CREATE POLICY "org_isolation_insert" ON sale_items
     )
   );
 
--- No UPDATE (sale_items are immutable after INSERT).
--- No DELETE (cascade from sales only).
+-- UPDATE/DELETE: sale_items são imutáveis após INSERT.
 
 
 -- ── payments ──────────────────────────────────────────────────────────────────
--- Same pattern as sale_items.
+-- Mesmo padrão de sale_items.
 
 CREATE POLICY "org_isolation_select" ON payments
   FOR SELECT TO authenticated
@@ -359,12 +376,11 @@ CREATE POLICY "org_isolation_insert" ON payments
     )
   );
 
--- No UPDATE or DELETE — payments are immutable.
+-- UPDATE/DELETE: payments são imutáveis após INSERT.
 
 
 -- ── inventory_movements ───────────────────────────────────────────────────────
--- INSERT allowed: sale movements (Phase 4) and refund movements (Phase 8).
--- No UPDATE or DELETE — inventory ledger is immutable.
+-- Ledger imutável — INSERT permitido, UPDATE/DELETE bloqueados.
 
 CREATE POLICY "org_isolation_select" ON inventory_movements
   FOR SELECT TO authenticated
@@ -375,7 +391,44 @@ CREATE POLICY "org_isolation_insert" ON inventory_movements
   WITH CHECK (organization_id = auth_org_id());
 
 
--- ── customers (Phase 7) ───────────────────────────────────────────────────────
+-- ── clock_records ─────────────────────────────────────────────────────────────
+-- UPDATE permitido: clock_out é preenchido quando o funcionário sai.
+-- DELETE não esperado do client (soft-delete via status, ou service_role).
+
+CREATE POLICY "org_isolation_select" ON clock_records
+  FOR SELECT TO authenticated
+  USING (organization_id = auth_org_id());
+
+CREATE POLICY "org_isolation_insert" ON clock_records
+  FOR INSERT TO authenticated
+  WITH CHECK (organization_id = auth_org_id());
+
+CREATE POLICY "org_isolation_update" ON clock_records
+  FOR UPDATE TO authenticated
+  USING  (organization_id = auth_org_id())
+  WITH CHECK (organization_id = auth_org_id());
+
+
+-- ── inventory_transfers ───────────────────────────────────────────────────────
+-- UPDATE permitido: receiveTransfer() atualiza status e received_at.
+-- DELETE não esperado do client.
+
+CREATE POLICY "org_isolation_select" ON inventory_transfers
+  FOR SELECT TO authenticated
+  USING (organization_id = auth_org_id());
+
+CREATE POLICY "org_isolation_insert" ON inventory_transfers
+  FOR INSERT TO authenticated
+  WITH CHECK (organization_id = auth_org_id());
+
+CREATE POLICY "org_isolation_update" ON inventory_transfers
+  FOR UPDATE TO authenticated
+  USING  (organization_id = auth_org_id())
+  WITH CHECK (organization_id = auth_org_id());
+
+
+-- ── customers ─────────────────────────────────────────────────────────────────
+-- Soft-delete preferido (archived=true). Hard DELETE via service_role only.
 
 CREATE POLICY "org_isolation_select" ON customers
   FOR SELECT TO authenticated
@@ -390,31 +443,28 @@ CREATE POLICY "org_isolation_update" ON customers
   USING  (organization_id = auth_org_id())
   WITH CHECK (organization_id = auth_org_id());
 
--- Soft-delete preferred (archived=true). Hard DELETE is admin only.
 CREATE POLICY "org_isolation_delete" ON customers
   FOR DELETE TO authenticated
   USING (organization_id = auth_org_id());
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- Step 5: Validation queries
+-- Step 5: Validação
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- List all RLS policies created (expected: ~30 rows)
+-- 5a. Listar todas as policies criadas (esperado: ~32 rows)
 SELECT
-  schemaname,
   tablename,
   policyname,
-  permissive,
-  roles,
   cmd,
+  roles,
   qual,
   with_check
 FROM pg_policies
 WHERE schemaname = 'public'
 ORDER BY tablename, cmd;
 
--- Verify RLS is enabled on all expected tables
+-- 5b. Verificar que RLS está habilitado em todas as tabelas esperadas
 SELECT
   tablename,
   rowsecurity AS rls_enabled
@@ -423,40 +473,63 @@ WHERE schemaname = 'public'
   AND tablename IN (
     'organizations', 'locations', 'users', 'user_location_access',
     'categories', 'products', 'inventory_stock',
-    'sales', 'sale_items', 'payments', 'inventory_movements', 'customers'
+    'sales', 'sale_items', 'payments', 'inventory_movements',
+    'clock_records', 'inventory_transfers', 'customers'
   )
 ORDER BY tablename;
+-- Esperado: rls_enabled = true para todas as 14 tabelas.
 
--- Test isolation: simulate authenticated role with a known org_id
--- (Replace with your actual org UUID and run in SQL Editor as postgres/service_role)
+-- 5c. Testar isolamento com JWT simulado
+-- (Executar como postgres/service_role no SQL Editor):
 --
--- SET request.jwt.claims = '{"sub": "machine-uuid", "role": "authenticated", "app_metadata": {"org_id": "<YOUR_ORG_UUID>"}}';
--- SELECT COUNT(*) FROM sales;      -- Should return your org's row count
--- SELECT COUNT(*) FROM products;   -- Should return your org's row count
+-- SET LOCAL request.jwt.claims = '{"sub":"machine","role":"authenticated","app_metadata":{"org_id":"<SEU_ORG_UUID>"}}';
+-- SELECT COUNT(*) FROM sales;        -- deve retornar sua contagem real
+-- SELECT COUNT(*) FROM products;     -- deve retornar sua contagem real
+-- SELECT COUNT(*) FROM clock_records;-- deve retornar sua contagem real
 --
--- SET request.jwt.claims = '{"sub": "other-uuid", "role": "authenticated", "app_metadata": {"org_id": "00000000-0000-0000-0000-000000000000"}}';
--- SELECT COUNT(*) FROM sales;      -- Should return 0 (no rows for fake org)
--- SELECT COUNT(*) FROM products;   -- Should return 0
+-- SET LOCAL request.jwt.claims = '{"sub":"outro","role":"authenticated","app_metadata":{"org_id":"00000000-0000-0000-0000-000000000000"}}';
+-- SELECT COUNT(*) FROM sales;        -- deve retornar 0 (org inexistente)
+-- SELECT COUNT(*) FROM products;     -- deve retornar 0
+--
+-- SET LOCAL request.jwt.claims = '{"sub":"anon","role":"anon"}';
+-- SELECT COUNT(*) FROM sales;        -- deve retornar 0 (anon bloqueado)
+
+-- 5d. Verificar que verify_employee_pin ainda funciona após RLS
+-- (Chamar pelo app — o RPC é SECURITY DEFINER, bypassa RLS)
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Known risks and future improvements:
+-- Riscos conhecidos e melhorias futuras
 --
--- 1. Column-level: users.pin / users.pin_hash are visible to authenticated role.
---    The app's fromSupabaseUser() strips them client-side. For full DB-level
---    protection, create a view (v_users) that excludes these columns and grant
---    SELECT only on the view, not the base table.
+-- 1. users.pin visível para authenticated:
+--    Com RLS ativo, a conta machine (authenticated) ainda pode ler a coluna pin.
+--    Mitigação atual: fromSupabaseUser() remove pin antes de retornar ao client.
+--    Mitigação futura: criar view v_users sem a coluna pin + REVOKE SELECT na
+--    tabela base + GRANT SELECT na view. Não bloqueante para o go-live.
 --
--- 2. sale_items / payments: no organization_id column — isolation via correlated
---    subquery. At scale, consider adding organization_id to both tables and
---    creating a direct policy. Current approach is correct and fast enough for
---    a kiosk with thousands (not millions) of rows.
+-- 2. sale_items / payments sem organization_id:
+--    Isolamento via subquery correlated (EXISTS SELECT 1 FROM sales ...).
+--    Correto e eficiente para volume de kiosk (milhares, não milhões de rows).
+--    Melhoria futura: adicionar organization_id nas duas tabelas para
+--    policy direta (evita o JOIN). Requer migration de dados.
 --
--- 3. anon role: ALL tables are blocked for anon (no anon policies created).
---    Only the verify_employee_pin RPC (SECURITY DEFINER) is callable by anon.
---    The app falls back to localStorage when Supabase reads are blocked.
+-- 3. Isolamento por location (não implementado):
+--    A conta machine é org-level, não location-level.
+--    Ambos os kiosks usam o mesmo JWT com o mesmo org_id.
+--    O filtro por location é feito client-side (e.g. &location_name=eq.X).
+--    Para isolamento por location no banco, seria necessário um JWT por kiosk
+--    e policies com location_id na claim — complexidade alta, benefício baixo
+--    para um negócio de 2 kiosks com o mesmo dono.
 --
--- 4. Token refresh: the machine account JWT expires (default 1 hour in Supabase).
---    The frontend schedules a token refresh before expiry. If refresh fails,
---    Supabase reads will fail until the next successful sign-in (app restart).
+-- 4. Expiração do token:
+--    O JWT da conta machine expira (padrão 1h no Supabase).
+--    O frontend agenda refresh automático 2min antes do vencimento.
+--    Se o refresh falhar, o app cai para localStorage até o próximo restart.
+--    Monitorar o console para '[Fluxe] Token refresh failed'.
+--
+-- 5. verify_employee_pin ainda usa pin texto puro:
+--    A migração para bcrypt (phase6_pin_hash.sql) é separada desta.
+--    RLS protege contra leitura direta da tabela users via REST API.
+--    A comparação plaintext dentro do RPC SECURITY DEFINER é aceitável
+--    para go-live, mas deve ser migrada para bcrypt antes de escalar.
 -- ─────────────────────────────────────────────────────────────────────────────

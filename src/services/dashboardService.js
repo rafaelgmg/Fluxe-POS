@@ -6,7 +6,6 @@
  * This makes them easy to test and reuse across components.
  */
 
-import { loadClockRecords } from '../utils/clockStorage'
 
 // ── Date preset builders ──────────────────────────────────────────────────────
 
@@ -49,21 +48,16 @@ export function filterSales(sales, { from, to, locationId }) {
 // ── KPI aggregation ───────────────────────────────────────────────────────────
 
 /**
- * @param {object[]} sales     — filtered sales
- * @param {object[]} products  — all products (for costPrice lookup)
+ * @param {object[]} sales — filtered sales (each item must carry costPrice snapshot)
  */
-export function calcKPIs(sales, products = []) {
-  const costMap = Object.fromEntries(
-    products.map(p => [p.barcode, parseFloat(p.costPrice) || 0])
-  )
-
+export function calcKPIs(sales) {
   let net = 0, gross = 0, invCost = 0
 
   for (const s of sales) {
     net   += s.subtotal || 0
     gross += s.total    || 0
     for (const item of (s.items || [])) {
-      invCost += (item.qty || 0) * (costMap[item.barcode] || 0)
+      invCost += (item.qty || 0) * (item.costPrice || 0)
     }
   }
 
@@ -135,9 +129,19 @@ export function byPaymentMethod(sales) {
 
 // ── Clock In / Who is at Work ─────────────────────────────────────────────────
 
-export function whoIsAtWork() {
+/**
+ * Derive active clock-ins from a records array (Supabase-sourced).
+ * Applies a today guard as a safety net in case stale records slip through.
+ *
+ * @param {object[]} records  — from fetchTodayClockRecords (normalized)
+ * @param {string|null} locationName — when set, filters to that location only
+ */
+export function whoIsAtWork(records = [], locationName = null) {
   const today = new Date().toDateString()
-  return loadClockRecords()
-    .filter(r => new Date(r.clockIn).toDateString() === today && !r.clockOut)
-    .map(r => ({ employee: r.employee, clockIn: r.clockIn }))
+  return records.filter(r => {
+    if (new Date(r.clockIn).toDateString() !== today) return false
+    if (r.clockOut) return false
+    if (locationName && r.location && r.location !== locationName) return false
+    return true
+  }).map(r => ({ employee: r.employee, location: r.location || '', clockIn: r.clockIn }))
 }

@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
+import { fetchTodayClockRecords } from '../services/supabaseRead'
 import {
   buildPreset, filterSales, calcKPIs,
   byLocation, byEmployee, byProduct, byPaymentMethod,
@@ -128,13 +129,14 @@ const PRESETS = [
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 
-export default function Dashboard({ onClose, sales = [], products = [] }) {
+export default function Dashboard({ onClose, sales = [] }) {
   // ── Filter state ────────────────────────────────────────────────────────────
-  const [preset,     setPreset]     = useState('today')
-  const [customFrom, setCustomFrom] = useState('')
-  const [customTo,   setCustomTo]   = useState('')
-  const [locationId, setLocationId] = useState('all')
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [preset,        setPreset]        = useState('today')
+  const [customFrom,    setCustomFrom]    = useState('')
+  const [customTo,      setCustomTo]      = useState('')
+  const [locationId,    setLocationId]    = useState('all')
+  const [refreshKey,    setRefreshKey]    = useState(0)
+  const [clockRecords,  setClockRecords]  = useState([])
 
   // ── Derived date range ──────────────────────────────────────────────────────
   const { from, to } = useMemo(() => {
@@ -153,24 +155,32 @@ export default function Dashboard({ onClose, sales = [], products = [] }) {
     [sales, from, to, locationId, refreshKey]
   )
 
-  const kpis        = useMemo(() => calcKPIs(filtered, products),    [filtered, products])
+  const kpis        = useMemo(() => calcKPIs(filtered),              [filtered])
   const locRows     = useMemo(() => byLocation(filtered),            [filtered])
   const empRows     = useMemo(() => byEmployee(filtered),            [filtered])
   const prodRows    = useMemo(() => byProduct(filtered),             [filtered])
   const methodRows  = useMemo(() => byPaymentMethod(filtered),       [filtered])
-  const atWork      = useMemo(() => whoIsAtWork(),                   [refreshKey])
+  const atWork      = useMemo(
+    () => whoIsAtWork(clockRecords, locationId !== 'all' ? locationId : null),
+    [clockRecords, locationId]
+  )
 
   const recentSales = useMemo(
     () => [...filtered].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 50),
     [filtered]
   )
 
+  // Fetch clock records from Supabase on mount and on every manual refresh
+  useEffect(() => {
+    fetchTodayClockRecords().then(records => { if (records) setClockRecords(records) })
+  }, [refreshKey])
+
   const handleRefresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
   // ── Location options ────────────────────────────────────────────────────────
   const locationOptions = [
     { id: 'all', name: 'All Locations' },
-    ...LOCATIONS_CFG.map(l => ({ id: l.id, name: l.name })),
+    ...LOCATIONS_CFG.map(l => ({ id: l.name, name: l.name })),
   ]
 
   return (
@@ -361,7 +371,9 @@ export default function Dashboard({ onClose, sales = [], products = [] }) {
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }} />
                     <div>
                       <p style={{ fontSize: 13, color: TEXT, fontWeight: 600 }}>{w.employee}</p>
-                      <p style={{ fontSize: 11, color: MUTED }}>Since {fmtTime(w.clockIn)}</p>
+                      <p style={{ fontSize: 11, color: MUTED }}>
+                        {w.location ? `${w.location} · ` : ''}Since {fmtTime(w.clockIn)}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -369,7 +381,7 @@ export default function Dashboard({ onClose, sales = [], products = [] }) {
             )
           }
           <p style={{ fontSize: 10, color: '#334155', marginTop: 10 }}>
-            ℹ️ Clock-in data is local per kiosk — cross-kiosk sync planned for Phase 2.
+            ℹ️ Data refreshed from Supabase — click Refresh to update.
           </p>
         </Panel>
 

@@ -17,9 +17,7 @@ export function hadStorageError() { return _corrupted }
 
 // ─── Default seed ─────────────────────────────────────────────────────────────
 const DEFAULT_USERS = [
-  { id: 1, firstName: 'Rafael',  lastName: '',        position: 'Manager', email: '',                           phone: '(702) 517-2206', pin: '1234', status: 'active', photo: null, createdAt: new Date().toISOString() },
-  { id: 2, firstName: 'Natalia', lastName: 'Menezes', position: 'Sales',   email: 'nataalia.menezes@gmail.com', phone: '(725) 256-5543', pin: '5678', status: 'active', photo: null, createdAt: new Date().toISOString() },
-  { id: 3, firstName: 'Nate',    lastName: '',        position: 'Sales',   email: '',                           phone: '',               pin: '9012', status: 'active', photo: null, createdAt: new Date().toISOString() },
+  { id: 1, firstName: 'Rafael', lastName: '', position: 'Manager', email: '', phone: '', pin: '', status: 'active', photo: null, createdAt: new Date().toISOString() },
 ]
 
 // ─── Schema migration: fills in missing fields from older formats ──────────────
@@ -103,15 +101,35 @@ export function loadActiveEmployees() {
 }
 
 /**
- * Async variant: tries Supabase first, falls back to loadUsers() on failure.
- * Use this from hooks/effects where async is acceptable.
- * Phase 1 only reads — no writes to Supabase.
+ * Async variant: fetches from Supabase, merges with local (preserving PINs),
+ * saves the merged result to localStorage, and returns it.
+ *
+ * Merge strategy:
+ *   - Remote provides fresh data (name, role, email, hourlyRate, status, etc.)
+ *   - Local provides PINs — Supabase never returns them (security)
+ *   - Match by supabaseId first, then by full name (case-insensitive)
+ *   - New employees from Supabase get pin: '' — they appear in lists but
+ *     cannot authenticate until their PIN is set locally (Phase 6: server RPC)
+ *
+ * Falls back to loadUsers() if Supabase is unavailable.
  */
 export async function loadUsersAsync() {
   try {
     const { fetchUsers } = await import('../services/supabaseRead')
     const remote = await fetchUsers()
-    if (remote) return remote
+    if (!remote || remote.length === 0) return loadUsers()
+
+    const local  = loadUsers()
+    const merged = remote.map(r => {
+      const match = local.find(l =>
+        l.supabaseId === r.id ||
+        `${l.firstName} ${l.lastName}`.trim().toLowerCase() ===
+        `${r.firstName} ${r.lastName}`.trim().toLowerCase()
+      )
+      return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '' }
+    })
+    saveUsers(merged)
+    return merged
   } catch {}
   return loadUsers()
 }

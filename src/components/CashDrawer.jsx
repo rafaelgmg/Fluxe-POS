@@ -10,6 +10,7 @@
 import { useState, useMemo } from 'react'
 import { localId } from '../domain/utils/ids'
 import { loadActiveEmployees } from '../utils/usersStorage'
+import { verifyEmployeePin } from '../services/supabaseAuth'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const BG     = '#020817'
@@ -84,14 +85,15 @@ function PinGate({ onUnlock, onClose }) {
   const [pin,   setPin]   = useState('')
   const [shake, setShake] = useState(false)
 
-  const press = (digit) => {
+  const press = async (digit) => {
     if (pin.length >= 4) return
     const next = pin + digit
     setPin(next)
     if (next.length === 4) {
       const emp = employees.find(e => e.id === selectedId)
-      if (emp && emp.pin === next) {
-        onUnlock(emp)
+      const result = emp ? await verifyEmployeePin(emp.name, next) : null
+      if (result) {
+        onUnlock(result)
       } else {
         setShake(true)
         setTimeout(() => { setPin(''); setShake(false) }, 700)

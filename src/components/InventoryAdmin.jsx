@@ -6,7 +6,8 @@ import { loadAllProducts, saveAllProducts } from '../utils/productsStorage'
 import { loadInventoryHistory, saveInventoryHistory } from '../utils/inventoryHistoryStorage'
 import { loadAllSales } from '../utils/salesStorage'
 import { localId } from '../domain/utils/ids'
-import { fetchProducts, fetchInventoryMovements } from '../services/supabaseRead'
+import { fetchProducts, fetchInventoryMovements, fetchRecentTransfers, getLocationUUID } from '../services/supabaseRead'
+import { sendTransfer, receiveTransfer } from '../services/supabaseWrite'
 
 function addEntry(setHistory, entry) {
   setHistory(prev => {
@@ -625,15 +626,21 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
 }
 
 // ─── Transfers View ───────────────────────────────────────────────────────────
-function TransfersView({ products, setProducts, history, setHistory }) {
-  const [fromLoc, setFromLoc] = useState(LOCATIONS_CFG[0].id)
-  const [toLoc, setToLoc]     = useState(LOCATIONS_CFG[1]?.id || LOCATIONS_CFG[0].id)
-  const [search, setSearch]   = useState('')
-  const [selected, setSelected] = useState(null)
-  const [qty, setQty]         = useState('')
-  const [note, setNote]       = useState('')
-  const [err, setErr]         = useState('')
-  const [toast, setToast]     = useState('')
+function TransfersView({ products, setProducts }) {
+  const [fromLoc, setFromLoc]       = useState(LOCATIONS_CFG[0].id)
+  const [toLoc, setToLoc]           = useState(LOCATIONS_CFG[1]?.id || LOCATIONS_CFG[0].id)
+  const [search, setSearch]         = useState('')
+  const [selected, setSelected]     = useState(null)
+  const [qty, setQty]               = useState('')
+  const [note, setNote]             = useState('')
+  const [err, setErr]               = useState('')
+  const [toast, setToast]           = useState('')
+  const [recentTransfers, setRecentTransfers] = useState([])
+  const [sending, setSending]       = useState(false)
+
+  useEffect(() => {
+    fetchRecentTransfers().then(rows => { if (rows) setRecentTransfers(rows) })
+  }, [])
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2400) }
 
@@ -647,36 +654,62 @@ function TransfersView({ products, setProducts, history, setHistory }) {
   const toName   = LOCATIONS_CFG.find(l => l.id === toLoc)?.name   || toLoc
   const availableAtFrom = selected ? (selected.qtyByLoc?.[fromLoc] ?? 0) : 0
 
-  const handleTransfer = () => {
+  const handleTransfer = async () => {
     if (!selected) { setErr('Select a product'); return }
     if (fromLoc === toLoc) { setErr('Source and destination must be different'); return }
     const n = parseInt(qty)
     if (!qty || isNaN(n) || n <= 0) { setErr('Enter a valid quantity'); return }
     if (n > availableAtFrom) { setErr(`Only ${availableAtFrom} units available at ${fromName}`); return }
     setErr('')
+    setSending(true)
 
-    setProducts(prev => {
-      const updated = prev.map(p => {
-        if (p.id !== selected.id) return p
-        const fromQty = (p.qtyByLoc?.[fromLoc] ?? 0) - n
-        const toQty   = (p.qtyByLoc?.[toLoc]   ?? 0) + n
-        const newQtyByLoc = { ...(p.qtyByLoc || {}), [fromLoc]: Math.max(0, fromQty), [toLoc]: toQty }
-        const newTotal = Object.values(newQtyByLoc).reduce((s, v) => s + (parseInt(v) || 0), 0)
-        return { ...p, qty: newTotal, qtyByLoc: newQtyByLoc }
-      })
-      saveAllProducts(updated)
-      return updated
-    })
+    // Optimistic local update — both sides immediately
+    setProducts(prev => prev.map(p => {
+      if (p.id !== selected.id) return p
+      const newQtyByLoc = {
+        ...(p.qtyByLoc || {}),
+        [fromLoc]: Math.max(0, (p.qtyByLoc?.[fromLoc] ?? 0) - n),
+        [toLoc]:   (p.qtyByLoc?.[toLoc] ?? 0) + n,
+      }
+      return { ...p, qty: Object.values(newQtyByLoc).reduce((s, v) => s + (parseInt(v) || 0), 0), qtyByLoc: newQtyByLoc }
+    }))
 
-    addEntry(setHistory, {
-      type: 'transfer', productId: selected.id, productName: selected.name, barcode: selected.barcode,
-      locationId: fromLoc, locationName: fromName, fromLocationId: fromLoc, fromLocationName: fromName,
-      toLocationId: toLoc, toLocationName: toName, before: availableAtFrom, after: availableAtFrom - n,
-      delta: -n, note: note || '',
+    // Optimistic entry for immediate display
+    const optimistic = {
+      id:                 `local-${Date.now()}`,
+      product_name:       selected.name,
+      barcode:            selected.barcode,
+      qty:                n,
+      from_location_name: fromName,
+      to_location_name:   toName,
+      sent_by:            '',
+      sent_at:            new Date().toISOString(),
+      status:             'received',
+      note:               note || '',
+    }
+    setRecentTransfers(prev => [optimistic, ...prev])
+
+    // Fire-and-forget: send (deduct origin + create record + movement) then receive (add destination)
+    const fromUUID = getLocationUUID(fromLoc)
+    const toUUID   = getLocationUUID(toLoc)
+    sendTransfer({
+      productId:        selected.id,
+      productName:      selected.name,
+      barcode:          selected.barcode,
+      qty:              n,
+      fromLocationUUID: fromUUID,
+      fromLocationName: fromName,
+      toLocationUUID:   toUUID,
+      toLocationName:   toName,
+      sentBy:           '',
+      note:             note || '',
+    }).then(transferId => {
+      if (transferId) receiveTransfer({ id: transferId, product_id: selected.id, to_location_id: toUUID, qty: n })
     })
 
     showToast(`Transferred ${n}× ${selected.name} from ${fromName} to ${toName}`)
     setSelected(null); setSearch(''); setQty(''); setNote('')
+    setSending(false)
   }
 
   const inp = { padding: '8px 10px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
@@ -761,28 +794,32 @@ function TransfersView({ products, setProducts, history, setHistory }) {
 
         {err && <p style={{ color: RED, fontSize: 12, marginBottom: 12 }}>⚠️ {err}</p>}
 
-        <button onClick={handleTransfer} style={{
-          width: '100%', padding: '13px', background: BLUE, border: 'none', borderRadius: 6,
-          color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+        <button onClick={handleTransfer} disabled={sending} style={{
+          width: '100%', padding: '13px', background: sending ? '#1e3a6e' : BLUE, border: 'none', borderRadius: 6,
+          color: '#fff', fontSize: 14, fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer',
           boxShadow: '0 0 20px rgba(37,99,235,0.25)', transition: 'all 0.2s ease',
         }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8' }}
-          onMouseLeave={e => { e.currentTarget.style.background = BLUE }}
-        >→ Confirm Transfer</button>
+          onMouseEnter={e => { if (!sending) e.currentTarget.style.background = '#1d4ed8' }}
+          onMouseLeave={e => { if (!sending) e.currentTarget.style.background = BLUE }}
+        >{sending ? 'Sending...' : '→ Confirm Transfer'}</button>
 
-        {/* Recent transfers */}
-        {history.filter(h => h.type === 'transfer').length > 0 && (
+        {/* Recent transfers — sourced from Supabase inventory_transfers */}
+        {recentTransfers.length > 0 && (
           <div style={{ marginTop: 32 }}>
             <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 12 }}>RECENT TRANSFERS</p>
             <div style={{ borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-              {history.filter(h => h.type === 'transfer').slice(0, 8).map(h => (
-                <div key={h.id} style={{ padding: '10px 14px', borderBottom: `1px solid rgba(30,41,59,0.4)`, display: 'flex', gap: 12, alignItems: 'center' }}>
+              {recentTransfers.slice(0, 8).map(t => (
+                <div key={t.id} style={{ padding: '10px 14px', borderBottom: `1px solid rgba(30,41,59,0.4)`, display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span style={{ fontSize: 16 }}>→</span>
                   <div style={{ flex: 1 }}>
-                    <p style={{ color: TEXT, fontSize: 12, fontWeight: 600 }}>{h.productName}</p>
-                    <p style={{ color: MUTED, fontSize: 11 }}>{h.fromLocationName} → {h.toLocationName} · {Math.abs(h.delta)} units</p>
+                    <p style={{ color: TEXT, fontSize: 12, fontWeight: 600 }}>{t.product_name}</p>
+                    <p style={{ color: MUTED, fontSize: 11 }}>{t.from_location_name} → {t.to_location_name} · {t.qty} units</p>
                   </div>
-                  <span style={{ color: '#334155', fontSize: 10 }}>{fmtTs(h.timestamp)}</span>
+                  <span style={{
+                    color: t.status === 'received' ? GREEN : AMBER,
+                    fontSize: 10, fontWeight: 600, marginRight: 8,
+                  }}>{t.status}</span>
+                  <span style={{ color: '#334155', fontSize: 10 }}>{fmtTs(t.sent_at)}</span>
                 </div>
               ))}
             </div>
@@ -972,8 +1009,6 @@ export default function InventoryAdmin({ onClose, defaultView = 'management' }) 
         <TransfersView
           products={products}
           setProducts={setProducts}
-          history={history}
-          setHistory={setHistory}
         />
       )}
       {view === 'history' && (

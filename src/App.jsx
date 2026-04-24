@@ -9,6 +9,8 @@ import { loadCommissionTiers, loadSpareRate } from './utils/commissionTiersStora
 import { localDateKey } from './utils/dateUtils'
 import { printReceipt } from './utils/printReceipt'
 import { awaitOrgSession } from './services/supabaseAuth'
+import { getNextInvoiceNumber } from './services/supabaseRead'
+import { loadUsersAsync } from './utils/usersStorage'
 import { useCRM } from './hooks/useCRM'
 import { useSales, nextInvoiceNumber } from './hooks/useSales'
 import { useCart } from './hooks/useCart'
@@ -108,6 +110,10 @@ export default function App() {
     clearCart,
     loadCartItems,
   } = useCart({ products, location: posSession?.location || DEFAULT_LOCATION })
+
+  // Boot-time user sync: fetch from Supabase, merge with local PINs, save to localStorage.
+  // Runs once on mount — all subsequent loadActiveEmployees() calls get fresh data.
+  useEffect(() => { loadUsersAsync().catch(() => {}) }, [])
 
   // Tax rate — ID-first (stable), falls back to name lookup for legacy sessions without locationId
   const taxRate = posSession?.locationId
@@ -295,24 +301,31 @@ export default function App() {
     if (finalizingRef.current) return
     finalizingRef.current = true
 
+    // Resolve cross-kiosk invoice number from the shared Postgres sequence.
+    // Falls back to the locally-generated temp number when offline.
+    const realNumber   = await getNextInvoiceNumber(invoice.number)
+    const finalInvoice = realNumber !== invoice.number
+      ? { ...invoice, number: realNumber }
+      : invoice
+
     // Persist sale to localStorage + Supabase; get saleId for inventory chain (Phase 4)
-    const { saleId } = await saveSale(invoice)
+    const { saleId } = await saveSale(finalInvoice)
 
     // Decrement stock locally + write inventory_stock/movements to Supabase via saleId
-    decrementStock(invoice.items, posSession?.locationId || null, {
-      invoiceNumber: invoice.number,
-      locationName:  invoice.location,
-      employee:      invoice.employee,
+    decrementStock(finalInvoice.items, posSession?.locationId || null, {
+      invoiceNumber: finalInvoice.number,
+      locationName:  finalInvoice.location,
+      employee:      finalInvoice.employee,
     }, saleId)
 
-    setSaleComplete(invoice)
+    setSaleComplete(finalInvoice)
     clearCart()
     setSaleEmployee(null)   // clear sale-specific seller; session user (currentUser) is preserved
     setPendingInvoice(null)
 
     // Auto-print based on receiptAction selected in PaymentModal
-    if (invoice.receiptAction === 'print' || invoice.receiptAction === 'both') {
-      setTimeout(() => printReceipt(invoice), 80)
+    if (finalInvoice.receiptAction === 'print' || finalInvoice.receiptAction === 'both') {
+      setTimeout(() => printReceipt(finalInvoice), 80)
     }
   }
 
@@ -895,7 +908,7 @@ export default function App() {
         />
       )}
 
-      {showDashboard   && <Dashboard       onClose={() => setShowDashboard(false)}  sales={sales} products={products} />}
+      {showDashboard   && <Dashboard       onClose={() => setShowDashboard(false)}  sales={sales} />}
       {showEndOfDay    && <EndOfDayReport onClose={() => setShowEndOfDay(false)}   sales={sales} posSession={posSession} />}
       {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} />}
       {showCompetition && <Competition   onClose={() => setShowCompetition(false)} sales={sales} posSession={posSession} />}
@@ -908,7 +921,7 @@ export default function App() {
           location={posSession?.location || ''}
         />
       )}
-      {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}   />}
+      {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}  posSession={posSession} />}
       {showInventory   && <Inventory     onClose={() => setShowInventory(false)} products={products} />}
       {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} />}
       {showReceipts    && <Receipts      onClose={() => setShowReceipts(false)}    posSession={posSession} />}

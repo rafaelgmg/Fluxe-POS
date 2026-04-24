@@ -61,7 +61,10 @@ export function useProducts() {
         if (locId && saleId) {
           stockChanges.push({
             productId:    p.id,
+            productName:  p.name,
+            barcode:      p.barcode,
             locationUUID: getLocationUUID(locId),   // 'loc_01' → UUID (populated on boot)
+            locationName: saleInfo?.locationName || '',
             qtyBefore:    locBefore,
             qtyAfter:     locAfter,
           })

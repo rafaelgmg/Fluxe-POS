@@ -195,7 +195,7 @@ export async function verifyEmployeePin(employeeName, pin) {
           id:    u.id,
           name:  (`${u.first_name || ''} ${u.last_name || ''}`).replace(/\s+/g, ' ').trim() || employeeName,
           role:  localEmp?.role || (u.position || 'sales').toLowerCase(),
-          photo: u.photo || null,
+          photo: localEmp?.photo || null,
         }
       }
       // RPC succeeded but returned no rows → wrong PIN or unknown employee

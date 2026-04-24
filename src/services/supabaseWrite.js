@@ -210,24 +210,22 @@ export function toSupabaseSaleRow(invoice, orgId) {
  */
 export function toSupabaseSaleItemRows(items, saleId, orgId) {
   return (items || []).map(item => ({
-    organization_id: orgId,
-    sale_id:         saleId,
-    product_id:      isUUID(item.productId) ? item.productId : null,
-    category_id:     isUUID(item.categoryId) ? item.categoryId : null,
-    product_name:    item.name        || item.product?.name        || '',
-    barcode:         item.barcode     || item.product?.barcode     || '',
-    description:     item.description || item.product?.description || '',
-    size:            item.size        || item.product?.size        || '',
-    category_name:   item.category    || item.product?.category    || '',
-    qty:             item.qty         ?? 1,
-    unit_price:      item.systemPrice ?? item.salePrice            ?? 0,
-    sale_price:      item.salePrice   ?? 0,
-    system_price:    item.systemPrice ?? item.salePrice            ?? 0,
-    min_price:       item.minPrice    ?? item.product?.minPrice    ?? 0,
-    discount:        item.discount    ?? 0,
-    subtotal:        item.subtotal    ?? 0,
-    spare:           item.spare       ?? 0,
-    // NEVER include `delta` — it is GENERATED ALWAYS AS in inventory_movements
+    sale_id:       saleId,
+    product_id:    isUUID(item.productId)  ? item.productId  : null,
+    category_id:   isUUID(item.categoryId) ? item.categoryId : null,
+    name:          item.name        || item.product?.name        || '',
+    barcode:       item.barcode     || item.product?.barcode     || '',
+    description:   item.description || item.product?.description || '',
+    size:          item.size        || item.product?.size        || '',
+    category_name: item.category    || item.product?.category    || '',
+    qty:           item.qty         ?? 1,
+    sale_price:    item.salePrice   ?? 0,
+    system_price:  item.systemPrice ?? item.salePrice            ?? 0,
+    min_price:     item.minPrice    ?? item.product?.minPrice    ?? 0,
+    cost_price:    item.costPrice   ?? item.product?.costPrice   ?? 0,
+    discount:      item.discount    ?? 0,
+    subtotal:      item.subtotal    ?? 0,
+    spare:         item.spare       ?? 0,
   }))
 }
 
@@ -248,10 +246,9 @@ export function toSupabasePaymentRows(invoice, saleId, orgId) {
 
   return payments.map(p => {
     const row = {
-      organization_id: orgId,
-      sale_id:         saleId,
-      method:          resolveMethod(p.method),
-      amount:          p.amount ?? 0,
+      sale_id: saleId,
+      method:  resolveMethod(p.method),
+      amount:  p.amount ?? 0,
     }
     if (p.amountReceived      != null) row.amount_received      = p.amountReceived
     if (p.changeDue           != null) row.change_due           = p.changeDue
@@ -365,21 +362,166 @@ export async function writeInventoryToSupabase(stockChanges, meta) {
     if (!saleId) return
 
     const movementRows = valid.map(sc => ({
-      organization_id: orgId,
-      product_id:      sc.productId,
-      location_id:     sc.locationUUID,
-      type:            'sale',
-      qty_before:      sc.qtyBefore,
-      qty_after:       sc.qtyAfter,
+      organization_id:    orgId,
+      product_id:         sc.productId,
+      location_id:        sc.locationUUID,
+      type:               'sale',
+      qty_before:         sc.qtyBefore,
+      qty_after:          sc.qtyAfter,
       // delta MUST NOT be included — GENERATED ALWAYS AS (qty_after - qty_before) STORED
       note,
-      sale_id:         saleId,
-      performed_by_id: isUUID(performedById) ? performedById : null,
+      sale_id:            saleId,
+      performed_by_id:    isUUID(performedById) ? performedById : null,
+      product_name_snap:  sc.productName  || '',
+      barcode_snap:       sc.barcode      || '',
+      location_name_snap: sc.locationName || '',
+      performed_by_snap:  '',
     }))
 
     await sbPost('/inventory_movements', movementRows, 'return=minimal')
   } catch (err) {
     console.warn('[Fluxe] Inventory write to Supabase failed — local copy is source of truth:', err.message)
+  }
+}
+
+/**
+ * Write a manual stock adjustment to Supabase (Update Count, Damage/Loss, Transfer receive).
+ * Unlike writeInventoryToSupabase, this does NOT require a saleId.
+ *
+ * @param {object[]} stockChanges  [{ productId, locationUUID, qtyBefore, qtyAfter }]
+ * @param {object}   meta          { type, note, performedById }
+ *   type: 'adjustment' | 'removal' | 'transfer' | 'count_set' (inventory_movement_type ENUM)
+ */
+export async function writeStockAdjustment(stockChanges, { type = 'adjustment', note = '', performedById = null } = {}) {
+  if (!isSupabaseConfigured()) return
+  if (!stockChanges?.length) return
+  try {
+    const orgId = await getOrgId()
+    const valid = stockChanges.filter(sc => isUUID(sc.productId) && isUUID(sc.locationUUID))
+    if (!valid.length) return
+
+    await Promise.all(valid.map(sc =>
+      sbPatch(
+        `/inventory_stock?product_id=eq.${sc.productId}&location_id=eq.${sc.locationUUID}`,
+        { qty: sc.qtyAfter }
+      )
+    ))
+
+    const movementRows = valid.map(sc => ({
+      organization_id:    orgId,
+      product_id:         sc.productId,
+      location_id:        sc.locationUUID,
+      type,
+      qty_before:         sc.qtyBefore,
+      qty_after:          sc.qtyAfter,
+      note,
+      performed_by_id:    isUUID(performedById) ? performedById : null,
+      product_name_snap:  sc.productName  || '',
+      barcode_snap:       sc.barcode      || '',
+      location_name_snap: sc.locationName || '',
+      performed_by_snap:  '',
+    }))
+    await sbPost('/inventory_movements', movementRows, 'return=minimal')
+  } catch (err) {
+    console.warn('[Fluxe] Stock adjustment failed — local copy is source of truth:', err.message)
+  }
+}
+
+/**
+ * Record a stock transfer between two locations.
+ * Deducts from origin, creates transfer record, inserts inventory_movement.
+ * The destination stock is updated when receiveTransfer() is called.
+ */
+export async function sendTransfer({ productId, productName, barcode, qty, fromLocationUUID, fromLocationName, toLocationUUID, toLocationName, sentBy, note }) {
+  if (!isSupabaseConfigured()) return null
+  if (!isUUID(productId) || !isUUID(fromLocationUUID) || !isUUID(toLocationUUID)) return null
+  try {
+    const orgId = await getOrgId()
+
+    // Fetch current qty at origin
+    const stockRows = await sbGet(
+      `/inventory_stock?product_id=eq.${productId}&location_id=eq.${fromLocationUUID}&select=qty&limit=1`
+    )
+    const qtyBefore = stockRows?.[0]?.qty ?? 0
+    const qtyAfter  = Math.max(0, qtyBefore - qty)
+
+    // Deduct from origin
+    await sbPatch(
+      `/inventory_stock?product_id=eq.${productId}&location_id=eq.${fromLocationUUID}`,
+      { qty: qtyAfter }
+    )
+
+    // Create transfer record
+    const rows = await sbPost('/inventory_transfers', [{
+      organization_id:    orgId,
+      from_location_id:   fromLocationUUID,
+      from_location_name: fromLocationName,
+      to_location_id:     toLocationUUID,
+      to_location_name:   toLocationName,
+      product_id:         productId,
+      product_name:       productName,
+      barcode,
+      qty,
+      note:    note   || '',
+      sent_by: sentBy || '',
+      status:  'sent',
+    }], 'return=representation')
+
+    // Insert inventory_movement (origin side; type='transfer' requires to_location_id)
+    await sbPost('/inventory_movements', [{
+      organization_id:    orgId,
+      product_id:         productId,
+      location_id:        fromLocationUUID,
+      to_location_id:     toLocationUUID,
+      type:               'transfer',
+      qty_before:         qtyBefore,
+      qty_after:          qtyAfter,
+      note:               `Transfer to ${toLocationName}${note ? ` — ${note}` : ''}`,
+      product_name_snap:  productName,
+      barcode_snap:       barcode,
+      location_name_snap: fromLocationName,
+      performed_by_snap:  sentBy || '',
+    }], 'return=minimal')
+
+    return Array.isArray(rows) ? rows[0]?.id : null
+  } catch (err) {
+    console.warn('[Fluxe] sendTransfer failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Receive a pending transfer: add qty to destination inventory_stock
+ * and mark the transfer record as received.
+ */
+export async function receiveTransfer(transfer) {
+  if (!isSupabaseConfigured()) return false
+  if (!isUUID(transfer?.product_id) || !isUUID(transfer?.to_location_id)) return false
+  try {
+    const { id, product_id, to_location_id, qty } = transfer
+
+    // Fetch current qty at destination
+    const stockRows = await sbGet(
+      `/inventory_stock?product_id=eq.${product_id}&location_id=eq.${to_location_id}&select=qty&limit=1`
+    )
+    const qtyBefore = stockRows?.[0]?.qty ?? 0
+
+    // Add to destination
+    await sbPatch(
+      `/inventory_stock?product_id=eq.${product_id}&location_id=eq.${to_location_id}`,
+      { qty: qtyBefore + qty }
+    )
+
+    // Mark as received
+    await sbPatch(`/inventory_transfers?id=eq.${id}`, {
+      status:      'received',
+      received_at: new Date().toISOString(),
+    })
+
+    return true
+  } catch (err) {
+    console.warn('[Fluxe] receiveTransfer failed:', err.message)
+    return false
   }
 }
 
@@ -485,16 +627,20 @@ export async function voidSaleInSupabase(invoice, meta = {}) {
     }
 
     const movementRows = stockData.map(({ item, qtyBefore }) => ({
-      organization_id: orgId,
-      product_id:      item.productId,
-      location_id:     locationUUID,
-      type:            'refund',
-      qty_before:      qtyBefore,
-      qty_after:       qtyBefore + (item.qty ?? 1),
+      organization_id:    orgId,
+      product_id:         item.productId,
+      location_id:        locationUUID,
+      type:               'refund',
+      qty_before:         qtyBefore,
+      qty_after:          qtyBefore + (item.qty ?? 1),
       // delta is GENERATED ALWAYS AS (qty_after - qty_before) — never include it
-      note:            `Void/Refund Invoice #${invoice.number}`,
-      sale_id:         saleId,
-      performed_by_id: isUUID(performedById) ? performedById : null,
+      note:               `Void/Refund Invoice #${invoice.number}`,
+      sale_id:            saleId,
+      performed_by_id:    isUUID(performedById) ? performedById : null,
+      product_name_snap:  item.productName || item.name || '',
+      barcode_snap:       item.barcode     || '',
+      location_name_snap: invoice.location || '',
+      performed_by_snap:  meta.employeeName || '',
     }))
 
     await sbPost('/inventory_movements', movementRows, 'return=minimal')
@@ -639,18 +785,69 @@ export async function upsertUserToSupabase(user) {
       position:        user.position   || 'Sales',
       email:           user.email      || '',
       phone:           user.phone      || '',
-      pin:             user.pin        || '',
       status:          user.status     || 'active',
       hourly_rate:     user.hourlyRate || 0,
     }
+    let supabaseId
     if (user.supabaseId) {
       await sbPatch(`/users?id=eq.${user.supabaseId}`, row)
-      return user.supabaseId
+      supabaseId = user.supabaseId
+    } else {
+      const inserted = await sbPost('/users', row, 'return=representation')
+      supabaseId = inserted?.id ?? null
     }
-    const inserted = await sbPost('/users', row, 'return=representation')
-    return inserted?.id ?? null
+    // Hash and store PIN server-side via RPC — plaintext never written to DB column
+    if (supabaseId && user.pin) {
+      await sbPost('/rpc/set_user_pin', { p_user_id: supabaseId, p_plain_pin: user.pin })
+        .catch(e => console.warn('[Fluxe] set_user_pin RPC failed:', e.message))
+    }
+    return supabaseId
   } catch (err) {
     console.warn('[Fluxe] upsertUserToSupabase failed:', err.message)
     return null
+  }
+}
+
+// ── Clock Records ─────────────────────────────────────────────────────────────
+
+/**
+ * Insert a clock-in record.
+ * Returns the Supabase UUID to store on the local record (for clock-out PATCH).
+ * Returns null on failure — local record is always saved first.
+ *
+ * @param {{ locationId: string|null, locationName: string, employeeName: string, clockIn: string }} opts
+ * @returns {Promise<string|null>}
+ */
+export async function insertClockRecord({ locationId, locationName, employeeName, clockIn }) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId = await getOrgId()
+    const row = await sbPost('/clock_records', {
+      organization_id: orgId,
+      location_id:     getLocationUUID(locationId) || null,
+      location_name:   locationName || '',
+      employee_name:   employeeName,
+      clock_in:        clockIn,
+    }, 'return=representation')
+    return row?.id ?? null
+  } catch (err) {
+    console.warn('[Fluxe] insertClockRecord failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Set clock_out on an existing clock record.
+ * Fire-and-forget — local record is already updated before this is called.
+ *
+ * @param {string} supabaseId  UUID returned from insertClockRecord
+ * @param {string} clockOut    ISO timestamp
+ */
+export async function patchClockOut(supabaseId, clockOut) {
+  if (!isSupabaseConfigured() || !supabaseId) return
+  try {
+    await sbPatch(`/clock_records?id=eq.${supabaseId}`, { clock_out: clockOut })
+  } catch (err) {
+    console.warn('[Fluxe] patchClockOut failed:', err.message)
   }
 }

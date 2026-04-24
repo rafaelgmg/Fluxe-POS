@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { loadClockRecords, saveClockRecords } from '../utils/clockStorage'
 import { localId } from '../domain/utils/ids'
+import { insertClockRecord, patchClockOut } from '../services/supabaseWrite'
+import { verifyEmployeePin } from '../services/supabaseAuth'
 function formatTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
@@ -12,7 +14,7 @@ function calcHours(clockIn, clockOut) {
   return `${h}h ${m}m`
 }
 
-export default function ClockInOut({ onClose }) {
+export default function ClockInOut({ onClose, posSession }) {
   const [employees,   setEmployees]   = useState(() => loadActiveEmployees())
   const [records,     setRecords]     = useState(loadClockRecords)
   const [selectedEmp, setSelectedEmp] = useState(() => loadActiveEmployees()[0]?.name ?? '')
@@ -45,24 +47,49 @@ export default function ClockInOut({ onClose }) {
     setPin(p => p + val)
   }
 
-  const handleAction = () => {
-    const emp = employees.find(e => e.name === selectedEmp)
-    if (!emp || emp.pin !== pin) {
+  const handleAction = async () => {
+    const verified = await verifyEmployeePin(selectedEmp, pin)
+    if (!verified) {
       setError('Incorrect PIN'); setPin(''); return
     }
     setError('')
     const active = clockedIn(selectedEmp)
     const ts = new Date().toISOString()
     let updated
+
     if (active) {
+      // ── Clock Out ────────────────────────────────────────────────────────────
       updated = records.map(r => r.id === active.id ? { ...r, clockOut: ts } : r)
+      saveClockRecords(updated)
+      setRecords(updated)
       setSuccess(`${selectedEmp} clocked out at ${formatTime(ts)}`)
+
+      // Fire-and-forget: PATCH clock_out in Supabase
+      if (active.supabaseId) patchClockOut(active.supabaseId, ts)
+
     } else {
-      updated = [...records, { id: localId('clk'), employee: selectedEmp, clockIn: ts, clockOut: null }]
+      // ── Clock In ─────────────────────────────────────────────────────────────
+      const localRec = { id: localId('clk'), employee: selectedEmp, clockIn: ts, clockOut: null }
+      updated = [...records, localRec]
+      saveClockRecords(updated)
+      setRecords(updated)
       setSuccess(`${selectedEmp} clocked in at ${formatTime(ts)}`)
+
+      // Fire-and-forget: INSERT in Supabase, then store supabaseId on local record
+      insertClockRecord({
+        locationId:   posSession?.locationId   || null,
+        locationName: posSession?.location     || '',
+        employeeName: selectedEmp,
+        clockIn:      ts,
+      }).then(supabaseId => {
+        if (!supabaseId) return
+        const current = loadClockRecords()
+        const patched = current.map(r => r.id === localRec.id ? { ...r, supabaseId } : r)
+        saveClockRecords(patched)
+        setRecords(patched)
+      })
     }
-    saveClockRecords(updated)
-    setRecords(updated)
+
     setPin('')
     setTimeout(() => setSuccess(''), 3000)
   }

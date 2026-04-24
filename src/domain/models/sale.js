@@ -100,5 +100,6 @@ export const SALE_ITEM_DEFAULTS = {
   discount:    0,
   spare:       0,
   minPrice:    0,
+  costPrice:   0,
   systemPrice: 0,
 }

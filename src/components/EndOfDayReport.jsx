@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { DEFAULT_LOCATION } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { loadCRM } from '../utils/crmStorage'
+import { fetchSalesByLocationAndDate, fetchClockRecordsByDate } from '../services/supabaseRead'
+import { byPaymentMethod } from '../services/dashboardService'
 
-// ── Design tokens (match system) ───────────────────────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const BG     = '#020817'
 const PANEL  = '#0a0f1e'
 const CARD   = '#0f172a'
@@ -16,14 +18,26 @@ const PURPLE = '#8b5cf6'
 const MUTED  = '#475569'
 const DIM    = '#94a3b8'
 const TEXT   = '#f1f5f9'
+const ORANGE = '#f97316'
+const CYAN   = '#06b6d4'
 
-const fmt$ = (n) => `$${(n || 0).toFixed(2)}`
-
-function fmtTime(ts) {
-  return new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+const fmt$    = (n) => `$${(n || 0).toFixed(2)}`
+const fmtTime = (ts) => new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+const fmtHrs  = (h) => {
+  const hh = Math.floor(h)
+  const mm = Math.round((h - hh) * 60)
+  return `${hh}h ${String(mm).padStart(2, '0')}m`
 }
 
-// ── Minimal SVG donut chart ────────────────────────────────────────────────────
+function dateToInput(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+function inputToDate(s) {
+  const [y, m, d] = s.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+// ── Minimal SVG donut chart ───────────────────────────────────────────────────
 function DonutChart({ slices, size = 100 }) {
   const total = slices.reduce((s, x) => s + x.value, 0)
   if (total === 0) return (
@@ -35,110 +49,175 @@ function DonutChart({ slices, size = 100 }) {
   let angle = -Math.PI / 2
   const paths = slices.filter(s => s.value > 0).map(s => {
     const sweep = (s.value / total) * 2 * Math.PI
-    const x1 = cx + r * Math.cos(angle)
-    const y1 = cy + r * Math.sin(angle)
+    const x1 = cx + r * Math.cos(angle); const y1 = cy + r * Math.sin(angle)
     angle += sweep
-    const x2 = cx + r * Math.cos(angle)
-    const y2 = cy + r * Math.sin(angle)
+    const x2 = cx + r * Math.cos(angle); const y2 = cy + r * Math.sin(angle)
     const large = sweep > Math.PI ? 1 : 0
-    return { d: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, color: s.color, label: s.label, value: s.value }
+    return { d: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, color: s.color }
   })
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={CARD} strokeWidth={stroke} />
-      {paths.map((p, i) => (
-        <path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth={stroke} strokeLinecap="butt" />
-      ))}
+      {paths.map((p, i) => <path key={i} d={p.d} fill="none" stroke={p.color} strokeWidth={stroke} strokeLinecap="butt" />)}
       <circle cx={cx} cy={cy} r={r - stroke / 2} fill={PANEL} />
       <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fill={TEXT} fontSize="11" fontWeight="700">
-        {slices.length}
+        {slices.filter(s => s.value > 0).length}
       </text>
-      <text x={cx} y={cy + 11} textAnchor="middle" dominantBaseline="middle" fill={MUTED} fontSize="7">
-        methods
-      </text>
+      <text x={cx} y={cy + 11} textAnchor="middle" dominantBaseline="middle" fill={MUTED} fontSize="7">methods</text>
     </svg>
   )
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
 export default function EndOfDayReport({ onClose, sales = [], posSession }) {
-  const [notes, setNotes]     = useState('')
-  const [saved, setSaved]     = useState(false)
-  const [section, setSection] = useState('overview') // 'overview' | 'invoices'
+  const [notes, setNotes]               = useState('')
+  const [saved, setSaved]               = useState(false)
+  const [section, setSection]           = useState('overview')
+  const [selectedDate, setSelectedDate] = useState(() => dateToInput(new Date()))
+  const [rawSales, setRawSales]         = useState(null)    // null = not yet fetched
+  const [clockRecords, setClockRecords] = useState(null)
+  const [dataSource, setDataSource]     = useState('loading') // 'loading' | 'supabase' | 'local'
 
-  const location  = posSession?.location || DEFAULT_LOCATION
-  const locCfg    = loadLocationConfig(location)
+  const location   = posSession?.location || DEFAULT_LOCATION
+  const locCfg     = loadLocationConfig(location)
   const taxRatePct = locCfg?.taxRate ?? 8.5
-  const taxLabel  = locCfg?.taxDisplayAs || 'TAX'
+  const taxLabel   = locCfg?.taxDisplayAs || 'TAX'
+  const isToday    = selectedDate === dateToInput(new Date())
 
-  const today = new Date()
-  const todaySales = useMemo(() => sales.filter(s => {
-    const d = new Date(s.timestamp)
-    return (
-      d.getFullYear() === today.getFullYear() &&
-      d.getMonth()    === today.getMonth()    &&
-      d.getDate()     === today.getDate()     &&
-      s.status !== 'voided'
-    )
-  }), [sales]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Metrics ────────────────────────────────────────────────────────────────
-  const netRevenue   = todaySales.reduce((s, x) => s + (x.subtotal || 0), 0)
-  const taxRevenue   = todaySales.reduce((s, x) => s + (x.tax || 0), 0)
-  const grossRevenue = todaySales.reduce((s, x) => s + (x.total || 0), 0)
-  const totalSpare   = todaySales.reduce((s, x) => s + (x.totalSpare || 0), 0)
-
-  // ── Payment breakdown ──────────────────────────────────────────────────────
-  const payMethods = useMemo(() => {
-    const map = {}
-    todaySales.forEach(s => {
-      const m = s.paymentMethod || 'Other'
-      map[m] = (map[m] || 0) + s.total
+  // ── Fetch fresh data from Supabase on open and on date change ────────────────
+  // Immediately shows local-prop data while fetching (no blank loading screen).
+  // On success: replaces with Supabase data (accurate, location-filtered).
+  // On failure: silently stays on local data.
+  useEffect(() => {
+    setDataSource('loading')
+    setRawSales(null)
+    setClockRecords(null)
+    const date = inputToDate(selectedDate)
+    Promise.all([
+      fetchSalesByLocationAndDate({ locationName: location, date }),
+      fetchClockRecordsByDate({ locationName: location, date }),
+    ]).then(([salesRows, clockRows]) => {
+      setRawSales(salesRows)
+      setClockRecords(clockRows)
+      setDataSource(salesRows !== null ? 'supabase' : 'local')
     })
-    const colors = ['#22c55e', '#2563eb', '#8b5cf6', '#f59e0b', '#06b6d4']
-    return Object.entries(map)
-      .sort((a, b) => b[1] - a[1])
-      .map(([label, value], i) => ({ label, value, color: colors[i % colors.length] }))
-  }, [todaySales])
+  }, [location, selectedDate])
 
-  // ── Sales by employee ──────────────────────────────────────────────────────
-  const byEmployee = useMemo(() => {
+  // ── Data source resolution ────────────────────────────────────────────────────
+  // While rawSales is null (Supabase not yet answered), use local prop as preview.
+  const allDaySales = useMemo(() => {
+    if (rawSales !== null) return rawSales
+    const dateObj = inputToDate(selectedDate)
+    return (sales || []).filter(s => {
+      const d = new Date(s.timestamp)
+      return (
+        d.getFullYear() === dateObj.getFullYear() &&
+        d.getMonth()    === dateObj.getMonth()    &&
+        d.getDate()     === dateObj.getDate()     &&
+        (!location || s.location === location)
+      )
+    })
+  }, [rawSales, sales, selectedDate, location])
+
+  const activeSales = useMemo(
+    () => allDaySales.filter(s => s.status !== 'voided' && s.status !== 'deleted'),
+    [allDaySales]
+  )
+  const voidedSales = useMemo(
+    () => allDaySales.filter(s => s.status === 'voided' || s.status === 'deleted'),
+    [allDaySales]
+  )
+
+  // ── KPI metrics ──────────────────────────────────────────────────────────────
+  const netRevenue      = activeSales.reduce((s, x) => s + (x.subtotal || 0), 0)
+  const taxRevenue      = activeSales.reduce((s, x) => s + (x.tax || 0), 0)
+  const grossRevenue    = activeSales.reduce((s, x) => s + (x.total || 0), 0)
+  const totalSpare      = activeSales.reduce((s, x) => s + (x.totalSpare || 0), 0)
+  const totalCommission = activeSales.reduce(
+    (s, x) => s + (x.commissionSnapshot?.commissionAtSale || 0), 0
+  )
+  const inventoryCost   = activeSales.reduce(
+    (s, x) => s + (x.items || []).reduce((si, item) => si + (item.qty || 0) * (item.costPrice || 0), 0), 0
+  )
+  const refundAmount    = voidedSales.reduce((s, x) => s + (x.total || 0), 0)
+
+  // ── Payment breakdown ─────────────────────────────────────────────────────────
+  // Uses the payments[] array so split-payment sales are counted correctly.
+  const payMethods = useMemo(() => {
+    const PAY_COLORS = { cash: GREEN, card: BLUE, external: PURPLE, check: AMBER }
+    return byPaymentMethod(activeSales).map((m, i) => ({
+      label: m.label,
+      value: m.total,
+      color: PAY_COLORS[m.label] || [GREEN, BLUE, PURPLE, AMBER, CYAN][i % 5],
+    }))
+  }, [activeSales])
+
+  // ── By employee (sales + spare + commission) ──────────────────────────────────
+  const byEmployeeData = useMemo(() => {
     const map = {}
-    todaySales.forEach(s => {
-      if (!map[s.employee]) map[s.employee] = { name: s.employee, subtotal: 0, count: 0 }
-      map[s.employee].subtotal += s.subtotal || 0
-      map[s.employee].count    += 1
+    activeSales.forEach(s => {
+      const name = s.employee || 'Unknown'
+      if (!map[name]) map[name] = { name, subtotal: 0, count: 0, spare: 0, commission: 0 }
+      map[name].subtotal   += s.subtotal || 0
+      map[name].count      += 1
+      map[name].spare      += s.totalSpare || 0
+      map[name].commission += s.commissionSnapshot?.commissionAtSale || 0
     })
     return Object.values(map).sort((a, b) => b.subtotal - a.subtotal)
-  }, [todaySales])
+  }, [activeSales])
 
-  const maxEmp = Math.max(...byEmployee.map(e => e.subtotal), 1)
+  // ── Clock hours per employee ──────────────────────────────────────────────────
+  // For today: open clock-ins count up to now.
+  // For past dates: open clock-ins (no clockOut) are excluded — shift wasn't closed.
+  const clockHoursMap = useMemo(() => {
+    if (!clockRecords) return null
+    const map = {}
+    clockRecords.forEach(r => {
+      if (!map[r.employee]) map[r.employee] = 0
+      const end = r.clockOut ? new Date(r.clockOut) : (isToday ? new Date() : null)
+      if (!end) return
+      map[r.employee] += Math.max(0, (end - new Date(r.clockIn)) / 3_600_000)
+    })
+    return map
+  }, [clockRecords, isToday])
 
-  // ── Products sold ──────────────────────────────────────────────────────────
+  // Merged employee rows: sales employees + clock-only employees
+  const employeeRows = useMemo(() => {
+    const rows = byEmployeeData.map(e => ({ ...e }))
+    if (clockHoursMap) {
+      Object.keys(clockHoursMap).forEach(name => {
+        if (!rows.find(r => r.name === name)) {
+          rows.push({ name, subtotal: 0, count: 0, spare: 0, commission: 0 })
+        }
+      })
+    }
+    return rows.sort((a, b) => b.subtotal - a.subtotal)
+  }, [byEmployeeData, clockHoursMap])
+
+  // ── Top products ──────────────────────────────────────────────────────────────
   const topProducts = useMemo(() => {
     const map = {}
-    todaySales.flatMap(s => s.items || []).forEach(item => {
+    activeSales.flatMap(s => s.items || []).forEach(item => {
       const name = item.product?.name || item.name || 'Unknown'
       map[name] = (map[name] || 0) + Math.max(0, item.qty || 1)
     })
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8)
-  }, [todaySales])
+  }, [activeSales])
 
-  // ── CRM: new customers captured today at this location ────────────────────
+  // ── CRM: new customers for the selected date at this location ─────────────────
   const todayNewCustomers = useMemo(() => {
+    const dateObj = inputToDate(selectedDate)
     return loadCRM().filter(c => {
       const d = new Date(c.createdAt || c.capturedAt || 0)
-      const sameDay = (
-        d.getFullYear() === today.getFullYear() &&
-        d.getMonth()    === today.getMonth()    &&
-        d.getDate()     === today.getDate()
+      return (
+        d.getFullYear() === dateObj.getFullYear() &&
+        d.getMonth()    === dateObj.getMonth()    &&
+        d.getDate()     === dateObj.getDate()     &&
+        (!c.capturedLocation || c.capturedLocation === location)
       )
-      // Filter by location when capturedLocation is set; if empty, include it
-      const sameLocation = !c.capturedLocation || c.capturedLocation === location
-      return sameDay && sameLocation
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedDate, location])
 
-  // ── Leads per employee (from CRM capturedBy) ──────────────────────────────
   const leadsByEmployee = useMemo(() => {
     const map = {}
     todayNewCustomers.forEach(c => {
@@ -150,9 +229,11 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
 
   const maxLeads = Math.max(...leadsByEmployee.map(([, n]) => n), 1)
 
-  const todayLabel = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-  const printedAt  = today.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  const hasData    = todaySales.length > 0
+  const dateLabel = inputToDate(selectedDate).toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  })
+  const printedAt = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  const hasData   = activeSales.length > 0
 
   const statCard = (label, value, color, sub) => (
     <div style={{
@@ -160,11 +241,18 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
       padding: '14px 18px', borderLeft: `3px solid ${color}`,
     }}>
       <p style={{ color: MUTED, fontSize: 11, marginBottom: 6 }}>{label}</p>
-      <p style={{ color, fontSize: 24, fontWeight: 800 }}>{value}</p>
+      <p style={{ color, fontSize: 22, fontWeight: 800 }}>{value}</p>
       {sub && <p style={{ color: MUTED, fontSize: 10, marginTop: 4 }}>{sub}</p>}
     </div>
   )
 
+  const sourceBadge = dataSource === 'loading'
+    ? { dot: AMBER, text: 'Fetching…' }
+    : dataSource === 'supabase'
+    ? { dot: GREEN, text: 'Live · Supabase' }
+    : { dot: AMBER, text: 'Offline · Local' }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
@@ -174,7 +262,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
       <div style={{
         background: `linear-gradient(160deg, #0d1829 0%, ${PANEL} 100%)`,
         border: `1px solid ${BORDER}`, borderRadius: 10,
-        width: '100%', maxWidth: 860, maxHeight: '92vh',
+        width: '100%', maxWidth: 880, maxHeight: '92vh',
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 24px 80px rgba(0,0,0,0.8)',
       }}>
@@ -183,16 +271,40 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
         <div style={{
           padding: '14px 22px', background: CARD, borderRadius: '10px 10px 0 0',
           borderBottom: `1px solid ${BORDER}`,
-          display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, flexWrap: 'wrap',
+          display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, flexWrap: 'wrap',
         }}>
           <div style={{
             width: 34, height: 34, background: 'rgba(37,99,235,0.12)',
             border: '1px solid rgba(37,99,235,0.25)', borderRadius: 8,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
           }}>📊</div>
-          <div>
+
+          <div style={{ minWidth: 0 }}>
             <p style={{ color: TEXT, fontWeight: 800, fontSize: 15 }}>End of Day Report</p>
-            <p style={{ color: MUTED, fontSize: 11, marginTop: 1 }}>{location} · {todayLabel}</p>
+            <p style={{ color: MUTED, fontSize: 11, marginTop: 1 }}>{location}</p>
+          </div>
+
+          {/* Date picker */}
+          <input
+            type="date"
+            value={selectedDate}
+            max={dateToInput(new Date())}
+            onChange={e => { if (e.target.value) { setSelectedDate(e.target.value); setSaved(false) } }}
+            style={{
+              background: BG, border: `1px solid ${BORDER}`, borderRadius: 6,
+              color: TEXT, fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none',
+              colorScheme: 'dark',
+            }}
+          />
+
+          {/* Data source badge */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '4px 10px', background: 'rgba(15,23,42,0.6)',
+            border: `1px solid ${BORDER}`, borderRadius: 20,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: sourceBadge.dot }} />
+            <span style={{ color: MUTED, fontSize: 10 }}>{sourceBadge.text}</span>
           </div>
 
           {/* Section toggle */}
@@ -200,16 +312,12 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
             marginLeft: 'auto', display: 'flex', gap: 6,
             background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 3,
           }}>
-            {[
-              { key: 'overview', label: 'Overview' },
-              { key: 'invoices', label: 'Invoices' },
-            ].map(({ key, label }) => (
+            {[{ key: 'overview', label: 'Overview' }, { key: 'invoices', label: 'Invoices' }].map(({ key, label }) => (
               <button key={key} onClick={() => setSection(key)} style={{
                 padding: '5px 14px', border: 'none', borderRadius: 6, cursor: 'pointer',
                 background: section === key ? BLUE : 'transparent',
                 color: section === key ? '#fff' : MUTED,
-                fontSize: 12, fontWeight: section === key ? 700 : 400,
-                transition: 'all 0.15s',
+                fontSize: 12, fontWeight: section === key ? 700 : 400, transition: 'all 0.15s',
               }}>{label}</button>
             ))}
           </div>
@@ -218,7 +326,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
             background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6,
             color: MUTED, fontSize: 20, cursor: 'pointer',
             width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.15s',
+            transition: 'all 0.15s', flexShrink: 0,
           }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = RED; e.currentTarget.style.color = RED }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED }}
@@ -228,36 +336,47 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
         {/* ── Body ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 22, display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-          {/* Printed at */}
-          <p style={{ color: '#334155', fontSize: 11 }}>Printed at {printedAt}</p>
+          <p style={{ color: '#334155', fontSize: 11 }}>{dateLabel} · Printed at {printedAt}</p>
 
-          {/* ── OVERVIEW SECTION ── */}
+          {/* ══ OVERVIEW ══ */}
           {section === 'overview' && (
             <>
-              {/* Revenue cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 10 }}>
-                {statCard('Net Revenue',       fmt$(netRevenue),                   GREEN,  `${todaySales.length} transactions`)}
-                {statCard(`${taxLabel} Collected`, fmt$(taxRevenue),               AMBER,  `${taxRatePct}%`)}
-                {statCard('Gross Revenue',     fmt$(grossRevenue),                 BLUE,   'Net + Tax')}
-                {statCard('Total Spare',       fmt$(totalSpare),                   PURPLE, 'Above min price')}
-                {statCard('New Customers',     String(todayNewCustomers.length),   '#06b6d4', leadsByEmployee[0] ? `Top: ${leadsByEmployee[0][0]}` : 'None captured yet')}
+              {/* Row 1 — Revenue */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))', gap: 10 }}>
+                {statCard('Net Revenue',     fmt$(netRevenue),   GREEN,  `${activeSales.length} transactions`)}
+                {statCard(taxLabel,          fmt$(taxRevenue),   AMBER,  `${taxRatePct}%`)}
+                {statCard('Gross Revenue',   fmt$(grossRevenue), BLUE,   'Net + Tax')}
+                {statCard('Total Spare',     fmt$(totalSpare),   PURPLE, 'Above min price')}
+                {statCard('Commission',      fmt$(totalCommission), CYAN, totalCommission > 0 ? 'All employees' : 'No data yet')}
+                {statCard('Inventory Cost',  fmt$(inventoryCost), ORANGE, inventoryCost > 0 ? 'COGS at sale' : 'No cost data')}
               </div>
 
-              {!hasData && (
+              {/* Refunds banner */}
+              {voidedSales.length > 0 && (
                 <div style={{
-                  padding: 40, textAlign: 'center',
-                  background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8,
+                  padding: '10px 16px', borderRadius: 8,
+                  background: 'rgba(239,68,68,0.08)', border: `1px solid rgba(239,68,68,0.25)`,
+                  display: 'flex', alignItems: 'center', gap: 10,
                 }}>
-                  <p style={{ color: MUTED, fontSize: 13 }}>No sales recorded today yet</p>
+                  <span style={{ fontSize: 14 }}>⚠️</span>
+                  <span style={{ color: RED, fontSize: 13, fontWeight: 700 }}>
+                    {voidedSales.length} voided sale{voidedSales.length !== 1 ? 's' : ''}
+                  </span>
+                  <span style={{ color: MUTED, fontSize: 12 }}>·</span>
+                  <span style={{ color: DIM, fontSize: 12 }}>{fmt$(refundAmount)} removed from totals</span>
+                </div>
+              )}
+
+              {!hasData && (
+                <div style={{ padding: 40, textAlign: 'center', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8 }}>
+                  <p style={{ color: MUTED, fontSize: 13 }}>No sales recorded{isToday ? ' today' : ' on this date'}</p>
                 </div>
               )}
 
               {hasData && (
                 <>
-                  {/* Payment methods + employees */}
+                  {/* Payment methods */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-
-                    {/* Payment methods */}
                     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
                       <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 16 }}>PAYMENT METHODS</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -268,12 +387,12 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: m.color }} />
-                                  <span style={{ color: DIM, fontSize: 12 }}>{m.label}</span>
+                                  <span style={{ color: DIM, fontSize: 12, textTransform: 'capitalize' }}>{m.label}</span>
                                 </div>
                                 <span style={{ color: m.color, fontSize: 12, fontWeight: 700 }}>{fmt$(m.value)}</span>
                               </div>
                               <div style={{ height: 4, background: BORDER, borderRadius: 2 }}>
-                                <div style={{ height: '100%', borderRadius: 2, background: m.color, width: `${(m.value / grossRevenue) * 100}%` }} />
+                                <div style={{ height: '100%', borderRadius: 2, background: m.color, width: `${grossRevenue > 0 ? (m.value / grossRevenue) * 100 : 0}%` }} />
                               </div>
                             </div>
                           ))}
@@ -281,33 +400,96 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                       </div>
                     </div>
 
-                    {/* Sales by employee */}
+                    {/* New customers */}
                     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
-                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 16 }}>SALES BY EMPLOYEE</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {byEmployee.map(emp => (
-                          <div key={emp.name}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                              <span style={{ color: DIM, fontSize: 13 }}>{emp.name}</span>
-                              <div style={{ display: 'flex', gap: 12 }}>
-                                <span style={{ color: MUTED, fontSize: 11 }}>{emp.count} sales</span>
-                                <span style={{ color: GREEN, fontSize: 13, fontWeight: 700 }}>{fmt$(emp.subtotal)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                        <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>LEADS CAPTURED</p>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, padding: '3px 10px',
+                          background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)',
+                          borderRadius: 20, color: CYAN,
+                        }}>{todayNewCustomers.length} new</span>
+                      </div>
+                      {leadsByEmployee.length === 0 ? (
+                        <p style={{ color: '#334155', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>None captured</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {leadsByEmployee.map(([name, count], i) => (
+                            <div key={name}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <span style={{ color: i === 0 ? TEXT : DIM, fontSize: 12, fontWeight: i === 0 ? 700 : 400 }}>
+                                  {i === 0 && '🏆 '}{name}
+                                </span>
+                                <span style={{ color: CYAN, fontSize: 12, fontWeight: 700 }}>{count} lead{count !== 1 ? 's' : ''}</span>
+                              </div>
+                              <div style={{ height: 4, background: BORDER, borderRadius: 2 }}>
+                                <div style={{ height: '100%', borderRadius: 2, background: i === 0 ? CYAN : '#334155', width: `${(count / maxLeads) * 100}%` }} />
                               </div>
                             </div>
-                            <div style={{ height: 5, background: BORDER, borderRadius: 2 }}>
-                              <div style={{ height: '100%', borderRadius: 2, background: GREEN, width: `${(emp.subtotal / maxEmp) * 100}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Products sold */}
+                  {/* Employee performance table */}
+                  <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ padding: '14px 18px 10px', borderBottom: `1px solid ${BORDER}` }}>
+                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>EMPLOYEE PERFORMANCE</p>
+                    </div>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          {['Employee', 'Sales', 'Net Rev', 'Spare', 'Commission', 'Hours'].map(h => (
+                            <th key={h} style={{
+                              padding: '8px 14px', textAlign: h === 'Employee' ? 'left' : 'right',
+                              color: MUTED, fontWeight: 600, fontSize: 10,
+                              background: 'rgba(15,23,42,0.6)', borderBottom: `1px solid ${BORDER}`, letterSpacing: 0.4,
+                            }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeeRows.map((emp, i) => {
+                          const hrs = clockHoursMap?.[emp.name]
+                          return (
+                            <tr key={emp.name} style={{
+                              borderBottom: `1px solid rgba(30,41,59,0.4)`,
+                              background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.3)',
+                            }}>
+                              <td style={{ padding: '9px 14px', color: TEXT, fontSize: 13, fontWeight: 600 }}>{emp.name}</td>
+                              <td style={{ padding: '9px 14px', color: MUTED, fontSize: 12, textAlign: 'right' }}>{emp.count}</td>
+                              <td style={{ padding: '9px 14px', color: GREEN, fontSize: 13, fontWeight: 700, textAlign: 'right' }}>{fmt$(emp.subtotal)}</td>
+                              <td style={{ padding: '9px 14px', color: PURPLE, fontSize: 12, textAlign: 'right' }}>{fmt$(emp.spare)}</td>
+                              <td style={{ padding: '9px 14px', color: CYAN, fontSize: 12, textAlign: 'right' }}>
+                                {emp.commission > 0 ? fmt$(emp.commission) : <span style={{ color: '#334155' }}>—</span>}
+                              </td>
+                              <td style={{ padding: '9px 14px', color: AMBER, fontSize: 12, textAlign: 'right' }}>
+                                {hrs != null ? fmtHrs(hrs) : <span style={{ color: '#334155' }}>—</span>}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {/* Totals row */}
+                        <tr style={{ borderTop: `1px solid ${BORDER}`, background: 'rgba(15,23,42,0.6)' }}>
+                          <td style={{ padding: '9px 14px', color: MUTED, fontSize: 11, fontWeight: 700 }}>TOTAL</td>
+                          <td style={{ padding: '9px 14px', color: MUTED, fontSize: 11, textAlign: 'right' }}>{activeSales.length}</td>
+                          <td style={{ padding: '9px 14px', color: GREEN, fontSize: 13, fontWeight: 800, textAlign: 'right' }}>{fmt$(netRevenue)}</td>
+                          <td style={{ padding: '9px 14px', color: PURPLE, fontSize: 12, fontWeight: 700, textAlign: 'right' }}>{fmt$(totalSpare)}</td>
+                          <td style={{ padding: '9px 14px', color: CYAN, fontSize: 12, fontWeight: 700, textAlign: 'right' }}>
+                            {totalCommission > 0 ? fmt$(totalCommission) : <span style={{ color: '#334155' }}>—</span>}
+                          </td>
+                          <td style={{ padding: '9px 14px', color: '#334155', fontSize: 11, textAlign: 'right' }}>—</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Top products */}
                   {topProducts.length > 0 && (
                     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
-                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 14 }}>TOP PRODUCTS TODAY</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 14 }}>TOP PRODUCTS</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
                         {topProducts.map(([name, qty]) => (
                           <div key={name} style={{
                             background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 6,
@@ -320,65 +502,6 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                       </div>
                     </div>
                   )}
-
-                  {/* Leads captured */}
-                  <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>LEADS CAPTURED TODAY</p>
-                      <span style={{
-                        fontSize: 11, fontWeight: 700, padding: '3px 10px',
-                        background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)',
-                        borderRadius: 20, color: '#06b6d4',
-                      }}>{todayNewCustomers.length} new {todayNewCustomers.length === 1 ? 'customer' : 'customers'}</span>
-                    </div>
-
-                    {leadsByEmployee.length === 0 ? (
-                      <p style={{ color: '#334155', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>
-                        No new customers captured today
-                      </p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {leadsByEmployee.map(([name, count], i) => (
-                          <div key={name}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {i === 0 && (
-                                  <span style={{ fontSize: 13 }}>🏆</span>
-                                )}
-                                <span style={{ color: i === 0 ? TEXT : DIM, fontSize: 13, fontWeight: i === 0 ? 700 : 400 }}>
-                                  {name}
-                                </span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ color: MUTED, fontSize: 11 }}>
-                                  {count} {count === 1 ? 'lead' : 'leads'}
-                                </span>
-                                <span style={{
-                                  fontSize: 11, fontWeight: 700, padding: '2px 8px',
-                                  background: i === 0 ? 'rgba(6,182,212,0.12)' : 'rgba(71,85,105,0.12)',
-                                  border: `1px solid ${i === 0 ? 'rgba(6,182,212,0.3)' : 'rgba(71,85,105,0.2)'}`,
-                                  borderRadius: 12,
-                                  color: i === 0 ? '#06b6d4' : MUTED,
-                                }}>
-                                  {todayNewCustomers.length > 0
-                                    ? Math.round((count / todayNewCustomers.length) * 100)
-                                    : 0}%
-                                </span>
-                              </div>
-                            </div>
-                            <div style={{ height: 5, background: BORDER, borderRadius: 2 }}>
-                              <div style={{
-                                height: '100%', borderRadius: 2,
-                                background: i === 0 ? '#06b6d4' : '#334155',
-                                width: `${(count / maxLeads) * 100}%`,
-                                transition: 'width 0.4s ease',
-                              }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
 
                   {/* Notes */}
                   <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
@@ -406,12 +529,9 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                         borderRadius: 6, color: saved ? GREEN : '#fff',
                         fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
                       }}
-                    >
-                      {saved ? '✓ Saved' : 'Save Notes'}
-                    </button>
+                    >{saved ? '✓ Saved' : 'Save Notes'}</button>
                   </div>
 
-                  {/* Refund policy */}
                   <p style={{ color: '#334155', fontSize: 11, textAlign: 'center' }}>
                     No Refunds. Exchanges within 14 days.
                   </p>
@@ -420,13 +540,13 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
             </>
           )}
 
-          {/* ── INVOICES SECTION ── */}
+          {/* ══ INVOICES ══ */}
           {section === 'invoices' && (
             <div style={{ borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    {['Invoice #', 'Time', 'Employee', 'Payment', 'Subtotal', 'Tax', 'Total'].map(h => (
+                    {['Invoice #', 'Time', 'Employee', 'Payment', 'Subtotal', 'Tax', 'Total', 'Status'].map(h => (
                       <th key={h} style={{
                         padding: '8px 12px',
                         textAlign: ['Subtotal','Tax','Total'].includes(h) ? 'right' : 'left',
@@ -437,28 +557,55 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {todaySales.length === 0 && (
+                  {allDaySales.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#334155', fontSize: 13 }}>
-                        No sales today
+                      <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: '#334155', fontSize: 13 }}>
+                        No sales{isToday ? ' today' : ' on this date'}
                       </td>
                     </tr>
                   )}
-                  {[...todaySales].reverse().map((s, i) => (
-                    <tr key={s.number} style={{
-                      borderBottom: `1px solid rgba(30,41,59,0.4)`,
-                      background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)',
-                    }}>
-                      <td style={{ padding: '8px 12px', color: BLUE, fontWeight: 700, fontSize: 13 }}>{s.number}</td>
-                      <td style={{ padding: '8px 12px', color: DIM, fontSize: 12 }}>{fmtTime(s.timestamp)}</td>
-                      <td style={{ padding: '8px 12px', color: DIM, fontSize: 12 }}>{s.employee}</td>
-                      <td style={{ padding: '8px 12px', color: MUTED, fontSize: 12, textTransform: 'capitalize' }}>{s.paymentMethod}</td>
-                      <td style={{ padding: '8px 12px', color: DIM, fontSize: 12, textAlign: 'right' }}>{fmt$(s.subtotal)}</td>
-                      <td style={{ padding: '8px 12px', color: MUTED, fontSize: 12, textAlign: 'right' }}>{fmt$(s.tax)}</td>
-                      <td style={{ padding: '8px 12px', color: GREEN, fontWeight: 700, fontSize: 13, textAlign: 'right' }}>{fmt$(s.total)}</td>
-                    </tr>
-                  ))}
+                  {allDaySales.map((s, i) => {
+                    const voided = s.status === 'voided' || s.status === 'deleted'
+                    return (
+                      <tr key={s.number ?? i} style={{
+                        borderBottom: `1px solid rgba(30,41,59,0.4)`,
+                        background: voided
+                          ? 'rgba(239,68,68,0.04)'
+                          : i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)',
+                        opacity: voided ? 0.6 : 1,
+                      }}>
+                        <td style={{ padding: '8px 12px', color: voided ? RED : BLUE, fontWeight: 700, fontSize: 13, textDecoration: voided ? 'line-through' : 'none' }}>
+                          {s.number}
+                        </td>
+                        <td style={{ padding: '8px 12px', color: DIM, fontSize: 12 }}>{fmtTime(s.timestamp)}</td>
+                        <td style={{ padding: '8px 12px', color: DIM, fontSize: 12 }}>{s.employee}</td>
+                        <td style={{ padding: '8px 12px', color: MUTED, fontSize: 12, textTransform: 'capitalize' }}>{s.paymentMethod}</td>
+                        <td style={{ padding: '8px 12px', color: DIM, fontSize: 12, textAlign: 'right' }}>{fmt$(s.subtotal)}</td>
+                        <td style={{ padding: '8px 12px', color: MUTED, fontSize: 12, textAlign: 'right' }}>{fmt$(s.tax)}</td>
+                        <td style={{ padding: '8px 12px', color: voided ? RED : GREEN, fontWeight: 700, fontSize: 13, textAlign: 'right' }}>{fmt$(s.total)}</td>
+                        <td style={{ padding: '8px 12px', textAlign: 'left' }}>
+                          {voided
+                            ? <span style={{ color: RED, fontSize: 10, fontWeight: 700, padding: '2px 7px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10 }}>VOIDED</span>
+                            : <span style={{ color: GREEN, fontSize: 10, fontWeight: 700, padding: '2px 7px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10 }}>OK</span>
+                          }
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
+                {activeSales.length > 0 && (
+                  <tfoot>
+                    <tr style={{ background: 'rgba(15,23,42,0.8)', borderTop: `1px solid ${BORDER}` }}>
+                      <td colSpan={4} style={{ padding: '9px 12px', color: MUTED, fontSize: 11, fontWeight: 700 }}>
+                        TOTAL ({activeSales.length} active{voidedSales.length > 0 ? ` · ${voidedSales.length} voided` : ''})
+                      </td>
+                      <td style={{ padding: '9px 12px', color: DIM, fontSize: 12, fontWeight: 700, textAlign: 'right' }}>{fmt$(netRevenue)}</td>
+                      <td style={{ padding: '9px 12px', color: MUTED, fontSize: 12, fontWeight: 700, textAlign: 'right' }}>{fmt$(taxRevenue)}</td>
+                      <td style={{ padding: '9px 12px', color: GREEN, fontSize: 14, fontWeight: 800, textAlign: 'right' }}>{fmt$(grossRevenue)}</td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           )}

@@ -524,6 +524,7 @@ CREATE TABLE sale_items (
   discount      NUMERIC(10,2) NOT NULL DEFAULT 0,
   subtotal      NUMERIC(10,2) NOT NULL,
   spare         NUMERIC(10,2) NOT NULL DEFAULT 0,
+  cost_price    NUMERIC(10,2) NOT NULL DEFAULT 0,
 
   created_at    TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
@@ -647,3 +648,38 @@ CREATE INDEX idx_invmov_org_date ON inventory_movements (organization_id, create
 CREATE INDEX idx_invmov_product  ON inventory_movements (product_id);
 CREATE INDEX idx_invmov_location ON inventory_movements (location_id);
 CREATE INDEX idx_invmov_sale     ON inventory_movements (sale_id) WHERE sale_id IS NOT NULL;
+
+
+-- ============================================================
+--  13. CLOCK_RECORDS
+--
+--  Registro de clock-in/clock-out por funcionário.
+--  clock_out NULL = funcionário ainda está trabalhando.
+--
+--  location_id / employee_id: FKs nullable — preserva histórico
+--    mesmo se o funcionário ou local for removido do sistema.
+--  location_name / employee_name: snapshots para leitura rápida
+--    sem JOIN (igual ao padrão de sales).
+-- ============================================================
+
+CREATE TABLE clock_records (
+  id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id  UUID         NOT NULL REFERENCES organizations(id),
+  location_id      UUID         REFERENCES locations(id) ON DELETE SET NULL,
+  location_name    TEXT         NOT NULL DEFAULT '',
+  employee_id      UUID         REFERENCES users(id)     ON DELETE SET NULL,
+  employee_name    TEXT         NOT NULL,
+  clock_in         TIMESTAMPTZ  NOT NULL,
+  clock_out        TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_clock_records_org_date ON clock_records (organization_id, clock_in DESC);
+CREATE INDEX idx_clock_records_location ON clock_records (location_id) WHERE location_id IS NOT NULL;
+CREATE INDEX idx_clock_records_employee ON clock_records (employee_id)  WHERE employee_id IS NOT NULL;
+CREATE INDEX idx_clock_records_active   ON clock_records (organization_id, clock_in DESC) WHERE clock_out IS NULL;
+
+CREATE TRIGGER trg_clock_records_updated_at
+  BEFORE UPDATE ON clock_records
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();

@@ -44,17 +44,26 @@ export function persistAllSales(sales) {
 
 /**
  * Return the next sequential invoice number and advance the counter.
- * Reads and writes synchronously — safe for single-tab use.
  *
- * Supabase migration: replace with a server-side sequence call (e.g.
- * a Postgres sequence or a row-level counter in a dedicated table) so
- * numbers remain gap-free and collision-free across devices.
+ * Per-kiosk isolation: set VITE_INVOICE_SEED in .env to a unique starting
+ * point for each physical device so invoice numbers never collide:
+ *   Kiosk A  →  VITE_INVOICE_SEED=60000  (invoices 60001, 60002 …)
+ *   Kiosk B  →  VITE_INVOICE_SEED=70000  (invoices 70001, 70002 …)
+ *
+ * The counter is always the maximum of (stored value, seed), so:
+ *   - A fresh device starts exactly at seed + 1.
+ *   - An existing device that already has a counter above seed continues
+ *     from where it left off (no backwards jump, no gaps).
+ *   - If a device's counter is ever below seed (e.g. wrong config applied),
+ *     the seed acts as a floor and corrects it forward on the next sale.
  *
  * @returns {number}
  */
 export function nextInvoiceNumber() {
-  const current = parseInt(localStorage.getItem(KEY_INVOICE_COUNTER) || '60000', 10)
-  const next = current + 1
+  const seed    = parseInt(import.meta.env.VITE_INVOICE_SEED || '60000', 10)
+  const stored  = parseInt(localStorage.getItem(KEY_INVOICE_COUNTER) || '0',  10)
+  const current = Math.max(stored, seed)
+  const next    = current + 1
   localStorage.setItem(KEY_INVOICE_COUNTER, String(next))
   return next
 }

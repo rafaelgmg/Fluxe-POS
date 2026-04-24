@@ -64,6 +64,7 @@ export function normalizeSaleItem(raw) {
     productId:   raw.productId   ?? null,
     categoryId:  raw.categoryId  ?? null,
     minPrice:    raw.minPrice    ?? 0,
+    costPrice:   raw.costPrice   ?? 0,
     discount:    raw.discount    ?? 0,
     spare:       raw.spare       ?? 0,
     systemPrice: raw.systemPrice ?? raw.salePrice ?? 0,

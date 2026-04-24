@@ -10,8 +10,9 @@ import { setManualBonus } from '../utils/bonusStorage'
 import { loadUsers } from '../utils/usersStorage'
 import { calcDayCompetitionBonus } from '../utils/competitionBonusEngine'
 import { localDateKey } from '../utils/dateUtils'
-import { loadClockRecords } from '../utils/clockStorage'
+import { fetchClockRecordsByEmployee } from '../services/supabaseRead'
 import { loadLocationConfig } from '../utils/locationConfig'
+import { verifyEmployeePin } from '../services/supabaseAuth'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const BG     = '#020817'
@@ -68,14 +69,15 @@ function ReportPinGate({ onUnlock, onClose }) {
   const [pin, setPin]   = useState('')
   const [shake, setShake] = useState(false)
 
-  const press = (digit) => {
+  const press = async (digit) => {
     if (pin.length >= 6) return
     const next = pin + digit
     setPin(next)
-    const emp = employees.find(e => e.id === selectedId)
-    if (emp && next.length >= emp.pin.length) {
-      if (emp.pin === next) {
-        onUnlock(emp)
+    if (next.length >= 4) {
+      const emp = employees.find(e => e.id === selectedId)
+      const result = await verifyEmployeePin(emp?.name, next)
+      if (result) {
+        onUnlock(result)
       } else {
         setShake(true)
         setTimeout(() => { setPin(''); setShake(false) }, 700)
@@ -811,20 +813,17 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
     })
   }, [sales, selectedName, unlockedEmployee, fromDate, toDate])
 
-  // ── Clock records (deve ficar ANTES de dailySales que o consome) ─────────
-  const clockRecords = useMemo(() => {
-    try {
-      const all  = loadClockRecords()
-      const from = parseLocalDate(fromDate)
-      const to   = parseLocalDate(toDate); to.setHours(23, 59, 59, 999)
-      const name = selectedName || unlockedEmployee?.name
-      return all.filter(r =>
-        r.employee === name &&
-        new Date(r.clockIn) >= from &&
-        new Date(r.clockIn) <= to
-      )
-    } catch { return [] }
-  }, [selectedName, unlockedEmployee, fromDate, toDate])
+  // ── Clock records — Supabase (deve ficar ANTES de dailySales que o consome) ─
+  const [clockRecords, setClockRecords] = useState([])
+
+  useEffect(() => {
+    const empName = selectedName || unlockedEmployee?.name
+    if (!empName) { setClockRecords([]); return }
+    const from = parseLocalDate(fromDate)
+    const to   = parseLocalDate(toDate); to.setHours(23, 59, 59, 999)
+    fetchClockRecordsByEmployee({ employeeName: empName, from, to })
+      .then(records => { if (records !== null) setClockRecords(records) })
+  }, [selectedName, unlockedEmployee, fromDate, toDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const dailySales = useMemo(() => {
     const empName = selectedName || unlockedEmployee?.name
