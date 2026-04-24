@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FluxeAssist.jsx
  * ──────────────────────────────────────────────────────────────────────────────
  * Fluxe Assist — lightweight command panel for seller quick-queries.
@@ -25,14 +25,14 @@ import { useState, useRef, useEffect } from 'react'
 import { parseCommand, runCommand, getCommandSuggestions } from '../utils/fluxeAssist'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
 const TEXT   = '#f1f5f9'
-const MUTED  = '#475569'
-const DIM    = '#94a3b8'
+const MUTED  = '#64748b'
+const DIM    = '#a8b8cc'
 const GREEN  = '#22c55e'
-const BLUE   = '#2563eb'
+const BLUE   = '#3b82f6'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 
@@ -348,18 +348,18 @@ export default function FluxeAssist({ onClose, sales, customers, empName, locati
             borderTop: `1px solid ${BORDER}`,
             display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center',
           }}>
-            <span style={{ color: '#1e293b', fontSize: 9, fontWeight: 700, letterSpacing: 0.4, flexShrink: 0 }}>RECENT</span>
+            <span style={{ color: '#253349', fontSize: 9, fontWeight: 700, letterSpacing: 0.4, flexShrink: 0 }}>RECENT</span>
             {history.map(h => (
               <button
                 key={h}
                 onClick={() => execute(h)}
                 style={{
                   padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 600,
-                  background: 'transparent', border: `1px solid #1e293b`,
-                  color: '#334155', cursor: 'pointer', transition: 'all 0.12s',
+                  background: 'transparent', border: `1px solid #253349`,
+                  color: '#415569', cursor: 'pointer', transition: 'all 0.12s',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#334155' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#415569' }}
               >{h}</button>
             ))}
           </div>
@@ -372,7 +372,7 @@ export default function FluxeAssist({ onClose, sales, customers, empName, locati
           background: CARD,
           display: 'flex', gap: 8, alignItems: 'center',
         }}>
-          <span style={{ color: '#1e293b', fontSize: 13, fontFamily: 'monospace', userSelect: 'none' }}>›</span>
+          <span style={{ color: '#253349', fontSize: 13, fontFamily: 'monospace', userSelect: 'none' }}>›</span>
           <input
             ref={inputRef}
             value={input}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 
 const FRAGRANCE_OPTIONS = [
   'Floral', 'Fresh / Aquatic', 'Woody', 'Oriental / Oud',
@@ -39,21 +39,21 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
     onChange: e => set(key, e.target.value),
     style: {
       width: '100%', padding: '9px 12px',
-      background: '#0f172a', border: '1px solid #1e293b',
+      background: '#111d30', border: '1px solid #253349',
       borderRadius: 6, color: '#f1f5f9', fontSize: 13,
       boxSizing: 'border-box', outline: 'none',
       transition: 'border-color 0.15s',
       ...extra.style,
     },
-    onFocus: e => { e.target.style.borderColor = '#2563eb' },
-    onBlur:  e => { e.target.style.borderColor = '#1e293b' },
+    onFocus: e => { e.target.style.borderColor = '#3b82f6' },
+    onBlur:  e => { e.target.style.borderColor = '#253349' },
     ...extra,
   })
 
   const lbl = (text, optional) => (
-    <label style={{ color: '#475569', fontSize: 11, fontWeight: 600, marginBottom: 6, display: 'block', letterSpacing: 0.5 }}>
+    <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, marginBottom: 6, display: 'block', letterSpacing: 0.5 }}>
       {text}
-      {optional && <span style={{ color: '#334155', marginLeft: 4, fontWeight: 400 }}>(optional)</span>}
+      {optional && <span style={{ color: '#415569', marginLeft: 4, fontWeight: 400 }}>(optional)</span>}
     </label>
   )
 
@@ -64,14 +64,14 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
       backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)', border: '1px solid #1e293b', borderRadius: 10,
+        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)', border: '1px solid #253349', borderRadius: 10,
         width: 480, maxHeight: '90vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
       }}>
 
         {/* Header */}
         <div style={{
-          padding: '16px 22px 14px', borderBottom: '1px solid #1e293b',
+          padding: '16px 22px 14px', borderBottom: '1px solid #253349',
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
           flexShrink: 0,
         }}>
@@ -79,7 +79,7 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
             <h2 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 2 }}>
               {standalone ? '➕ Capture Client' : '👤 Customer Info'}
             </h2>
-            <p style={{ color: '#475569', fontSize: 12 }}>
+            <p style={{ color: '#64748b', fontSize: 12 }}>
               {standalone
                 ? 'Save this contact — no sale required'
                 : 'Link this sale to a customer — or skip'}
@@ -87,10 +87,10 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
           </div>
           {!standalone && (
             <div style={{
-              background: '#0f172a', border: '1px solid #1e293b',
+              background: '#111d30', border: '1px solid #253349',
               borderRadius: 6, padding: '6px 12px', textAlign: 'right'
             }}>
-              <p style={{ color: '#475569', fontSize: 10 }}>Invoice #{invoice.number}</p>
+              <p style={{ color: '#64748b', fontSize: 10 }}>Invoice #{invoice.number}</p>
               <p style={{ color: '#22c55e', fontWeight: 800, fontSize: 16 }}>${invoice.total.toFixed(2)}</p>
             </div>
           )}
@@ -147,8 +147,8 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
                     onClick={() => toggleFragrance(opt)}
                     style={{
                       padding: '5px 12px', borderRadius: 20,
-                      border: `1px solid ${active ? '#2563eb' : '#1e293b'}`,
-                      background: active ? 'rgba(37,99,235,0.15)' : '#0f172a',
+                      border: `1px solid ${active ? '#3b82f6' : '#253349'}`,
+                      background: active ? 'rgba(37,99,235,0.15)' : '#111d30',
                       color: active ? '#93c5fd' : '#64748b',
                       fontSize: 12, cursor: 'pointer',
                       fontWeight: active ? 700 : 400,
@@ -174,21 +174,21 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
           {/* Marketing consent */}
           <label style={{
             display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
-            background: '#0f172a', borderRadius: 6, padding: '12px 14px',
-            border: `1px solid ${form.marketingConsent ? 'rgba(37,99,235,0.4)' : '#1e293b'}`,
+            background: '#111d30', borderRadius: 6, padding: '12px 14px',
+            border: `1px solid ${form.marketingConsent ? 'rgba(37,99,235,0.4)' : '#253349'}`,
             transition: 'border-color 0.15s',
           }}>
             <input
               type="checkbox"
               checked={form.marketingConsent}
               onChange={e => set('marketingConsent', e.target.checked)}
-              style={{ marginTop: 2, cursor: 'pointer', accentColor: '#2563eb' }}
+              style={{ marginTop: 2, cursor: 'pointer', accentColor: '#3b82f6' }}
             />
             <div>
               <p style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 500 }}>
                 Receive promotions & offers
               </p>
-              <p style={{ color: '#334155', fontSize: 11, marginTop: 2 }}>
+              <p style={{ color: '#415569', fontSize: 11, marginTop: 2 }}>
                 Customer agrees to receive marketing messages via SMS or email
               </p>
             </div>
@@ -197,7 +197,7 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
 
         {/* Footer */}
         <div style={{
-          padding: '14px 22px', borderTop: '1px solid #1e293b',
+          padding: '14px 22px', borderTop: '1px solid #253349',
           display: 'flex', gap: 10, flexShrink: 0,
         }}>
           <button
@@ -205,17 +205,17 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
             disabled={!canSave}
             style={{
               flex: 2, padding: '13px',
-              background: canSave ? '#2563eb' : '#0f172a',
-              border: canSave ? 'none' : '1px solid #1e293b',
+              background: canSave ? '#3b82f6' : '#111d30',
+              border: canSave ? 'none' : '1px solid #253349',
               borderRadius: 6,
-              color: canSave ? '#fff' : '#334155',
+              color: canSave ? '#fff' : '#415569',
               fontSize: 14, fontWeight: 700,
               cursor: canSave ? 'pointer' : 'not-allowed',
               transition: 'background 0.15s',
               boxShadow: canSave ? '0 0 20px rgba(37,99,235,0.25)' : 'none',
             }}
             onMouseEnter={e => { if (canSave) e.currentTarget.style.background = '#1d4ed8' }}
-            onMouseLeave={e => { if (canSave) e.currentTarget.style.background = '#2563eb' }}
+            onMouseLeave={e => { if (canSave) e.currentTarget.style.background = '#3b82f6' }}
           >
             {standalone ? '💾 Save Client' : '💾 Save & Complete'}
           </button>
@@ -223,12 +223,12 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
             onClick={onSkip}
             style={{
               flex: 1, padding: '13px',
-              background: 'transparent', border: '1px solid #1e293b',
+              background: 'transparent', border: '1px solid #253349',
               borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#94a3b8' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#a8b8cc' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
           >
             Skip
           </button>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { buildBarcode } from '../utils/parseBarcode'
 import { BUSINESS_SHORT, COLORS, SYSTEM_NAME, LOCATIONS_CFG } from '../config/branding'
 import { loadActiveCategoryNames } from '../utils/categoriesStorage'
@@ -156,7 +156,7 @@ function PinGate({ onUnlock, onCancel }) {
       backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: '#0a0f1e', border: `2px solid ${GOLD}`, borderRadius: 12,
+        background: '#0d1526', border: `2px solid ${GOLD}`, borderRadius: 12,
         padding: 36, width: 300, textAlign: 'center',
         boxShadow: `0 0 40px rgba(245,158,11,0.15)`,
       }}>
@@ -164,7 +164,7 @@ function PinGate({ onUnlock, onCancel }) {
         <h2 style={{ color: GOLD, fontSize: 18, fontWeight: 800, marginBottom: 4, letterSpacing: 1 }}>
           ADMIN ACCESS
         </h2>
-        <p style={{ color: '#475569', fontSize: 12, marginBottom: 24 }}>{BUSINESS_SHORT} — Managers only</p>
+        <p style={{ color: '#64748b', fontSize: 12, marginBottom: 24 }}>{BUSINESS_SHORT} — Managers only</p>
 
         {/* PIN dots */}
         <div style={{
@@ -175,8 +175,8 @@ function PinGate({ onUnlock, onCancel }) {
           {[0,1,2,3].map(i => (
             <div key={i} style={{
               width: 14, height: 14, borderRadius: '50%',
-              background: i < input.length ? (shake ? '#ef4444' : GOLD) : '#0f172a',
-              border: `2px solid ${i < input.length ? (shake ? '#ef4444' : GOLD) : '#1e293b'}`,
+              background: i < input.length ? (shake ? '#ef4444' : GOLD) : '#111d30',
+              border: `2px solid ${i < input.length ? (shake ? '#ef4444' : GOLD) : '#253349'}`,
               transition: 'background 0.12s, border 0.12s'
             }} />
           ))}
@@ -197,25 +197,25 @@ function PinGate({ onUnlock, onCancel }) {
               }}
               disabled={!k}
               style={{
-                padding: '14px 0', background: !k ? 'transparent' : '#0f172a',
-                border: !k ? 'none' : '1px solid #1e293b', borderRadius: 8,
+                padding: '14px 0', background: !k ? 'transparent' : '#111d30',
+                border: !k ? 'none' : '1px solid #253349', borderRadius: 8,
                 color: k === '⌫' ? '#64748b' : '#f1f5f9', fontSize: k === '⌫' ? 16 : 20,
                 fontWeight: 600, cursor: !k ? 'default' : 'pointer',
                 opacity: !k ? 0 : 1, transition: 'background 0.1s'
               }}
               onMouseEnter={e => { if (k) e.currentTarget.style.background = '#131d35' }}
-              onMouseLeave={e => { if (k) e.currentTarget.style.background = '#0f172a' }}
+              onMouseLeave={e => { if (k) e.currentTarget.style.background = '#111d30' }}
             >{k}</button>
           ))}
         </div>
 
         <button onClick={onCancel} style={{
           width: '100%', padding: '10px', background: 'transparent',
-          border: '1px solid #1e293b', borderRadius: 6,
+          border: '1px solid #253349', borderRadius: 6,
           color: '#64748b', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s',
         }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
         >← Back to POS</button>
       </div>
     </div>
@@ -288,8 +288,8 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
     value: form[key],
     onChange: e => set(key, e.target.value),
     style: {
-      width: '100%', padding: '7px 10px', background: '#0f172a',
-      border: `1px solid ${errors[key] ? '#ef4444' : '#1e293b'}`,
+      width: '100%', padding: '7px 10px', background: '#111d30',
+      border: `1px solid ${errors[key] ? '#ef4444' : '#253349'}`,
       borderRadius: 4, color: '#f1f5f9', fontSize: 13,
       boxSizing: 'border-box', ...extra.style
     },
@@ -297,7 +297,7 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
   })
 
   const lbl = (text) => (
-    <label style={{ color: '#475569', fontSize: 11, marginBottom: 3, display: 'block' }}>{text}</label>
+    <label style={{ color: '#64748b', fontSize: 11, marginBottom: 3, display: 'block' }}>{text}</label>
   )
   const err = (key) => errors[key] && (
     <p style={{ color: '#ef4444', fontSize: 10, marginTop: 2 }}>{errors[key]}</p>
@@ -308,12 +308,12 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
 
   return (
     <div style={{
-      width: 340, background: '#0a0f1e', borderLeft: `2px solid ${PURPLE}`,
+      width: 340, background: '#0d1526', borderLeft: `2px solid ${PURPLE}`,
       display: 'flex', flexDirection: 'column', flexShrink: 0
     }}>
       {/* Header */}
       <div style={{
-        padding: '12px 16px', background: '#0f172a',
+        padding: '12px 16px', background: '#111d30',
         borderBottom: `1px solid ${PURPLE}`,
         display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0
       }}>
@@ -353,7 +353,7 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
           <input {...inp('cleanBarcode', { style: { fontFamily: 'monospace' } })} />
           {err('cleanBarcode')}
           {form.minPrice && form.cleanBarcode && (
-            <p style={{ color: '#475569', fontSize: 10, marginTop: 3, fontFamily: 'monospace' }}>
+            <p style={{ color: '#64748b', fontSize: 10, marginTop: 3, fontFamily: 'monospace' }}>
               Stored as: {buildBarcode(form.cleanBarcode, form.minPrice)}
             </p>
           )}
@@ -367,7 +367,7 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
           <div>
             {lbl('Category')}
             <select value={form.category} onChange={e => set('category', e.target.value)}
-              style={{ width: '100%', padding: '7px 10px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, color: '#f1f5f9', fontSize: 13, cursor: 'pointer' }}>
+              style={{ width: '100%', padding: '7px 10px', background: '#111d30', border: '1px solid #253349', borderRadius: 4, color: '#f1f5f9', fontSize: 13, cursor: 'pointer' }}>
               {/* Show all active categories + keep current value even if now inactive */}
               {[...new Set([...(product?.category ? [product.category] : []), ...liveCategories])]
                 .map(c => <option key={c} value={c}>{c}</option>)}
@@ -377,7 +377,7 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
 
         {/* Pricing block */}
         <div style={{
-          background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6,
+          background: '#111d30', border: '1px solid #253349', borderRadius: 6,
           padding: '12px 12px 8px', marginBottom: 12
         }}>
           <p style={{ color: GOLD, fontSize: 10, fontWeight: 800, letterSpacing: 1, marginBottom: 10 }}>
@@ -405,10 +405,10 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
               {margin !== null && (
                 <div style={{
-                  flex: 1, background: '#020817', border: '1px solid #1e293b', borderRadius: 4, padding: '6px 10px',
+                  flex: 1, background: '#030e1e', border: '1px solid #253349', borderRadius: 4, padding: '6px 10px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                 }}>
-                  <span style={{ color: '#475569', fontSize: 10 }}>Gross Margin</span>
+                  <span style={{ color: '#64748b', fontSize: 10 }}>Gross Margin</span>
                   <span style={{ color: marginColor(margin), fontWeight: 700, fontSize: 13 }}>
                     {margin.toFixed(1)}%
                   </span>
@@ -416,10 +416,10 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
               )}
               {minMargin !== null && (
                 <div style={{
-                  flex: 1, background: '#020817', border: '1px solid #1e293b', borderRadius: 4, padding: '6px 10px',
+                  flex: 1, background: '#030e1e', border: '1px solid #253349', borderRadius: 4, padding: '6px 10px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                 }}>
-                  <span style={{ color: '#475569', fontSize: 10 }}>Min Margin</span>
+                  <span style={{ color: '#64748b', fontSize: 10 }}>Min Margin</span>
                   <span style={{ color: marginColor(minMargin), fontWeight: 700, fontSize: 13 }}>
                     {minMargin.toFixed(1)}%
                   </span>
@@ -442,30 +442,30 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
               const setLoc = (v) => set('qtyByLoc', { ...form.qtyByLoc, [loc.id]: Math.max(0, v) })
               return (
                 <div key={loc.id} style={{
-                  background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6,
+                  background: '#111d30', border: '1px solid #253349', borderRadius: 6,
                   padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 10,
                 }}>
                   <div style={{ flex: 1 }}>
-                    <p style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600 }}>{loc.name}</p>
-                    <p style={{ color: '#334155', fontSize: 10, marginTop: 1 }}>{loc.region}</p>
+                    <p style={{ color: '#a8b8cc', fontSize: 12, fontWeight: 600 }}>{loc.name}</p>
+                    <p style={{ color: '#415569', fontSize: 10, marginTop: 1 }}>{loc.region}</p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <button onClick={() => setLoc(val - 1)}
-                      style={{ width: 26, height: 26, background: '#020817', border: '1px solid #1e293b', borderRadius: 4, color: '#f1f5f9', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>−</button>
+                      style={{ width: 26, height: 26, background: '#030e1e', border: '1px solid #253349', borderRadius: 4, color: '#f1f5f9', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>−</button>
                     <input
                       type="number"
                       value={val}
                       onChange={e => setLoc(parseInt(e.target.value) || 0)}
-                      style={{ width: 48, textAlign: 'center', padding: '4px 6px', background: '#020817', border: '1px solid #1e293b', borderRadius: 4, color: '#f1f5f9', fontSize: 13, outline: 'none' }}
+                      style={{ width: 48, textAlign: 'center', padding: '4px 6px', background: '#030e1e', border: '1px solid #253349', borderRadius: 4, color: '#f1f5f9', fontSize: 13, outline: 'none' }}
                     />
                     <button onClick={() => setLoc(val + 1)}
-                      style={{ width: 26, height: 26, background: '#020817', border: '1px solid #1e293b', borderRadius: 4, color: '#f1f5f9', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>＋</button>
+                      style={{ width: 26, height: 26, background: '#030e1e', border: '1px solid #253349', borderRadius: 4, color: '#f1f5f9', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>＋</button>
                   </div>
                 </div>
               )
             })}
             <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 2 }}>
-              <span style={{ color: '#475569', fontSize: 11 }}>
+              <span style={{ color: '#64748b', fontSize: 11 }}>
                 Total: <span style={{ color: '#f1f5f9', fontWeight: 700 }}>
                   {Object.values(form.qtyByLoc).reduce((s, v) => s + (parseInt(v) || 0), 0)}
                 </span>
@@ -476,9 +476,9 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
       </div>
 
       {/* Save footer */}
-      <div style={{ padding: 14, borderTop: '1px solid #1e293b', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: 14, borderTop: '1px solid #253349', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {product?.updatedAt && (
-          <p style={{ color: '#475569', fontSize: 10, textAlign: 'center' }}>
+          <p style={{ color: '#64748b', fontSize: 10, textAlign: 'center' }}>
             Last updated: {timeAgo(product.updatedAt)} · {new Date(product.updatedAt).toLocaleString()}
           </p>
         )}
@@ -665,8 +665,8 @@ function ProductsScreen({ products, setProducts, onBack }) {
   )
   const th = (col, label) => (
     <th onClick={() => toggleSort(col)} style={{
-      padding: '8px 10px', textAlign: 'left', color: '#475569', fontWeight: 600, fontSize: 11,
-      cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', background: '#0f172a'
+      padding: '8px 10px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: 11,
+      cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', background: '#111d30'
     }}>{label}<SortIcon col={col} /></th>
   )
 
@@ -675,7 +675,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
 
       {/* Sub-header */}
       <div style={{
-        padding: '10px 16px', background: '#0f172a', borderBottom: '1px solid #1e293b',
+        padding: '10px 16px', background: '#111d30', borderBottom: '1px solid #253349',
         display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0
       }}>
         <button onClick={onBack} style={{
@@ -683,17 +683,17 @@ function ProductsScreen({ products, setProducts, onBack }) {
           cursor: 'pointer', paddingRight: 4, lineHeight: 1
         }}>←</button>
         <span style={{ color: '#3498db', fontWeight: 700, fontSize: 13 }}>🧴 Products</span>
-        <span style={{ color: '#475569', fontSize: 11 }}>Settings</span>
-        <div style={{ width: 1, height: 16, background: '#1e293b', margin: '0 4px' }} />
+        <span style={{ color: '#64748b', fontSize: 11 }}>Settings</span>
+        <div style={{ width: 1, height: 16, background: '#253349', margin: '0 4px' }} />
 
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search product, barcode, supplier..."
           style={{
-            padding: '6px 12px', background: '#020817', border: '1px solid #1e293b',
+            padding: '6px 12px', background: '#030e1e', border: '1px solid #253349',
             borderRadius: 4, color: '#f1f5f9', fontSize: 13, width: 230, outline: 'none'
           }}
-          onFocus={e => { e.target.style.borderColor = '#2563eb' }}
-          onBlur={e =>  { e.target.style.borderColor = '#1e293b' }}
+          onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
+          onBlur={e =>  { e.target.style.borderColor = '#253349' }}
         />
         <BarcodeIconButton active={showBarcode} onClick={() => setShowBarcode(true)} />
         {showBarcode && (
@@ -704,21 +704,21 @@ function ProductsScreen({ products, setProducts, onBack }) {
         )}
 
         <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-          style={{ padding: '6px 10px', background: '#020817', border: '1px solid #1e293b', borderRadius: 4, color: '#f1f5f9', fontSize: 12, cursor: 'pointer', outline: 'none' }}>
+          style={{ padding: '6px 10px', background: '#030e1e', border: '1px solid #253349', borderRadius: 4, color: '#f1f5f9', fontSize: 12, cursor: 'pointer', outline: 'none' }}>
           <option value="All">All Categories</option>
           {loadActiveCategoryNames().map(c => <option key={c} value={c}>{c}</option>)}
         </select>
 
         {suppliers.length > 0 && (
           <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}
-            style={{ padding: '6px 10px', background: '#020817', border: '1px solid #1e293b', borderRadius: 4, color: '#f1f5f9', fontSize: 12, cursor: 'pointer', outline: 'none' }}>
+            style={{ padding: '6px 10px', background: '#030e1e', border: '1px solid #253349', borderRadius: 4, color: '#f1f5f9', fontSize: 12, cursor: 'pointer', outline: 'none' }}>
             <option value="">All Suppliers</option>
             {suppliers.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         )}
 
         {/* Status filter tabs */}
-        <div style={{ display: 'flex', gap: 2, background: '#020817', border: '1px solid #1e293b', borderRadius: 6, padding: 2 }}>
+        <div style={{ display: 'flex', gap: 2, background: '#030e1e', border: '1px solid #253349', borderRadius: 6, padding: 2 }}>
           {[
             { id: 'active',   label: 'Active',   color: '#22c55e' },
             { id: 'inactive', label: 'Inactive', color: '#ef4444' },
@@ -727,7 +727,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
             <button key={id} onClick={() => { setStatusFilter(id); setEditingProduct(null) }} style={{
               padding: '4px 11px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
               background: statusFilter === id ? `${color}18` : 'transparent',
-              color: statusFilter === id ? color : '#475569',
+              color: statusFilter === id ? color : '#64748b',
               outline: statusFilter === id ? `1px solid ${color}40` : 'none',
             }}>
               {label} <span style={{ opacity: 0.7 }}>{statusCounts[id]}</span>
@@ -740,7 +740,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
           Low Margin (&lt;20%)
         </label>
 
-        <span style={{ color: '#475569', fontSize: 12 }}>{filtered.length} products</span>
+        <span style={{ color: '#64748b', fontSize: 12 }}>{filtered.length} products</span>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', position: 'relative' }}>
           {selected.size > 0 && (
@@ -753,14 +753,14 @@ function ProductsScreen({ products, setProducts, onBack }) {
 
               {showBulkMenu && (
                 <div style={{
-                  position: 'absolute', top: '110%', right: 0, background: '#0a0f1e',
+                  position: 'absolute', top: '110%', right: 0, background: '#0d1526',
                   border: `1px solid ${PURPLE}`, borderRadius: 8, padding: 14, zIndex: 20,
                   minWidth: 230, boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
                 }}>
                   <p style={{ color: '#64748b', fontSize: 11, marginBottom: 8, fontWeight: 600 }}>Update Category</p>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
                     <select value={bulkCategory} onChange={e => setBulkCategory(e.target.value)}
-                      style={{ flex: 1, padding: '5px 8px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, color: '#f1f5f9', fontSize: 12, outline: 'none' }}>
+                      style={{ flex: 1, padding: '5px 8px', background: '#111d30', border: '1px solid #253349', borderRadius: 4, color: '#f1f5f9', fontSize: 12, outline: 'none' }}>
                       <option value="">Select category...</option>
                       {loadActiveCategoryNames().map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -772,7 +772,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
                   <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
                     <input value={bulkSupplier} onChange={e => setBulkSupplier(e.target.value)}
                       placeholder="Supplier name..."
-                      style={{ flex: 1, padding: '5px 8px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4, color: '#f1f5f9', fontSize: 12, outline: 'none' }} />
+                      style={{ flex: 1, padding: '5px 8px', background: '#111d30', border: '1px solid #253349', borderRadius: 4, color: '#f1f5f9', fontSize: 12, outline: 'none' }} />
                     <button onClick={handleBulkSupplier}
                       style={{ padding: '5px 10px', background: PURPLE, border: 'none', borderRadius: 4, color: '#fff', fontSize: 12, cursor: 'pointer' }}>Apply</button>
                   </div>
@@ -804,7 +804,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 900 }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
               <tr>
-                <th style={{ padding: '8px 12px', background: '#0f172a', width: 36 }}>
+                <th style={{ padding: '8px 12px', background: '#111d30', width: 36 }}>
                   <input type="checkbox"
                     checked={selected.size === filtered.length && filtered.length > 0}
                     onChange={toggleSelectAll} style={{ cursor: 'pointer' }} />
@@ -820,7 +820,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
                 {th('margin',      'Margin%'  )}
                 {th('qty',         'Stock'    )}
                 {th('supplierName','Supplier' )}
-                <th style={{ padding: '8px 10px', background: '#0f172a', width: 64 }}></th>
+                <th style={{ padding: '8px 10px', background: '#111d30', width: 64 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -829,11 +829,11 @@ function ProductsScreen({ products, setProducts, onBack }) {
                 const isSel    = selected.has(p.id)
                 return (
                   <tr key={p.id} onClick={() => openEditor(p)} style={{
-                    borderBottom: '1px solid #1e293b', cursor: 'pointer',
+                    borderBottom: '1px solid #253349', cursor: 'pointer',
                     background: isActive ? PURPLE + '18' : isSel ? PURPLE + '10' : 'transparent'
                   }}
                     onMouseEnter={e => { if (!isActive && !isSel) { e.currentTarget.style.background = 'rgba(37,99,235,0.05)'; e.currentTarget.style.borderBottomColor = 'rgba(37,99,235,0.15)' } }}
-                    onMouseLeave={e => { if (!isActive && !isSel) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderBottomColor = '#1e293b' } }}
+                    onMouseLeave={e => { if (!isActive && !isSel) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderBottomColor = '#253349' } }}
                   >
                     <td style={{ padding: '7px 12px' }} onClick={e => e.stopPropagation()}>
                       <input type="checkbox" checked={isSel} onChange={() => toggleSelect(p.id)} style={{ cursor: 'pointer' }} />
@@ -841,44 +841,44 @@ function ProductsScreen({ products, setProducts, onBack }) {
                     <td style={{ padding: '7px 10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{
-                          width: 26, height: 26, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 4,
+                          width: 26, height: 26, background: '#111d30', border: '1px solid #253349', borderRadius: 4,
                           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0,
                           opacity: p.status === 'inactive' ? 0.5 : 1,
                         }}>🧴</div>
-                        <span style={{ color: p.status === 'inactive' ? '#475569' : '#f1f5f9', fontWeight: 500, whiteSpace: 'nowrap' }}>{p.name}</span>
+                        <span style={{ color: p.status === 'inactive' ? '#64748b' : '#f1f5f9', fontWeight: 500, whiteSpace: 'nowrap' }}>{p.name}</span>
                         {p.status === 'inactive' && (
                           <span style={{ padding: '1px 6px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 4, color: '#f87171', fontSize: 9, fontWeight: 700, letterSpacing: 0.3, flexShrink: 0 }}>INACTIVE</span>
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: '7px 10px', color: '#475569', maxWidth: 120 }}>
+                    <td style={{ padding: '7px 10px', color: '#64748b', maxWidth: 120 }}>
                       <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {p.description || '—'}
                       </span>
                     </td>
-                    <td style={{ padding: '7px 10px', color: '#475569', fontFamily: 'monospace', fontSize: 11, whiteSpace: 'nowrap' }}>{p.barcode}</td>
+                    <td style={{ padding: '7px 10px', color: '#64748b', fontFamily: 'monospace', fontSize: 11, whiteSpace: 'nowrap' }}>{p.barcode}</td>
                     <td style={{ padding: '7px 10px', color: '#64748b' }}>{p.size || '—'}</td>
                     <td style={{ padding: '7px 10px' }}>
-                      <span style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 3, padding: '2px 6px', color: '#64748b', fontSize: 10, whiteSpace: 'nowrap' }}>
+                      <span style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 3, padding: '2px 6px', color: '#64748b', fontSize: 10, whiteSpace: 'nowrap' }}>
                         {p.category}
                       </span>
                     </td>
                     <td style={{ padding: '7px 10px', color: '#22c55e', fontWeight: 700 }}>${p.systemPrice}</td>
                     <td style={{ padding: '7px 10px', color: '#ef4444', fontWeight: 600 }}>${p.minPrice}</td>
                     <td style={{ padding: '7px 10px', color: '#f39c12' }}>
-                      {p.costPrice ? `$${p.costPrice}` : <span style={{ color: '#334155' }}>—</span>}
+                      {p.costPrice ? `$${p.costPrice}` : <span style={{ color: '#415569' }}>—</span>}
                     </td>
                     <td style={{ padding: '7px 10px' }}>
                       {p.margin != null
                         ? <span style={{ color: marginColor(p.margin), fontWeight: 700 }}>{p.margin.toFixed(0)}%</span>
-                        : <span style={{ color: '#334155' }}>—</span>
+                        : <span style={{ color: '#415569' }}>—</span>
                       }
                     </td>
                     <td style={{ padding: '7px 10px' }}>
                       <span style={{ color: p.qty <= 2 ? '#ef4444' : p.qty <= 5 ? '#f39c12' : '#64748b', fontWeight: p.qty <= 2 ? 700 : 400 }}>{p.qty}</span>
                     </td>
                     <td style={{ padding: '7px 10px', color: '#64748b' }}>
-                      {p.supplierName || <span style={{ color: '#334155' }}>—</span>}
+                      {p.supplierName || <span style={{ color: '#415569' }}>—</span>}
                     </td>
                     <td style={{ padding: '7px 10px' }} onClick={e => e.stopPropagation()}>
                       <button onClick={() => openEditor(p)} style={{
@@ -907,7 +907,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
         {/* Deactivate confirmation modal */}
         {deactivatingProduct && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1400, backdropFilter: 'blur(4px)' }}>
-            <div style={{ background: 'linear-gradient(160deg,#0d1829 0%,#0a0f1e 100%)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, width: 420, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+            <div style={{ background: 'linear-gradient(160deg,#0d1829 0%,#0d1526 100%)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, width: 420, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 20 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>⛔</div>
                 <div>
@@ -915,7 +915,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
                   <p style={{ color: '#fca5a5', fontSize: 12 }}>{deactivatingProduct.name}</p>
                 </div>
               </div>
-              <p style={{ color: '#475569', fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
+              <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
                 This product will be <strong style={{ color: '#ef4444' }}>removed from active sales</strong> and hidden from sellers.
                 All past sales, reports, and inventory history will be preserved.
               </p>
@@ -928,7 +928,7 @@ function ProductsScreen({ products, setProducts, onBack }) {
                 </div>
               )}
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setDeactivatingProduct(null)} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid #1e293b', borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => setDeactivatingProduct(null)} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid #253349', borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer' }}>Cancel</button>
                 <button onClick={() => { handleDeactivateProduct(deactivatingProduct); setDeactivatingProduct(null) }} style={{ flex: 2, padding: '11px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 6, color: '#fca5a5', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#fca5a5' }}
@@ -946,14 +946,14 @@ function ProductsScreen({ products, setProducts, onBack }) {
 
 function ComingSoon({ label, moduleColor, onBack }) {
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, color: '#1e293b' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, color: '#253349' }}>
       <button onClick={onBack} style={{
         position: 'absolute', top: 16, left: 16,
         background: 'none', border: 'none', color: '#64748b', fontSize: 18, cursor: 'pointer'
       }}>←</button>
       <div style={{ fontSize: 48, opacity: 0.3 }}>🚧</div>
       <p style={{ fontSize: 18, fontWeight: 700, color: moduleColor || '#64748b', opacity: 0.7 }}>{label}</p>
-      <p style={{ fontSize: 13, color: '#334155' }}>This module is coming soon</p>
+      <p style={{ fontSize: 13, color: '#415569' }}>This module is coming soon</p>
     </div>
   )
 }
@@ -963,11 +963,11 @@ function ComingSoon({ label, moduleColor, onBack }) {
 function HeaderBtn({ onClick, children }) {
   return (
     <button onClick={onClick} style={{
-      padding: '6px 16px', background: 'transparent', border: '1px solid #1e293b',
+      padding: '6px 16px', background: 'transparent', border: '1px solid #253349',
       borderRadius: 4, color: '#64748b', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s',
     }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
     >{children}</button>
   )
 }
@@ -977,7 +977,7 @@ function HeaderBtn({ onClick, children }) {
 function AdminHeader({ goBack, onClose, backLabel = '← Back' }) {
   return (
     <div style={{
-      height: 50, background: '#0a0f1e', borderBottom: `2px solid ${PURPLE}`,
+      height: 50, background: '#0d1526', borderBottom: `2px solid ${PURPLE}`,
       display: 'flex', alignItems: 'center', padding: '0 20px', gap: 14, flexShrink: 0
     }}>
       <span style={{ fontWeight: 800, fontSize: 15, color: '#93c5fd', letterSpacing: 2 }}>{SYSTEM_NAME}</span>
@@ -1043,7 +1043,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'user-table') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Management" />
         <UsersScreen onBack={goBack} />
       </div>
@@ -1052,7 +1052,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'loc-settings') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Locations" />
         <LocationSettings onBack={goBack} />
       </div>
@@ -1077,7 +1077,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'product-table') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Management" />
         <ProductsScreen products={products} setProducts={setProducts} onBack={goBack} />
       </div>
@@ -1086,7 +1086,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'categories') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Products" />
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <CategoriesScreen onBack={goBack} />
@@ -1097,7 +1097,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'commission-settings') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Users" />
         <CommissionSettings onBack={goBack} />
       </div>
@@ -1106,7 +1106,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'bonus-rules') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Users" />
         <BonusRulesScreen onBack={goBack} />
       </div>
@@ -1115,7 +1115,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'customers-mgmt') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Customers" />
         <CustomersAdmin
           customers={customers}
@@ -1129,7 +1129,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'crm-settings') {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Customers" />
         <CRMSettings />
       </div>
@@ -1139,7 +1139,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
   // Coming soon overlay for non-implemented screens
   if (activeScreen && !activeScreen.screen) {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Back" />
         <div style={{ flex: 1, position: 'relative', display: 'flex' }}>
           <ComingSoon label={currentItem?.label} moduleColor={currentModule?.color} onBack={goBack} />
@@ -1150,21 +1150,21 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   // ── Main dashboard ────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#020817', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
 
       {/* Header */}
       <div style={{
-        height: 50, background: '#0a0f1e', borderBottom: `2px solid ${PURPLE}`,
+        height: 50, background: '#0d1526', borderBottom: `2px solid ${PURPLE}`,
         display: 'flex', alignItems: 'center', padding: '0 20px', gap: 14, flexShrink: 0
       }}>
         <span style={{ fontWeight: 800, fontSize: 15, color: '#93c5fd', letterSpacing: 2 }}>{SYSTEM_NAME}</span>
         <div style={{ background: 'rgba(124,58,237,0.2)', border: '1px solid rgba(124,58,237,0.35)', borderRadius: 6, padding: '3px 10px', fontSize: 10, fontWeight: 700, color: '#c4b5fd', letterSpacing: 1.5 }}>
           ADMIN
         </div>
-        <span style={{ color: '#475569', fontSize: 12 }}>Management</span>
+        <span style={{ color: '#64748b', fontSize: 12 }}>Management</span>
         {activeModule && (
           <>
-            <span style={{ color: '#475569' }}>›</span>
+            <span style={{ color: '#64748b' }}>›</span>
             <span style={{ color: currentModule?.color, fontSize: 12, fontWeight: 600 }}>
               {currentModule?.icon} {currentModule?.label}
             </span>
@@ -1180,11 +1180,11 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
         {/* LEFT — module tiles */}
         <div style={{
-          width: 260, background: '#0a0f1e', borderRight: '1px solid #1e293b',
+          width: 260, background: '#0d1526', borderRight: '1px solid #253349',
           display: 'flex', flexDirection: 'column', padding: 20, gap: 12, flexShrink: 0,
           overflowY: 'auto'
         }}>
-          <p style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>
+          <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>
             MODULES
           </p>
           {MODULES.map(mod => {
@@ -1196,29 +1196,29 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14,
                   padding: '16px 16px',
-                  background: isActive ? mod.color + '12' : '#0f172a',
-                  border: `1px solid ${isActive ? mod.color : '#1e293b'}`,
-                  borderLeft: `4px solid ${isActive ? mod.color : '#1e293b'}`,
+                  background: isActive ? mod.color + '12' : '#111d30',
+                  border: `1px solid ${isActive ? mod.color : '#253349'}`,
+                  borderLeft: `4px solid ${isActive ? mod.color : '#253349'}`,
                   borderRadius: 8, cursor: 'pointer', textAlign: 'left',
                   transition: 'all 0.15s',
                 }}
                 onMouseEnter={e => { if (!isActive) { e.currentTarget.style.borderColor = mod.color; e.currentTarget.style.borderLeftColor = mod.color; e.currentTarget.style.boxShadow = `0 0 16px ${mod.color}18` } }}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.borderLeftColor = '#1e293b'; e.currentTarget.style.boxShadow = 'none' } }}
+                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.borderLeftColor = '#253349'; e.currentTarget.style.boxShadow = 'none' } }}
               >
                 <div style={{
                   width: 40, height: 40, borderRadius: 10,
-                  background: isActive ? mod.color + '22' : '#0f172a',
-                  border: `1px solid ${isActive ? mod.color + '44' : '#1e293b'}`,
+                  background: isActive ? mod.color + '22' : '#111d30',
+                  border: `1px solid ${isActive ? mod.color + '44' : '#253349'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 20, flexShrink: 0
                 }}>
                   {mod.icon}
                 </div>
                 <div>
-                  <p style={{ color: isActive ? '#f1f5f9' : '#94a3b8', fontWeight: isActive ? 700 : 500, fontSize: 14 }}>
+                  <p style={{ color: isActive ? '#f1f5f9' : '#a8b8cc', fontWeight: isActive ? 700 : 500, fontSize: 14 }}>
                     {mod.label}
                   </p>
-                  <p style={{ color: '#475569', fontSize: 10, marginTop: 2 }}>
+                  <p style={{ color: '#64748b', fontSize: 10, marginTop: 2 }}>
                     {mod.submenu.length} options
                   </p>
                 </div>
@@ -1239,8 +1239,8 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
               background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.04) 0%, transparent 70%)',
             }}>
               <div style={{ fontSize: 56, opacity: 0.2 }}>⚙️</div>
-              <p style={{ fontSize: 20, fontWeight: 800, color: '#1e293b', letterSpacing: 2 }}>MANAGEMENT</p>
-              <p style={{ fontSize: 13, color: '#334155' }}>Select a module on the left to get started</p>
+              <p style={{ fontSize: 20, fontWeight: 800, color: '#253349', letterSpacing: 2 }}>MANAGEMENT</p>
+              <p style={{ fontSize: 13, color: '#415569' }}>Select a module on the left to get started</p>
             </div>
           )}
 
@@ -1249,7 +1249,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
               {/* Module header bar */}
               <div style={{
                 padding: '20px 28px 16px', borderBottom: '1px solid rgba(30,41,59,0.6)', flexShrink: 0,
-                background: `linear-gradient(135deg, ${currentModule.color}08 0%, #0a0f1e 60%)`,
+                background: `linear-gradient(135deg, ${currentModule.color}08 0%, #0d1526 60%)`,
                 borderLeft: `4px solid ${currentModule.color}`,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1258,7 +1258,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
                     <h2 style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800, letterSpacing: 0.5 }}>
                       {currentModule.label}
                     </h2>
-                    <p style={{ color: '#475569', fontSize: 12, marginTop: 2 }}>
+                    <p style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>
                       {currentModule.submenu.length} available options
                     </p>
                   </div>
@@ -1275,18 +1275,18 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
                       style={{
                         display: 'flex', alignItems: 'center', gap: 14,
                         padding: '16px 18px',
-                        background: '#0f172a', border: '1px solid #1e293b',
+                        background: '#111d30', border: '1px solid #253349',
                         borderRadius: 8, cursor: 'pointer', textAlign: 'left',
                         transition: 'all 0.12s',
                       }}
                       onMouseEnter={e => {
-                        e.currentTarget.style.background = '#0a0f1e'
+                        e.currentTarget.style.background = '#0d1526'
                         e.currentTarget.style.borderColor = currentModule.color + '66'
                         e.currentTarget.style.boxShadow = `0 0 16px ${currentModule.color}10`
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.background = '#0f172a'
-                        e.currentTarget.style.borderColor = '#1e293b'
+                        e.currentTarget.style.background = '#111d30'
+                        e.currentTarget.style.borderColor = '#253349'
                         e.currentTarget.style.boxShadow = 'none'
                       }}
                     >
@@ -1295,8 +1295,8 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
                         background: currentModule.color,
                         boxShadow: `0 0 6px ${currentModule.color}88`
                       }} />
-                      <span style={{ color: '#94a3b8', fontSize: 14, fontWeight: 500 }}>{item.label}</span>
-                      <span style={{ marginLeft: 'auto', color: '#475569', fontSize: 16 }}>›</span>
+                      <span style={{ color: '#a8b8cc', fontSize: 14, fontWeight: 500 }}>{item.label}</span>
+                      <span style={{ marginLeft: 'auto', color: '#64748b', fontSize: 16 }}>›</span>
                     </button>
                   ))}
                 </div>

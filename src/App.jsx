@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { loadActiveCategoryNames, ensureCategoriesSeeded, buildCategoryMap } from './utils/categoriesStorage'
 import { getTaxRate, getTaxRateById, loadLocationConfig, loadLocationConfigById, resolveSpareRateForDay, resolveSpareRateForDayById } from './utils/locationConfig'
 import { localId } from './domain/utils/ids'
@@ -462,13 +462,13 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'radial-gradient(ellipse at top, #0d1829 0%, #020817 60%)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'radial-gradient(ellipse at top, #0d1829 0%, #030e1e 60%)' }}>
 
       {/* TOP BAR */}
       <div style={{
         height: 50,
-        background: 'linear-gradient(90deg, #0a0f1e 0%, #0d1524 100%)',
-        borderBottom: '1px solid #1e293b',
+        background: 'linear-gradient(90deg, #0d1526 0%, #0d1524 100%)',
+        borderBottom: '1px solid #253349',
         display: 'flex', alignItems: 'center', padding: '0 16px', gap: 4, flexShrink: 0,
         boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
       }}>
@@ -527,19 +527,19 @@ export default function App() {
           onClick={handleLock}
           title="Lock Station"
           style={{
-            background: 'none', border: 'none', color: '#94a3b8',
+            background: 'none', border: 'none', color: '#a8b8cc',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             gap: 2, fontSize: 10, cursor: 'pointer',
             padding: '4px 8px', borderRadius: 4, transition: 'all 0.2s ease',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#fca5a5'; e.currentTarget.style.boxShadow = '0 0 12px rgba(239,68,68,0.15)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.boxShadow = 'none' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#a8b8cc'; e.currentTarget.style.boxShadow = 'none' }}
         >
           <svg width="18" height="20" viewBox="0 0 18 20" fill="none">
             <path d="M4 9V6a5 5 0 0 1 10 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
             <rect x="1" y="9" width="16" height="10" rx="3" fill="currentColor" opacity="0.85"/>
-            <circle cx="9" cy="14" r="2" fill="#0a0f1e"/>
-            <rect x="8" y="15" width="2" height="2.5" rx="0.5" fill="#0a0f1e"/>
+            <circle cx="9" cy="14" r="2" fill="#0d1526"/>
+            <rect x="8" y="15" width="2" height="2.5" rx="0.5" fill="#0d1526"/>
           </svg>
           Lock
         </button>
@@ -548,34 +548,34 @@ export default function App() {
         <button
           onClick={() => setShowCashDrawer(true)}
           style={{
-            background: 'none', border: 'none', color: '#94a3b8',
+            background: 'none', border: 'none', color: '#a8b8cc',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             gap: 2, fontSize: 10, cursor: 'pointer',
             padding: '4px 8px', borderRadius: 4, transition: 'all 0.2s ease',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.12)'; e.currentTarget.style.color = '#93c5fd'; e.currentTarget.style.boxShadow = '0 0 12px rgba(37,99,235,0.15)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.boxShadow = 'none' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#a8b8cc'; e.currentTarget.style.boxShadow = 'none' }}
         >
           {/* Cash drawer SVG — top body + sliding drawer + handle */}
           <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Shadow/depth */}
-            <rect x="1" y="2" width="20" height="15" rx="2" fill="#0f172a" />
+            <rect x="1" y="2" width="20" height="15" rx="2" fill="#111d30" />
             {/* Main body — top unit */}
-            <rect x="0" y="1" width="20" height="9" rx="2" fill="#334155" />
+            <rect x="0" y="1" width="20" height="9" rx="2" fill="#415569" />
             {/* Top highlight */}
-            <rect x="0" y="1" width="20" height="2.5" rx="2" fill="#475569" />
+            <rect x="0" y="1" width="20" height="2.5" rx="2" fill="#64748b" />
             {/* Bill slot */}
-            <rect x="4" y="4.5" width="9" height="1.2" rx="0.6" fill="#1e293b" />
+            <rect x="4" y="4.5" width="9" height="1.2" rx="0.6" fill="#253349" />
             {/* Status LED */}
             <circle cx="17" cy="5" r="1.2" fill="#22c55e" />
             <circle cx="17" cy="5" r="0.6" fill="#86efac" />
             {/* Drawer face */}
-            <rect x="0" y="11" width="20" height="6" rx="1.5" fill="#475569" />
+            <rect x="0" y="11" width="20" height="6" rx="1.5" fill="#64748b" />
             {/* Drawer top edge highlight */}
             <rect x="0" y="11" width="20" height="1.2" rx="1" fill="#64748b" />
             {/* Drawer handle */}
-            <rect x="5.5" y="13" width="9" height="2" rx="1" fill="#1e293b" />
-            <rect x="6" y="13.3" width="8" height="1" rx="0.5" fill="#334155" />
+            <rect x="5.5" y="13" width="9" height="2" rx="1" fill="#253349" />
+            <rect x="6" y="13.3" width="8" height="1" rx="0.5" fill="#415569" />
           </svg>
           Cash Drawer
         </button>
@@ -618,20 +618,20 @@ export default function App() {
               👤 {currentUser.name}
             </span>
           )}
-          <span style={{ color: '#475569', fontSize: 12 }}>
+          <span style={{ color: '#64748b', fontSize: 12 }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
           <button
             onClick={() => setPosSession(null)}
             title="Switch location / Log out"
             style={{
-              background: 'none', border: '1px solid #1e293b', borderRadius: 4,
+              background: 'none', border: '1px solid #253349', borderRadius: 4,
               color: '#64748b', fontSize: 10, cursor: 'pointer',
               padding: '4px 8px', display: 'flex', flexDirection: 'column',
               alignItems: 'center', gap: 2, transition: 'all 0.2s ease',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
           >
             <span style={{ fontSize: 14 }}>🔓</span>
             Switch
@@ -644,7 +644,7 @@ export default function App() {
 
         {/* CATEGORY SIDEBAR */}
         <div style={{
-          width: 110, background: '#0a0f1e', borderRight: '1px solid #1e293b',
+          width: 110, background: '#0d1526', borderRight: '1px solid #253349',
           display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0
         }}>
           {['All', ...loadActiveCategoryNames()].map(cat => (
@@ -658,7 +658,7 @@ export default function App() {
                 fontSize: 13, fontWeight: selectedCategory === cat ? 700 : 400,
                 cursor: 'pointer', textAlign: 'center', lineHeight: 1.3,
                 transition: 'all 0.2s ease',
-                borderLeft: selectedCategory === cat ? '2px solid #2563eb' : '2px solid transparent',
+                borderLeft: selectedCategory === cat ? '2px solid #3b82f6' : '2px solid transparent',
                 boxShadow: selectedCategory === cat ? 'inset 0 0 20px rgba(37,99,235,0.08)' : 'none',
               }}
             >
@@ -672,7 +672,7 @@ export default function App() {
 
           {/* Search + controls bar */}
           <div style={{
-            padding: '8px 12px', background: '#0a0f1e', borderBottom: '1px solid #1e293b',
+            padding: '8px 12px', background: '#0d1526', borderBottom: '1px solid #253349',
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
             <input
@@ -680,12 +680,12 @@ export default function App() {
               onChange={e => setSearch(e.target.value)}
               placeholder="Search product or scan barcode..."
               style={{
-                flex: 1, padding: '9px 14px', background: '#0f172a',
-                border: '1px solid #1e293b', borderRadius: 6, color: '#f1f5f9', fontSize: 14,
+                flex: 1, padding: '9px 14px', background: '#111d30',
+                border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9', fontSize: 14,
                 outline: 'none', transition: 'border-color 0.15s',
               }}
-              onFocus={e => { e.target.style.borderColor = '#2563eb' }}
-              onBlur={e => { e.target.style.borderColor = '#1e293b' }}
+              onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
+              onBlur={e => { e.target.style.borderColor = '#253349' }}
             />
             <BarcodeIconButton active={showBarcodeModal} onClick={() => setShowBarcodeModal(true)} />
 
@@ -695,9 +695,9 @@ export default function App() {
                 <button key={val} onClick={() => setSort(val)} style={{
                   padding: '5px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                   borderRadius: 5, border: '1px solid',
-                  borderColor: sortOrder === val ? '#2563eb' : '#1e293b',
+                  borderColor: sortOrder === val ? '#3b82f6' : '#253349',
                   background:  sortOrder === val ? 'rgba(37,99,235,0.15)' : 'transparent',
-                  color:       sortOrder === val ? '#93c5fd' : '#475569',
+                  color:       sortOrder === val ? '#93c5fd' : '#64748b',
                   transition: 'all 0.15s',
                 }}>{label}</button>
               ))}
@@ -709,15 +709,15 @@ export default function App() {
                 <button key={val} onClick={() => setView(val)} style={{
                   padding: '5px 9px', fontSize: 14, cursor: 'pointer',
                   borderRadius: 5, border: '1px solid',
-                  borderColor: viewMode === val ? '#2563eb' : '#1e293b',
+                  borderColor: viewMode === val ? '#3b82f6' : '#253349',
                   background:  viewMode === val ? 'rgba(37,99,235,0.15)' : 'transparent',
-                  color:       viewMode === val ? '#93c5fd' : '#475569',
+                  color:       viewMode === val ? '#93c5fd' : '#64748b',
                   transition: 'all 0.15s',
                 }}>{icon}</button>
               ))}
             </div>
 
-            <span style={{ color: '#334155', fontSize: 12, whiteSpace: 'nowrap' }}>
+            <span style={{ color: '#415569', fontSize: 12, whiteSpace: 'nowrap' }}>
               {sorted.length} items
             </span>
           </div>
@@ -727,8 +727,8 @@ export default function App() {
             <div style={{
               display: 'grid',
               gridTemplateColumns: '52px 1fr 180px 70px 60px 50px 60px',
-              padding: '9px 12px', background: '#0f172a',
-              borderBottom: '1px solid #1e293b', fontSize: 12, color: '#475569',
+              padding: '9px 12px', background: '#111d30',
+              borderBottom: '1px solid #253349', fontSize: 12, color: '#64748b',
               fontWeight: 600, letterSpacing: 0.4, flexShrink: 0,
             }}>
               <span>Photo</span><span>Product</span><span>Barcode</span>
@@ -739,7 +739,7 @@ export default function App() {
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {sorted.map(product => {
                 const locQty = product.qtyByLoc?.[posSession?.locationId] ?? product.qty
-                const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#94a3b8'
+                const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#a8b8cc'
                 const dColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#22c55e'
                 return (
                   <div key={product.id} style={{
@@ -751,22 +751,22 @@ export default function App() {
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.05)'; e.currentTarget.style.borderBottomColor = 'rgba(37,99,235,0.15)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderBottomColor = 'rgba(30,41,59,0.6)' }}
                   >
-                    <div style={{ width: 36, height: 36, background: '#0f172a', borderRadius: 6, border: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🧴</div>
+                    <div style={{ width: 36, height: 36, background: '#111d30', borderRadius: 6, border: '1px solid #253349', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🧴</div>
                     <div>
                       <p style={{ fontSize: 15, color: '#f1f5f9', fontWeight: 600 }}>{product.name}</p>
-                      {product.description && <p style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>{product.description}</p>}
+                      {product.description && <p style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{product.description}</p>}
                     </div>
-                    <span style={{ fontSize: 15, color: '#475569', fontFamily: "'Courier New', Courier, monospace", letterSpacing: 0.5 }}>{product.barcode}</span>
+                    <span style={{ fontSize: 15, color: '#64748b', fontFamily: "'Courier New', Courier, monospace", letterSpacing: 0.5 }}>{product.barcode}</span>
                     <span style={{ fontSize: 13, color: '#64748b' }}>{product.size}</span>
                     <span style={{ textAlign: 'right', fontSize: 15, fontWeight: 700, color: qColor }}>{locQty}</span>
                     <div style={{ width: 7, height: 7, borderRadius: '50%', margin: '0 auto', background: dColor, boxShadow: `0 0 6px ${dColor}` }} />
                     <button onClick={() => openEditModal(product)} style={{
-                      padding: '7px 14px', background: '#2563eb', border: 'none',
+                      padding: '7px 14px', background: '#3b82f6', border: 'none',
                       borderRadius: 7, color: '#fff', fontSize: 13, fontWeight: 700,
                       cursor: 'pointer', margin: '0 auto', display: 'block', transition: 'background 0.15s',
                     }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#2563eb' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#3b82f6' }}
                     >Add</button>
                   </div>
                 )
@@ -781,20 +781,20 @@ export default function App() {
                 {sorted.map(product => {
                   const locQty = product.qtyByLoc?.[posSession?.locationId] ?? product.qty
                   const dColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#22c55e'
-                  const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#94a3b8'
+                  const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#a8b8cc'
                   return (
                     <button key={product.id} onClick={() => openEditModal(product)} style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                      padding: '14px 12px', background: '#0f172a',
-                      border: '1px solid #1e293b', borderRadius: 8,
+                      padding: '14px 12px', background: '#111d30',
+                      border: '1px solid #253349', borderRadius: 8,
                       cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
                       gap: 6,
                     }}
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.08)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.35)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#0f172a'; e.currentTarget.style.borderColor = '#1e293b' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#111d30'; e.currentTarget.style.borderColor = '#253349' }}
                     >
                       <p style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 700, lineHeight: 1.3 }}>{product.name}</p>
-                      {product.size && <p style={{ fontSize: 11, color: '#475569' }}>{product.size}</p>}
+                      {product.size && <p style={{ fontSize: 11, color: '#64748b' }}>{product.size}</p>}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: dColor, boxShadow: `0 0 5px ${dColor}`, flexShrink: 0 }} />
                         <span style={{ fontSize: 11, color: qColor, fontWeight: 700 }}>{locQty} in stock</span>
@@ -822,15 +822,15 @@ export default function App() {
 
       {/* BOTTOM STATUS BAR */}
       <div style={{
-        height: 32, background: '#0a0f1e', borderTop: '1px solid #1e293b',
+        height: 32, background: '#0d1526', borderTop: '1px solid #253349',
         display: 'flex', alignItems: 'center', padding: '0 16px', gap: 20,
-        fontSize: 11, color: '#334155', flexShrink: 0
+        fontSize: 11, color: '#415569', flexShrink: 0
       }}>
         <span>{SYSTEM_NAME} v1.0</span>
         <span>•</span>
         <span>{posSession?.location || DEFAULT_LOCATION}</span>
         <span>•</span>
-        <span style={{ color: serverOnline ? '#22c55e' : '#475569' }}>
+        <span style={{ color: serverOnline ? '#22c55e' : '#64748b' }}>
           {serverOnline ? '● CRM online' : '○ CRM offline'}
         </span>
         {syncStatus === 'syncing' && <span style={{ color: '#f39c12' }}>⟳ syncing...</span>}
@@ -981,7 +981,7 @@ export default function App() {
       {cartError && (
         <div style={{
           position: 'fixed', bottom: 48, left: '50%', transform: 'translateX(-50%)',
-          background: '#0f172a', border: '1px solid #ef4444', borderRadius: 10,
+          background: '#111d30', border: '1px solid #ef4444', borderRadius: 10,
           padding: '14px 22px', color: '#f1f5f9', fontSize: 13, fontWeight: 600,
           zIndex: 2100, display: 'flex', alignItems: 'center', gap: 12,
           boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
@@ -995,7 +995,7 @@ export default function App() {
       {saleComplete && (
         <div style={{
           position: 'fixed', bottom: 48, left: '50%', transform: 'translateX(-50%)',
-          background: '#0f172a', border: '1px solid #22c55e', borderRadius: 10,
+          background: '#111d30', border: '1px solid #22c55e', borderRadius: 10,
           padding: '16px 24px', color: '#f1f5f9', fontSize: 14, fontWeight: 600,
           zIndex: 2000, display: 'flex', alignItems: 'center', gap: 14,
           boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
@@ -1005,14 +1005,14 @@ export default function App() {
             <div style={{ fontWeight: 700, fontSize: 15 }}>
               Sale #{saleComplete.number} — ${saleComplete.total.toFixed(2)}
             </div>
-            <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+            <div style={{ color: '#a8b8cc', fontSize: 12, marginTop: 2 }}>
               {saleComplete.employee} · {saleComplete.paymentMethod}
             </div>
           </div>
           <button
             onClick={() => printReceipt(saleComplete)}
             style={{
-              marginLeft: 4, background: '#2563eb', border: 'none',
+              marginLeft: 4, background: '#3b82f6', border: 'none',
               borderRadius: 6, color: '#fff', padding: '8px 16px',
               cursor: 'pointer', fontSize: 13, fontWeight: 700,
             }}
@@ -1022,7 +1022,7 @@ export default function App() {
           <button
             onClick={() => setSaleComplete(null)}
             style={{
-              background: 'transparent', border: '1px solid #1e293b',
+              background: 'transparent', border: '1px solid #253349',
               borderRadius: 6, color: '#64748b', padding: '8px 14px',
               cursor: 'pointer', fontSize: 13,
             }}

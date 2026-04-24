@@ -1,4 +1,4 @@
-import { sumItemSpare } from '../utils/spareUtils'
+﻿import { sumItemSpare } from '../utils/spareUtils'
 
 export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale, currentUser, onFreezeSale, onEditItem }) {
   const subtotal      = items.reduce((sum, i) => sum + i.subtotal, 0)
@@ -10,20 +10,20 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
 
   return (
     <div style={{
-      width: 320, background: '#0a0f1e', borderLeft: '1px solid #1e293b',
+      width: 320, background: '#0d1526', borderLeft: '1px solid #253349',
       display: 'flex', flexDirection: 'column', height: '100%'
     }}>
       {/* Header */}
       <div style={{
-        padding: '12px 16px', background: '#0f172a',
-        borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 8
+        padding: '12px 16px', background: '#111d30',
+        borderBottom: '1px solid #253349', display: 'flex', alignItems: 'center', gap: 8
       }}>
         <span style={{ fontSize: 16 }}>🛒</span>
         <span style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9' }}>Cart</span>
         {items.length > 0 && (
           <span style={{
             fontSize: 11, marginLeft: 4,
-            color: totalSpare < 0 ? '#ef4444' : '#475569'
+            color: totalSpare < 0 ? '#ef4444' : '#64748b'
           }}>
             {totalSpare < 0 ? '-' : '+'}{Math.floor(Math.abs(totalSpare))}
           </span>
@@ -41,9 +41,9 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       {/* Column headers */}
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 48px 68px 68px 28px',
-        padding: '8px 12px', background: '#0f172a',
-        borderBottom: '1px solid #1e293b',
-        fontSize: 11, color: '#475569', fontWeight: 600, letterSpacing: 0.4,
+        padding: '8px 12px', background: '#111d30',
+        borderBottom: '1px solid #253349',
+        fontSize: 11, color: '#64748b', fontWeight: 600, letterSpacing: 0.4,
       }}>
         <span>PRODUCT</span>
         <span style={{ textAlign: 'center' }}>QTY</span>
@@ -56,7 +56,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
         {empty && (
           <div style={{
-            padding: 32, textAlign: 'center', color: '#334155', fontSize: 13,
+            padding: 32, textAlign: 'center', color: '#415569', fontSize: 13,
             background: 'radial-gradient(ellipse at center, rgba(37,99,235,0.03) 0%, transparent 70%)',
             height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
@@ -103,25 +103,25 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
                   </p>
                 )}
               </div>
-              <span style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: '#94a3b8' }}>
+              <span style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: '#a8b8cc' }}>
                 {item.qty}
               </span>
-              <span style={{ textAlign: 'right', fontSize: 14, color: '#94a3b8' }}>
+              <span style={{ textAlign: 'right', fontSize: 14, color: '#a8b8cc' }}>
                 ${item.systemPrice.toFixed(2)}
               </span>
               <span style={{
                 textAlign: 'right', fontSize: 15, fontWeight: 700,
-                color: isExchange ? '#475569' : '#22c55e'
+                color: isExchange ? '#64748b' : '#22c55e'
               }}>
                 ${item.subtotal.toFixed(2)}
               </span>
               <button onClick={e => { e.stopPropagation(); onRemove(idx) }} style={{
-                background: 'none', border: 'none', color: '#475569',
+                background: 'none', border: 'none', color: '#64748b',
                 fontSize: 17, cursor: 'pointer', textAlign: 'center',
                 transition: 'color 0.1s',
               }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#ef4444' }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#475569' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#64748b' }}
               >×</button>
             </div>
           )
@@ -129,19 +129,19 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       </div>
 
       {/* Totals */}
-      <div style={{ padding: '14px 16px', borderTop: '1px solid #1e293b', background: '#0f172a' }}>
+      <div style={{ padding: '14px 16px', borderTop: '1px solid #253349', background: '#111d30' }}>
         {[
-          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#94a3b8' },
+          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#a8b8cc' },
           ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#64748b' }] : []),
         ].map(row => (
           <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ color: '#475569', fontSize: 13 }}>{row.label}</span>
+            <span style={{ color: '#64748b', fontSize: 13 }}>{row.label}</span>
             <span style={{ color: row.color, fontSize: 13 }}>{row.value}</span>
           </div>
         ))}
         <div style={{
           display: 'flex', justifyContent: 'space-between',
-          borderTop: '1px solid #1e293b', paddingTop: 10, marginTop: 6
+          borderTop: '1px solid #253349', paddingTop: 10, marginTop: 6
         }}>
           <span style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800 }}>Total</span>
           <span style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800 }}>${total.toFixed(2)}</span>
@@ -149,18 +149,18 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       </div>
 
       {/* Action buttons */}
-      <div style={{ padding: '12px 16px', background: '#0a0f1e', borderTop: '1px solid #1e293b' }}>
+      <div style={{ padding: '12px 16px', background: '#0d1526', borderTop: '1px solid #253349' }}>
         <button
           onClick={onCompleteSale}
           disabled={empty}
           style={{
             width: '100%', padding: '14px', marginBottom: 8,
             background: empty
-              ? '#0f172a'
-              : 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-            border: empty ? '1px solid #1e293b' : 'none',
+              ? '#111d30'
+              : 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
+            border: empty ? '1px solid #253349' : 'none',
             borderRadius: 10,
-            color: empty ? '#334155' : '#fff',
+            color: empty ? '#415569' : '#fff',
             fontSize: 15, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             cursor: empty ? 'not-allowed' : 'pointer',
@@ -179,9 +179,9 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
           style={{
             width: '100%', padding: '9px',
             background: 'rgba(255,255,255,0.03)',
-            border: `1px solid ${empty ? '#1e293b' : '#263354'}`,
+            border: `1px solid ${empty ? '#253349' : '#263354'}`,
             borderRadius: 10,
-            color: empty ? '#334155' : '#64748b',
+            color: empty ? '#415569' : '#64748b',
             fontSize: 12, fontWeight: 500,
             cursor: empty ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s ease',

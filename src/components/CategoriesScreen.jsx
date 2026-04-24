@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CategoriesScreen.jsx
  * Admin → Products → Categories
  * Full CRUD for product categories with persistence.
@@ -13,16 +13,16 @@ import {
 } from '../utils/categoriesStorage'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
-const BLUE   = '#2563eb'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
+const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
-const MUTED  = '#475569'
-const DIM    = '#94a3b8'
+const MUTED  = '#64748b'
+const DIM    = '#a8b8cc'
 const TEXT   = '#f1f5f9'
 const PURPLE = '#8b5cf6'
 
@@ -62,7 +62,7 @@ function EditPanel({ cat, onSave, onClose }) {
   }
 
   const lbl = (text, dim) => (
-    <label style={{ color: dim ? '#334155' : MUTED, fontSize: 10, fontWeight: 700, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
+    <label style={{ color: dim ? '#415569' : MUTED, fontSize: 10, fontWeight: 700, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
       {text}
     </label>
   )
@@ -189,7 +189,7 @@ function EditPanel({ cat, onSave, onClose }) {
             }}>
               <strong>Rate is automatic</strong> — uses the day tier table:<br />
               $600+ → 20% · $1000+ → 25% · $1500+ → 30%<br />
-              <span style={{ color: '#475569' }}>Configure tiers in Admin → Users → Commission Settings</span>
+              <span style={{ color: '#64748b' }}>Configure tiers in Admin → Users → Commission Settings</span>
             </div>
           )}
           {rateRequired && commissionRate && (
@@ -217,7 +217,7 @@ function EditPanel({ cat, onSave, onClose }) {
                   onClick={() => setSpareCommissionEnabled(v => !v)}
                   style={{
                     width: 34, height: 18, borderRadius: 9, cursor: 'pointer', flexShrink: 0,
-                    background: spareCommissionEnabled ? AMBER : '#1e293b',
+                    background: spareCommissionEnabled ? AMBER : '#253349',
                     border: `1px solid ${spareCommissionEnabled ? AMBER : BORDER}`,
                     position: 'relative', transition: 'all 0.2s',
                   }}
@@ -233,7 +233,7 @@ function EditPanel({ cat, onSave, onClose }) {
                   <p style={{ color: spareCommissionEnabled ? AMBER : MUTED, fontSize: 11, fontWeight: 700, margin: 0 }}>
                     Also pay spare commission
                   </p>
-                  <p style={{ color: '#475569', fontSize: 10, margin: '2px 0 0' }}>
+                  <p style={{ color: '#64748b', fontSize: 10, margin: '2px 0 0' }}>
                     Spare will use the NC spare rate (configured in Commission Settings)
                   </p>
                 </div>
@@ -241,7 +241,7 @@ function EditPanel({ cat, onSave, onClose }) {
             </div>
           )}
           {(!commissionType || commissionType === 'none') && (
-            <p style={{ color: '#334155', fontSize: 10, lineHeight: 1.4, marginTop: 4 }}>
+            <p style={{ color: '#415569', fontSize: 10, lineHeight: 1.4, marginTop: 4 }}>
               Select a type to configure commission for this category.
             </p>
           )}
@@ -261,7 +261,7 @@ function EditPanel({ cat, onSave, onClose }) {
 
         {/* Created */}
         {cat.createdAt && (
-          <p style={{ color: '#334155', fontSize: 10 }}>
+          <p style={{ color: '#415569', fontSize: 10 }}>
             Created: {new Date(cat.createdAt).toLocaleDateString('en-US')}
           </p>
         )}
@@ -567,7 +567,7 @@ export default function CategoriesScreen({ onBack }) {
                       title="Move up"
                       style={{
                         padding: '3px 7px', background: CARD, border: `1px solid ${BORDER}`,
-                        borderRadius: 4, color: isFirst ? '#334155' : DIM,
+                        borderRadius: 4, color: isFirst ? '#415569' : DIM,
                         cursor: isFirst ? 'default' : 'pointer', fontSize: 11,
                       }}
                     >▲</button>
@@ -577,7 +577,7 @@ export default function CategoriesScreen({ onBack }) {
                       title="Move down"
                       style={{
                         padding: '3px 7px', background: CARD, border: `1px solid ${BORDER}`,
-                        borderRadius: 4, color: isLast ? '#334155' : DIM,
+                        borderRadius: 4, color: isLast ? '#415569' : DIM,
                         cursor: isLast ? 'default' : 'pointer', fontSize: 11,
                       }}
                     >▼</button>
@@ -622,7 +622,7 @@ export default function CategoriesScreen({ onBack }) {
           {/* Footer note */}
           <div style={{
             padding: '10px 16px', borderTop: `1px solid ${BORDER}`,
-            fontSize: 11, color: '#334155', flexShrink: 0,
+            fontSize: 11, color: '#415569', flexShrink: 0,
           }}>
             {counts.active} active · {counts.inactive} inactive · Deactivating a category does not affect existing products.
           </div>

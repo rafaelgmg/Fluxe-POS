@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback } from 'react'
 import { COLORS } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { localDateKey } from '../utils/dateUtils'
@@ -13,9 +13,9 @@ const AVATAR_COLORS = [
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG     = 'radial-gradient(ellipse at center, #1a2a4a 0%, #0a0a1a 100%)'
 const PANEL  = 'rgba(15,23,42,0.7)'
-const BORDER = '#1e293b'
-const MUTED  = '#475569'
-const DIM    = '#334155'
+const BORDER = '#253349'
+const MUTED  = '#64748b'
+const DIM    = '#415569'
 const GOLD   = COLORS.accent   // amber/gold
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -509,7 +509,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
               {rest.map((person, i) => (
                 <div key={person.name} style={{
-                  background: '#0f172a', border: `1px solid ${BORDER}`,
+                  background: '#111d30', border: `1px solid ${BORDER}`,
                   borderRadius: 10, padding: '10px 16px',
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}>
@@ -522,7 +522,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                     fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
                   }}>{person.initials}</div>
                   <div>
-                    <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 2 }}>{person.name}</p>
+                    <p style={{ color: '#a8b8cc', fontSize: 13, marginBottom: 2 }}>{person.name}</p>
                     <p style={{ color: person.color, fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
                       {fmt(person.value)}
                     </p>
@@ -578,7 +578,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                     <p style={{
-                      color: isFirst ? '#fff' : '#94a3b8',
+                      color: isFirst ? '#fff' : '#a8b8cc',
                       fontSize: isFirst ? 16 : 14,
                       fontWeight: isFirst ? 700 : 500,
                     }}>{person.name}</p>
@@ -643,7 +643,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
             Cross-kiosk
           </span>
         )}
-        <span style={{ color: '#1e293b' }}>·</span>
+        <span style={{ color: '#253349' }}>·</span>
         <span>{subtitle}</span>
       </div>
     </div>

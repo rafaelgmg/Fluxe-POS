@@ -1,17 +1,17 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { loadBonusRules, saveBonusRules, nextRuleId } from '../utils/bonusStorage'
 import { localDateKey } from '../utils/dateUtils'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
 const TEXT   = '#f1f5f9'
-const MUTED  = '#475569'
-const DIM    = '#94a3b8'
+const MUTED  = '#64748b'
+const DIM    = '#a8b8cc'
 const GREEN  = '#22c55e'
-const BLUE   = '#2563eb'
+const BLUE   = '#3b82f6'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 const PURPLE = '#8b5cf6'
@@ -111,7 +111,7 @@ function TierEditor({ tiers, onChange }) {
         <tbody>
           {tiers.length === 0 && !addMode && (
             <tr>
-              <td colSpan={3} style={{ ...tdS, textAlign: 'center', color: '#334155', padding: 16 }}>
+              <td colSpan={3} style={{ ...tdS, textAlign: 'center', color: '#415569', padding: 16 }}>
                 No tiers — click + Add
               </td>
             </tr>

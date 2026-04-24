@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { loadCRM } from '../utils/crmStorage'
 import { LOCATIONS_CFG } from '../config/branding'
@@ -15,18 +15,18 @@ import { loadLocationConfig } from '../utils/locationConfig'
 import { verifyEmployeePin } from '../services/supabaseAuth'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
-const BLUE   = '#2563eb'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
+const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
 const PURPLE = '#8b5cf6'
-const MUTED  = '#475569'
+const MUTED  = '#64748b'
 const TEXT   = '#f1f5f9'
-const DIM    = '#94a3b8'
+const DIM    = '#a8b8cc'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt$ = (n) => `$${(n || 0).toFixed(2)}`
@@ -221,14 +221,14 @@ function InvoiceProductsTable({ items = [], invoiceTax, invoiceSubtotal }) {
         </thead>
         <tbody>
           {items.length === 0 && (
-            <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: '#334155', fontSize: 12 }}>No items</td></tr>
+            <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: '#415569', fontSize: 12 }}>No items</td></tr>
           )}
           {items.map((item, i) => {
             const lineTax   = (item.subtotal || 0) * taxFraction
             const lineTotal = (item.subtotal || 0) + lineTax
             return (
               <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.5)' }}>
-                <td style={tdStyle({ fontFamily: 'monospace', fontSize: 10, color: '#334155' })}>{item.barcode || item.product?.barcode || '—'}</td>
+                <td style={tdStyle({ fontFamily: 'monospace', fontSize: 10, color: '#415569' })}>{item.barcode || item.product?.barcode || '—'}</td>
                 <td style={tdStyle({ color: TEXT, fontWeight: 500 })}>{item.product?.name || item.name}</td>
                 <td style={tdStyle({ color: MUTED })}>{item.product?.description || item.description || '—'}</td>
                 <td style={tdStyle()}>{item.product?.size || item.size || '—'}</td>
@@ -442,7 +442,7 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
         padding: '8px 12px', background: 'transparent',
         border: `1px solid ${BORDER}`, borderRadius: 6,
-        color: disabled ? '#334155' : (color || DIM), fontSize: 10, fontWeight: 600,
+        color: disabled ? '#415569' : (color || DIM), fontSize: 10, fontWeight: 600,
         cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease',
         letterSpacing: 0.3,
       }}
@@ -661,7 +661,7 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
       {toast && (
         <div style={{
           position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-          background: '#0f172a', border: `1px solid ${BORDER}`, borderRadius: 8,
+          background: '#111d30', border: `1px solid ${BORDER}`, borderRadius: 8,
           padding: '10px 20px', color: TEXT, fontSize: 13, fontWeight: 500,
           zIndex: 1200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           animation: 'none',
@@ -721,7 +721,7 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
           <tbody>
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#334155', fontSize: 13 }}>
+                <td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#415569', fontSize: 13 }}>
                   No invoices in this period
                 </td>
               </tr>
@@ -1141,7 +1141,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
       border: `1px solid ${active ? 'transparent' : BORDER}`,
       borderRadius: 8,
       background: active
-        ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
+        ? 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)'
         : 'rgba(255,255,255,0.04)',
       color: active ? '#fff' : DIM,
       fontSize: 12,
@@ -1385,7 +1385,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                       <tbody>
                         {rows.length === 0 && (
                           <tr>
-                            <td colSpan={cols.length + (mode === 'admin' ? 1 : 0)} style={{ padding: 32, textAlign: 'center', color: '#334155', fontSize: 13 }}>
+                            <td colSpan={cols.length + (mode === 'admin' ? 1 : 0)} style={{ padding: 32, textAlign: 'center', color: '#415569', fontSize: 13 }}>
                               No sales in selected period
                             </td>
                           </tr>
@@ -1515,7 +1515,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                   rate >= 0.30 ? PURPLE :
                   rate >= 0.25 ? BLUE :
                   rate >= 0.20 ? GREEN :
-                  '#334155'
+                  '#415569'
 
                 return (
                   <div>
@@ -1585,7 +1585,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                         <tbody>
                           {productCommissionLines.length === 0 && (
                             <tr>
-                              <td colSpan={12} style={{ padding: 40, textAlign: 'center', color: '#334155', fontSize: 13 }}>
+                              <td colSpan={12} style={{ padding: 40, textAlign: 'center', color: '#415569', fontSize: 13 }}>
                                 No items sold in this period
                               </td>
                             </tr>
@@ -1611,7 +1611,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                                 }}>{line.tierLabel}</span>
                               </td>
                               <td style={tdS({ textAlign: 'right' })}>
-                                <span style={{ color: line.commission > 0 ? GREEN : '#334155', fontWeight: line.commission > 0 ? 700 : 400 }}>
+                                <span style={{ color: line.commission > 0 ? GREEN : '#415569', fontWeight: line.commission > 0 ? 700 : 400 }}>
                                   {fmt$(line.commission)}
                                 </span>
                                 {line.productCommission !== null && (
@@ -1620,7 +1620,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                                   </div>
                                 )}
                               </td>
-                              <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#475569' })}>{line.barcode}</td>
+                              <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#64748b' })}>{line.barcode}</td>
                               <td style={tdS({ color: TEXT, fontWeight: 600, maxWidth: 160 })}>{line.name}</td>
                               <td style={tdS({ color: MUTED, maxWidth: 140 })}>{line.description || '—'}</td>
                               <td style={tdS()}>{line.size}</td>
@@ -1702,7 +1702,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                       </thead>
                       <tbody>
                         {productsSold.length === 0 && (
-                          <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#334155', fontSize: 12 }}>No products sold in this period</td></tr>
+                          <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#415569', fontSize: 12 }}>No products sold in this period</td></tr>
                         )}
                         {productsSold.map((p, i) => (
                           <tr key={p.name + p.size} style={{
@@ -1755,7 +1755,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                       </thead>
                       <tbody>
                         {clockRecords.length === 0 && (
-                          <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#334155', fontSize: 12 }}>No clock records in this period</td></tr>
+                          <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#415569', fontSize: 12 }}>No clock records in this period</td></tr>
                         )}
                         {[...clockRecords].reverse().map((r, i) => {
                           const ms = r.clockOut ? new Date(r.clockOut) - new Date(r.clockIn) : null
@@ -1821,7 +1821,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                       </thead>
                       <tbody>
                         {spareInvoices.length === 0 && (
-                          <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#334155', fontSize: 12 }}>No spare recorded in this period</td></tr>
+                          <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#415569', fontSize: 12 }}>No spare recorded in this period</td></tr>
                         )}
                         {spareInvoices.map((s, i) => (
                           <tr key={s.number} style={{
@@ -1929,19 +1929,19 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                                 </td>
                                 <td style={tdS()}>
                                   {c.noPurchase
-                                    ? (c.capturedAt ? <span style={{ color: MUTED }}>{fmtDateTime(c.capturedAt)} <span style={{ fontSize: 9, color: '#334155' }}>(captured)</span></span> : '—')
+                                    ? (c.capturedAt ? <span style={{ color: MUTED }}>{fmtDateTime(c.capturedAt)} <span style={{ fontSize: 9, color: '#415569' }}>(captured)</span></span> : '—')
                                     : (c.firstPurchase ? fmtDateTime(c.firstPurchase) : '—')
                                   }
                                 </td>
                                 <td style={tdS()}>
-                                  {c.noPurchase ? <span style={{ color: '#334155' }}>—</span> : (c.lastPurchase ? fmtDateTime(c.lastPurchase) : '—')}
+                                  {c.noPurchase ? <span style={{ color: '#415569' }}>—</span> : (c.lastPurchase ? fmtDateTime(c.lastPurchase) : '—')}
                                 </td>
                                 <td style={tdS()}>{c.location}</td>
                                 <td style={tdS({ textAlign: 'right', color: c.noPurchase ? MUTED : GREEN, fontWeight: 700 })}>
                                   {c.noPurchase ? '—' : fmt$(c.totalSpent)}
                                 </td>
                                 <td style={tdS({ textAlign: 'right' })}>
-                                  {c.noPurchase ? <span style={{ color: '#334155' }}>—</span> : c.purchaseCount}
+                                  {c.noPurchase ? <span style={{ color: '#415569' }}>—</span> : c.purchaseCount}
                                 </td>
                                 <td style={tdS({ textAlign: 'right', color: c.periodPurchases > 0 ? AMBER : MUTED })}>
                                   {c.noPurchase || c.periodPurchases === 0 ? '—' : fmt$(c.periodSpent)}
@@ -1949,7 +1949,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                                 <td style={tdS({ textAlign: 'center' })}>
                                   {c.capturedInPeriod
                                     ? <span style={{ color: GREEN, fontWeight: 700, fontSize: 11 }}>★ NEW</span>
-                                    : <span style={{ color: '#334155' }}>—</span>}
+                                    : <span style={{ color: '#415569' }}>—</span>}
                                 </td>
                               </tr>
                             ))}
@@ -1970,7 +1970,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                   <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
                   <p style={{ color: TEXT, fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Deductions</p>
                   <p style={{ color: MUTED, fontSize: 12 }}>No deductions recorded for this period.</p>
-                  <p style={{ color: '#334155', fontSize: 11, marginTop: 8 }}>Deductions will appear here once recorded by management.</p>
+                  <p style={{ color: '#415569', fontSize: 11, marginTop: 8 }}>Deductions will appear here once recorded by management.</p>
                 </div>
               )}
 
@@ -1983,7 +1983,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                   <div style={{ fontSize: 32, marginBottom: 12 }}>💰</div>
                   <p style={{ color: TEXT, fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Reimbursements</p>
                   <p style={{ color: MUTED, fontSize: 12 }}>No reimbursements recorded for this period.</p>
-                  <p style={{ color: '#334155', fontSize: 11, marginTop: 8 }}>Reimbursements will appear here once recorded by management.</p>
+                  <p style={{ color: '#415569', fontSize: 11, marginTop: 8 }}>Reimbursements will appear here once recorded by management.</p>
                 </div>
               )}
             </div>

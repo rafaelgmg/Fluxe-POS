@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FrozenSalesModal.jsx
  *
  * Lista as vendas congeladas (❄️ Freeze Sale).
@@ -11,15 +11,15 @@
  *   onClose()    — fecha o modal
  */
 
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
-const BLUE   = '#2563eb'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
+const BLUE   = '#3b82f6'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
-const MUTED  = '#475569'
-const DIM    = '#94a3b8'
+const MUTED  = '#64748b'
+const DIM    = '#a8b8cc'
 const TEXT   = '#f1f5f9'
 
 function fmt$(n) {
@@ -41,7 +41,7 @@ export default function FrozenSalesModal({ frozenSales, onResume, onDiscard, onC
       zIndex: 1100, backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)',
+        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
         border: `1px solid ${BORDER}`, borderRadius: 12,
         width: 520, maxHeight: '80vh',
         display: 'flex', flexDirection: 'column',

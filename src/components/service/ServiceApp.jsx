@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ServiceApp.jsx — Fluxe Service Mode Shell
  *
  * Rendered instead of the retail POS when a location has business_type === 'service'.
@@ -47,13 +47,13 @@ export default function ServiceApp({ posSession, currentUser, onLogout }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', height: '100vh',
-      background: 'radial-gradient(ellipse at top, #0d1829 0%, #020817 60%)',
+      background: 'radial-gradient(ellipse at top, #0d1829 0%, #030e1e 60%)',
     }}>
 
       {/* ── TOP BAR — identical style to retail top bar ─────────────────────── */}
       <div style={{
         height: 50,
-        background: 'linear-gradient(90deg, #0a0f1e 0%, #0d1524 100%)',
+        background: 'linear-gradient(90deg, #0d1526 0%, #0d1524 100%)',
         borderBottom: `1px solid ${C.border}`,
         display: 'flex', alignItems: 'center', padding: '0 16px', gap: 8, flexShrink: 0,
         boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
@@ -117,7 +117,7 @@ export default function ServiceApp({ posSession, currentUser, onLogout }) {
         {/* ── SIDEBAR NAV ───────────────────────────────────────────────────── */}
         <nav style={{
           width: 180,
-          background: '#0a0f1e',
+          background: '#0d1526',
           borderRight: `1px solid ${C.border}`,
           display: 'flex', flexDirection: 'column',
           paddingTop: 12, flexShrink: 0, overflowY: 'auto',

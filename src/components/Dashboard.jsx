@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+﻿import { useState, useMemo, useCallback, useEffect } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { fetchTodayClockRecords } from '../services/supabaseRead'
 import {
@@ -8,11 +8,11 @@ import {
 } from '../services/dashboardService'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
-const MUTED  = '#475569'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
+const MUTED  = '#64748b'
 const TEXT   = '#f1f5f9'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ function fmtDateTime(iso) {
     d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
 
-const METHOD_COLOR = { cash: '#22c55e', card: '#2563eb', external: '#8b5cf6', check: '#f59e0b' }
+const METHOD_COLOR = { cash: '#22c55e', card: '#3b82f6', external: '#8b5cf6', check: '#f59e0b' }
 function methodColor(m) { return METHOD_COLOR[(m || '').toLowerCase()] || '#64748b' }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ function BreakdownTable({ rows, maxRows = 8, showSpare = false }) {
       {top.length === 0 && <p style={{ color: MUTED, fontSize: 12 }}>No data</p>}
       {top.map((r, i) => (
         <div key={r.label + i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, color: '#334155', width: 16, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+          <span style={{ fontSize: 11, color: '#415569', width: 16, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
               <span style={{ fontSize: 12, color: TEXT, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -83,9 +83,9 @@ function BreakdownTable({ rows, maxRows = 8, showSpare = false }) {
                 {fmt(r.total)}
               </span>
             </div>
-            <div style={{ height: 3, background: '#1e293b', borderRadius: 2 }}>
+            <div style={{ height: 3, background: '#253349', borderRadius: 2 }}>
               <div style={{
-                height: '100%', borderRadius: 2, background: '#2563eb',
+                height: '100%', borderRadius: 2, background: '#3b82f6',
                 width: `${Math.max(2, (r.total / maxVal) * 100)}%`,
                 transition: 'width 0.4s ease',
               }} />
@@ -206,7 +206,7 @@ export default function Dashboard({ onClose, sales = [] }) {
             <button key={p.key} onClick={() => setPreset(p.key)} style={{
               padding: '5px 11px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
               borderRadius: 6, border: '1px solid',
-              borderColor: preset === p.key ? '#2563eb' : BORDER,
+              borderColor: preset === p.key ? '#3b82f6' : BORDER,
               background:  preset === p.key ? 'rgba(37,99,235,0.15)' : 'transparent',
               color:       preset === p.key ? '#93c5fd' : MUTED,
               transition:  'all 0.15s',
@@ -245,7 +245,7 @@ export default function Dashboard({ onClose, sales = [] }) {
             padding: '6px 14px', background: 'transparent', border: `1px solid ${BORDER}`,
             borderRadius: 6, color: MUTED, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s',
           }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.color = '#93c5fd' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#93c5fd' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED }}
           >⟳ Refresh</button>
 
@@ -268,7 +268,7 @@ export default function Dashboard({ onClose, sales = [] }) {
           <KpiCard icon="💵" label="NET REVENUE"     value={kpis.netRevenue}    color="#22c55e" sub={`${kpis.saleCount} sale${kpis.saleCount !== 1 ? 's' : ''}`} />
           <KpiCard icon="💰" label="GROSS REVENUE"   value={kpis.grossRevenue}  color="#60a5fa" />
           <KpiCard icon="🏛️"  label="TAX COLLECTED"  value={kpis.taxRevenue}    color="#f59e0b" />
-          <KpiCard icon="📦" label="INVENTORY COST"  value={kpis.inventoryCost} color="#94a3b8" />
+          <KpiCard icon="📦" label="INVENTORY COST"  value={kpis.inventoryCost} color="#a8b8cc" />
           <KpiCard
             icon={kpis.netProfit >= 0 ? '📈' : '📉'}
             label="NET PROFIT"
@@ -380,7 +380,7 @@ export default function Dashboard({ onClose, sales = [] }) {
               </div>
             )
           }
-          <p style={{ fontSize: 10, color: '#334155', marginTop: 10 }}>
+          <p style={{ fontSize: 10, color: '#415569', marginTop: 10 }}>
             ℹ️ Data refreshed from Supabase — click Refresh to update.
           </p>
         </Panel>

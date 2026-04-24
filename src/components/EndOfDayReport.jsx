@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { DEFAULT_LOCATION } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { loadCRM } from '../utils/crmStorage'
@@ -6,17 +6,17 @@ import { fetchSalesByLocationAndDate, fetchClockRecordsByDate } from '../service
 import { byPaymentMethod } from '../services/dashboardService'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
-const BLUE   = '#2563eb'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
+const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 const PURPLE = '#8b5cf6'
-const MUTED  = '#475569'
-const DIM    = '#94a3b8'
+const MUTED  = '#64748b'
+const DIM    = '#a8b8cc'
 const TEXT   = '#f1f5f9'
 const ORANGE = '#f97316'
 const CYAN   = '#06b6d4'
@@ -336,7 +336,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
         {/* ── Body ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 22, display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-          <p style={{ color: '#334155', fontSize: 11 }}>{dateLabel} · Printed at {printedAt}</p>
+          <p style={{ color: '#415569', fontSize: 11 }}>{dateLabel} · Printed at {printedAt}</p>
 
           {/* ══ OVERVIEW ══ */}
           {section === 'overview' && (
@@ -411,7 +411,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                         }}>{todayNewCustomers.length} new</span>
                       </div>
                       {leadsByEmployee.length === 0 ? (
-                        <p style={{ color: '#334155', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>None captured</p>
+                        <p style={{ color: '#415569', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>None captured</p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                           {leadsByEmployee.map(([name, count], i) => (
@@ -423,7 +423,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                                 <span style={{ color: CYAN, fontSize: 12, fontWeight: 700 }}>{count} lead{count !== 1 ? 's' : ''}</span>
                               </div>
                               <div style={{ height: 4, background: BORDER, borderRadius: 2 }}>
-                                <div style={{ height: '100%', borderRadius: 2, background: i === 0 ? CYAN : '#334155', width: `${(count / maxLeads) * 100}%` }} />
+                                <div style={{ height: '100%', borderRadius: 2, background: i === 0 ? CYAN : '#415569', width: `${(count / maxLeads) * 100}%` }} />
                               </div>
                             </div>
                           ))}
@@ -462,10 +462,10 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                               <td style={{ padding: '9px 14px', color: GREEN, fontSize: 13, fontWeight: 700, textAlign: 'right' }}>{fmt$(emp.subtotal)}</td>
                               <td style={{ padding: '9px 14px', color: PURPLE, fontSize: 12, textAlign: 'right' }}>{fmt$(emp.spare)}</td>
                               <td style={{ padding: '9px 14px', color: CYAN, fontSize: 12, textAlign: 'right' }}>
-                                {emp.commission > 0 ? fmt$(emp.commission) : <span style={{ color: '#334155' }}>—</span>}
+                                {emp.commission > 0 ? fmt$(emp.commission) : <span style={{ color: '#415569' }}>—</span>}
                               </td>
                               <td style={{ padding: '9px 14px', color: AMBER, fontSize: 12, textAlign: 'right' }}>
-                                {hrs != null ? fmtHrs(hrs) : <span style={{ color: '#334155' }}>—</span>}
+                                {hrs != null ? fmtHrs(hrs) : <span style={{ color: '#415569' }}>—</span>}
                               </td>
                             </tr>
                           )
@@ -477,9 +477,9 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                           <td style={{ padding: '9px 14px', color: GREEN, fontSize: 13, fontWeight: 800, textAlign: 'right' }}>{fmt$(netRevenue)}</td>
                           <td style={{ padding: '9px 14px', color: PURPLE, fontSize: 12, fontWeight: 700, textAlign: 'right' }}>{fmt$(totalSpare)}</td>
                           <td style={{ padding: '9px 14px', color: CYAN, fontSize: 12, fontWeight: 700, textAlign: 'right' }}>
-                            {totalCommission > 0 ? fmt$(totalCommission) : <span style={{ color: '#334155' }}>—</span>}
+                            {totalCommission > 0 ? fmt$(totalCommission) : <span style={{ color: '#415569' }}>—</span>}
                           </td>
-                          <td style={{ padding: '9px 14px', color: '#334155', fontSize: 11, textAlign: 'right' }}>—</td>
+                          <td style={{ padding: '9px 14px', color: '#415569', fontSize: 11, textAlign: 'right' }}>—</td>
                         </tr>
                       </tbody>
                     </table>
@@ -532,7 +532,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                     >{saved ? '✓ Saved' : 'Save Notes'}</button>
                   </div>
 
-                  <p style={{ color: '#334155', fontSize: 11, textAlign: 'center' }}>
+                  <p style={{ color: '#415569', fontSize: 11, textAlign: 'center' }}>
                     No Refunds. Exchanges within 14 days.
                   </p>
                 </>
@@ -559,7 +559,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
                 <tbody>
                   {allDaySales.length === 0 && (
                     <tr>
-                      <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: '#334155', fontSize: 13 }}>
+                      <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: '#415569', fontSize: 13 }}>
                         No sales{isToday ? ' today' : ' on this date'}
                       </td>
                     </tr>

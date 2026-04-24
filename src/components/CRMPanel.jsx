@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { BUSINESS_SHORT, COLORS } from '../config/branding'
 
 const TEAL = COLORS.crm
@@ -156,20 +156,20 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
 
   return (
     <div style={{
-      width: 420, background: '#0a0f1e', borderLeft: '1px solid #1e293b',
+      width: 420, background: '#0d1526', borderLeft: '1px solid #253349',
       display: 'flex', flexDirection: 'column', flexShrink: 0
     }}>
       {/* Header */}
       <div style={{
-        padding: '16px 18px 12px', background: '#0f172a',
-        borderBottom: '1px solid #1e293b', flexShrink: 0
+        padding: '16px 18px 12px', background: '#111d30',
+        borderBottom: '1px solid #253349', flexShrink: 0
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h3 style={{ color: '#f1f5f9', fontSize: 17, fontWeight: 700 }}>
               {customer.firstName} {customer.lastName}
             </h3>
-            <p style={{ color: '#475569', fontSize: 12, marginTop: 2 }}>
+            <p style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>
               {customer.phone ? fmtPhone(customer.phone) : '—'}
               {customer.email && ` · ${customer.email}`}
             </p>
@@ -191,11 +191,11 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
                     onClick={() => setConfirmArchive(true)}
                     style={{
                       padding: '4px 10px', background: 'none',
-                      border: '1px solid #1e293b', borderRadius: 5,
-                      color: '#475569', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
+                      border: '1px solid #253349', borderRadius: 5,
+                      color: '#64748b', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#475569' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
                   >Delete</button>
                 </div>
               ) : (
@@ -206,7 +206,7 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
                     borderRadius: 5, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 700,
                   }}>Yes, delete</button>
                   <button onClick={() => setConfirmArchive(false)} style={{
-                    padding: '4px 8px', background: 'none', border: '1px solid #1e293b',
+                    padding: '4px 8px', background: 'none', border: '1px solid #253349',
                     borderRadius: 5, color: '#64748b', fontSize: 11, cursor: 'pointer',
                   }}>Cancel</button>
                 </div>
@@ -218,12 +218,12 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
                   onClick={() => setConfirmArchive(true)}
                   title="Archive customer"
                   style={{
-                    background: 'none', border: '1px solid #1e293b', borderRadius: 5,
-                    color: '#475569', fontSize: 11, cursor: 'pointer', padding: '4px 10px',
+                    background: 'none', border: '1px solid #253349', borderRadius: 5,
+                    color: '#64748b', fontSize: 11, cursor: 'pointer', padding: '4px 10px',
                     transition: 'all 0.15s',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#475569' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
                 >Archive</button>
               ) : (
                 <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
@@ -233,7 +233,7 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
                     borderRadius: 5, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 700,
                   }}>Yes</button>
                   <button onClick={() => setConfirmArchive(false)} style={{
-                    padding: '4px 8px', background: 'none', border: '1px solid #1e293b',
+                    padding: '4px 8px', background: 'none', border: '1px solid #253349',
                     borderRadius: 5, color: '#64748b', fontSize: 11, cursor: 'pointer',
                   }}>No</button>
                 </div>
@@ -253,17 +253,17 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
             { label: 'Last Purchase', value: last ? fmtDate(last) : '—',               color: '#64748b' },
           ].map(s => (
             <div key={s.label} style={{
-              flex: 1, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, padding: '8px 10px', textAlign: 'center'
+              flex: 1, background: '#111d30', border: '1px solid #253349', borderRadius: 6, padding: '8px 10px', textAlign: 'center'
             }}>
               <p style={{ color: s.color, fontWeight: 800, fontSize: 15 }}>{s.value}</p>
-              <p style={{ color: '#475569', fontSize: 10, marginTop: 2 }}>{s.label}</p>
+              <p style={{ color: '#64748b', fontSize: 10, marginTop: 2 }}>{s.label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', background: '#0f172a', borderBottom: '1px solid rgba(30,41,59,0.6)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', background: '#111d30', borderBottom: '1px solid rgba(30,41,59,0.6)', flexShrink: 0 }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
             flex: 1, padding: '9px 6px', background: 'none',
@@ -285,8 +285,8 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
 
             {/* Fragrance preferences */}
             {getFragrancePrefs(customer).length > 0 && (
-              <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, padding: '12px 14px' }}>
-                <p style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>
+              <div style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 6, padding: '12px 14px' }}>
+                <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>
                   FRAGRANCE PREFERENCES
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -305,19 +305,19 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
 
             {/* Notes */}
             {customer.notes && (
-              <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, padding: '12px 14px' }}>
-                <p style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
+              <div style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 6, padding: '12px 14px' }}>
+                <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
                   NOTES
                 </p>
-                <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                <p style={{ color: '#a8b8cc', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
                   {customer.notes}
                 </p>
               </div>
             )}
 
             {/* Other info */}
-            <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, padding: '12px 14px' }}>
-              <p style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>
+            <div style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 6, padding: '12px 14px' }}>
+              <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>
                 PROFILE
               </p>
               {[
@@ -326,8 +326,8 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
                 { label: 'Customer Since', value: fmtDate(customer.createdAt) },
               ].map(f => (
                 <div key={f.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ color: '#475569', fontSize: 12 }}>{f.label}</span>
-                  <span style={{ color: '#94a3b8', fontSize: 12 }}>{f.value}</span>
+                  <span style={{ color: '#64748b', fontSize: 12 }}>{f.label}</span>
+                  <span style={{ color: '#a8b8cc', fontSize: 12 }}>{f.value}</span>
                 </div>
               ))}
             </div>
@@ -339,15 +339,15 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {(customer.purchases || []).slice().reverse().map((p, idx) => (
               <div key={idx} style={{
-                background: '#0f172a', borderRadius: 8, padding: '12px 14px',
-                border: '1px solid #1e293b'
+                background: '#111d30', borderRadius: 8, padding: '12px 14px',
+                border: '1px solid #253349'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <div>
                     <p style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 600 }}>
                       Invoice #{p.invoiceNumber}
                     </p>
-                    <p style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>
+                    <p style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>
                       {fmtDate(p.date)} · {p.seller} · {p.location}
                     </p>
                   </div>
@@ -355,10 +355,10 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
                     <p style={{ color: '#22c55e', fontWeight: 800, fontSize: 15 }}>
                       ${p.total.toFixed(2)}
                     </p>
-                    <p style={{ color: '#475569', fontSize: 10, marginTop: 2 }}>{p.paymentMethod}</p>
+                    <p style={{ color: '#64748b', fontSize: 10, marginTop: 2 }}>{p.paymentMethod}</p>
                   </div>
                 </div>
-                <div style={{ borderTop: '1px solid #1e293b', paddingTop: 8 }}>
+                <div style={{ borderTop: '1px solid #253349', paddingTop: 8 }}>
                   {p.items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span style={{ color: '#64748b', fontSize: 12 }}>
@@ -379,20 +379,20 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
         {activeTab === 'products' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {products.length === 0 && (
-              <p style={{ color: '#475569', textAlign: 'center', marginTop: 20, fontSize: 13 }}>No products</p>
+              <p style={{ color: '#64748b', textAlign: 'center', marginTop: 20, fontSize: 13 }}>No products</p>
             )}
             {products.map((p, idx) => (
               <div key={idx} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, padding: '10px 14px'
+                background: '#111d30', border: '1px solid #253349', borderRadius: 6, padding: '10px 14px'
               }}>
                 <div>
-                  <p style={{ color: '#94a3b8', fontSize: 13, fontWeight: 500 }}>{p.name}</p>
-                  {p.size && <p style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>{p.size}</p>}
+                  <p style={{ color: '#a8b8cc', fontSize: 13, fontWeight: 500 }}>{p.name}</p>
+                  {p.size && <p style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>{p.size}</p>}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ color: TEAL, fontWeight: 700, fontSize: 13 }}>×{p.qty}</p>
-                  <p style={{ color: '#334155', fontSize: 10, marginTop: 2 }}>{p.times} order{p.times > 1 ? 's' : ''}</p>
+                  <p style={{ color: '#415569', fontSize: 10, marginTop: 2 }}>{p.times} order{p.times > 1 ? 's' : ''}</p>
                 </div>
               </div>
             ))}
@@ -407,13 +407,13 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[['firstName','First Name'],['lastName','Last Name']].map(([k, label]) => (
                 <div key={k}>
-                  <label style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>{label.toUpperCase()}</label>
+                  <label style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>{label.toUpperCase()}</label>
                   <input
                     value={editForm[k]}
                     onChange={e => setEdit(k, e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none' }}
+                    style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none' }}
                     onFocus={e => { e.target.style.borderColor = TEAL }}
-                    onBlur={e =>  { e.target.style.borderColor = '#1e293b' }}
+                    onBlur={e =>  { e.target.style.borderColor = '#253349' }}
                   />
                 </div>
               ))}
@@ -423,14 +423,14 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[['phone','Phone'],['email','Email']].map(([k, label]) => (
                 <div key={k}>
-                  <label style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>{label.toUpperCase()}</label>
+                  <label style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>{label.toUpperCase()}</label>
                   <input
                     value={editForm[k]}
                     onChange={e => setEdit(k, e.target.value)}
                     type={k === 'email' ? 'email' : 'tel'}
-                    style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none' }}
+                    style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none' }}
                     onFocus={e => { e.target.style.borderColor = TEAL }}
-                    onBlur={e =>  { e.target.style.borderColor = '#1e293b' }}
+                    onBlur={e =>  { e.target.style.borderColor = '#253349' }}
                   />
                 </div>
               ))}
@@ -441,27 +441,27 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
 
             {/* Birthday */}
             <div>
-              <label style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>BIRTHDAY</label>
+              <label style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>BIRTHDAY</label>
               <input
                 type="date"
                 value={editForm.birthday}
                 onChange={e => setEdit('birthday', e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none', colorScheme: 'dark' }}
+                style={{ width: '100%', padding: '8px 10px', boxSizing: 'border-box', background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none', colorScheme: 'dark' }}
               />
             </div>
 
             {/* Fragrance preferences */}
             <div>
-              <label style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 8 }}>FRAGRANCE PREFERENCES</label>
+              <label style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 8 }}>FRAGRANCE PREFERENCES</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {FRAGRANCE_OPTIONS.map(opt => {
                   const active = editForm.fragrancePreferences.includes(opt)
                   return (
                     <button key={opt} onClick={() => toggleEditFragrance(opt)} style={{
                       padding: '4px 10px', borderRadius: 20, fontSize: 11, cursor: 'pointer',
-                      border: `1px solid ${active ? TEAL : '#1e293b'}`,
-                      background: active ? TEAL + '22' : '#0f172a',
-                      color: active ? TEAL : '#475569',
+                      border: `1px solid ${active ? TEAL : '#253349'}`,
+                      background: active ? TEAL + '22' : '#111d30',
+                      color: active ? TEAL : '#64748b',
                       fontWeight: active ? 700 : 400, transition: 'all 0.12s',
                     }}>{opt}</button>
                   )
@@ -471,22 +471,22 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
 
             {/* Notes */}
             <div>
-              <label style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>NOTES</label>
+              <label style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 5 }}>NOTES</label>
               <textarea
                 value={editForm.notes}
                 onChange={e => setEdit('notes', e.target.value)}
                 rows={3}
-                style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, color: '#f1f5f9', fontSize: 13, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
+                style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9', fontSize: 13, resize: 'vertical', fontFamily: 'inherit', outline: 'none' }}
                 onFocus={e => { e.target.style.borderColor = TEAL }}
-                onBlur={e =>  { e.target.style.borderColor = '#1e293b' }}
+                onBlur={e =>  { e.target.style.borderColor = '#253349' }}
               />
             </div>
 
             {/* Marketing consent */}
             <label style={{
               display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
-              background: '#0f172a', borderRadius: 6, padding: '10px 12px',
-              border: `1px solid ${editForm.marketingConsent ? TEAL + '66' : '#1e293b'}`,
+              background: '#111d30', borderRadius: 6, padding: '10px 12px',
+              border: `1px solid ${editForm.marketingConsent ? TEAL + '66' : '#253349'}`,
             }}>
               <input
                 type="checkbox"
@@ -496,7 +496,7 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
               />
               <div>
                 <p style={{ color: '#f1f5f9', fontSize: 12, fontWeight: 600 }}>Receive promotions & offers</p>
-                <p style={{ color: '#334155', fontSize: 11, marginTop: 1 }}>Marketing consent via SMS or email</p>
+                <p style={{ color: '#415569', fontSize: 11, marginTop: 1 }}>Marketing consent via SMS or email</p>
               </div>
             </label>
 
@@ -506,9 +506,9 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
               disabled={!editCanSave}
               style={{
                 padding: '12px', borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: editCanSave ? 'pointer' : 'not-allowed',
-                background: editSaved ? '#22c55e' : editCanSave ? TEAL : '#0f172a',
-                border: editCanSave ? 'none' : '1px solid #1e293b',
-                color: editCanSave ? '#fff' : '#334155',
+                background: editSaved ? '#22c55e' : editCanSave ? TEAL : '#111d30',
+                border: editCanSave ? 'none' : '1px solid #253349',
+                color: editCanSave ? '#fff' : '#415569',
                 transition: 'background 0.2s',
               }}
             >
@@ -529,8 +529,8 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
               ].map(ch => (
                 <button key={ch.id} onClick={() => setSmsChannel(ch.id)} style={{
                   flex: 1, padding: '9px',
-                  background: smsChannel === ch.id ? ch.color + '22' : '#0f172a',
-                  border: `1px solid ${smsChannel === ch.id ? ch.color : '#1e293b'}`,
+                  background: smsChannel === ch.id ? ch.color + '22' : '#111d30',
+                  border: `1px solid ${smsChannel === ch.id ? ch.color : '#253349'}`,
                   borderRadius: 6, color: smsChannel === ch.id ? ch.color : '#64748b',
                   fontWeight: smsChannel === ch.id ? 700 : 400,
                   fontSize: 13, cursor: 'pointer'
@@ -539,9 +539,9 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
             </div>
 
             {/* Recipient info */}
-            <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 6, padding: '10px 14px' }}>
-              <p style={{ color: '#475569', fontSize: 11 }}>
-                To: <span style={{ color: '#94a3b8' }}>{customer.firstName} {customer.lastName}</span>
+            <div style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 6, padding: '10px 14px' }}>
+              <p style={{ color: '#64748b', fontSize: 11 }}>
+                To: <span style={{ color: '#a8b8cc' }}>{customer.firstName} {customer.lastName}</span>
                 {' · '}
                 <span style={{ color: TEAL }}>{fmtPhone(customer.phone)}</span>
               </p>
@@ -554,7 +554,7 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
 
             {/* Message textarea */}
             <div>
-              <label style={{ color: '#475569', fontSize: 11, display: 'block', marginBottom: 4 }}>
+              <label style={{ color: '#64748b', fontSize: 11, display: 'block', marginBottom: 4 }}>
                 Message
               </label>
               <textarea
@@ -564,15 +564,15 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
                 rows={4}
                 style={{
                   width: '100%', boxSizing: 'border-box',
-                  padding: '10px 12px', background: '#0f172a',
-                  border: '1px solid #1e293b', borderRadius: 6,
+                  padding: '10px 12px', background: '#111d30',
+                  border: '1px solid #253349', borderRadius: 6,
                   color: '#f1f5f9', fontSize: 13, resize: 'vertical',
                   fontFamily: 'inherit', outline: 'none'
                 }}
-                onFocus={e => { e.target.style.borderColor = '#2563eb' }}
-                onBlur={e =>  { e.target.style.borderColor = '#1e293b' }}
+                onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
+                onBlur={e =>  { e.target.style.borderColor = '#253349' }}
               />
-              <p style={{ color: '#475569', fontSize: 11, marginTop: 4 }}>
+              <p style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
                 {smsText.length} characters
                 {' · '}Your name + "Reply STOP to unsubscribe" will be appended automatically.
               </p>
@@ -583,10 +583,10 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
               onClick={handleSend}
               disabled={!smsText.trim() || smsSending || !onSendSMS}
               style={{
-                padding: '12px', background: !smsText.trim() || smsSending ? '#0f172a' : TEAL,
-                border: !smsText.trim() || smsSending ? '1px solid #1e293b' : 'none',
+                padding: '12px', background: !smsText.trim() || smsSending ? '#111d30' : TEAL,
+                border: !smsText.trim() || smsSending ? '1px solid #253349' : 'none',
                 borderRadius: 6,
-                color: !smsText.trim() || smsSending ? '#475569' : '#fff',
+                color: !smsText.trim() || smsSending ? '#64748b' : '#fff',
                 fontSize: 14, fontWeight: 700,
                 cursor: !smsText.trim() || smsSending ? 'not-allowed' : 'pointer'
               }}
@@ -608,7 +608,7 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
             )}
 
             {!onSendSMS && (
-              <p style={{ color: '#475569', fontSize: 12, textAlign: 'center', marginTop: 8 }}>
+              <p style={{ color: '#64748b', fontSize: 12, textAlign: 'center', marginTop: 8 }}>
                 Server offline — start the backend to send messages
               </p>
             )}
@@ -686,13 +686,13 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#020817', zIndex: 1000,
+      position: 'fixed', inset: 0, background: '#030e1e', zIndex: 1000,
       display: 'flex', flexDirection: 'column'
     }}>
 
       {/* Header */}
       <div style={{
-        height: 50, background: '#0a0f1e', borderBottom: `2px solid ${TEAL}`,
+        height: 50, background: '#0d1526', borderBottom: `2px solid ${TEAL}`,
         display: 'flex', alignItems: 'center', padding: '0 20px', gap: 14, flexShrink: 0
       }}>
         <span style={{ fontWeight: 800, fontSize: 15, color: '#f59e0b', letterSpacing: 1 }}>
@@ -704,10 +704,10 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
         }}>
           CRM
         </div>
-        <span style={{ color: '#475569', fontSize: 12 }}>
+        <span style={{ color: '#64748b', fontSize: 12 }}>
           {sorted.length}/{activeCustomers.length} customer{activeCustomers.length !== 1 ? 's' : ''}
         </span>
-        <span style={{ color: serverOnline ? '#22c55e' : '#475569', fontSize: 12 }}>
+        <span style={{ color: serverOnline ? '#22c55e' : '#64748b', fontSize: 12 }}>
           {serverOnline ? '● SMS online' : '○ SMS offline'}
         </span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -729,7 +729,7 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
                 title="Print scheduled messages to browser console"
                 style={{
                   padding: '5px 12px', background: 'transparent',
-                  border: '1px solid #1e293b', borderRadius: 4,
+                  border: '1px solid #253349', borderRadius: 4,
                   color: '#64748b', fontSize: 11, cursor: 'pointer'
                 }}
               >
@@ -742,19 +742,19 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
             title="Export all customers to CSV"
             style={{
               padding: '5px 12px', background: 'transparent',
-              border: '1px solid #1e293b', borderRadius: 4,
+              border: '1px solid #253349', borderRadius: 4,
               color: '#64748b', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#22c55e'; e.currentTarget.style.color = '#22c55e' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
           >⬇ Export CSV</button>
           <button onClick={onClose} style={{
-            padding: '6px 16px', background: 'transparent', border: '1px solid #1e293b',
+            padding: '6px 16px', background: 'transparent', border: '1px solid #253349',
             borderRadius: 4, color: '#64748b', fontSize: 12, cursor: 'pointer',
             transition: 'all 0.15s',
           }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
           >← Back to POS</button>
         </div>
       </div>
@@ -763,22 +763,22 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* Customer list */}
-        <div style={{ width: 340, background: '#0a0f1e', borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ width: 340, background: '#0d1526', borderRight: '1px solid #253349', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
 
           {/* Search + Filter */}
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid #1e293b', flexShrink: 0 }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid #253349', flexShrink: 0 }}>
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search name, phone or email..."
               style={{
                 width: '100%', padding: '8px 12px', boxSizing: 'border-box',
-                background: '#0f172a', border: '1px solid #1e293b',
+                background: '#111d30', border: '1px solid #253349',
                 borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none',
                 marginBottom: 10,
               }}
-              onFocus={e => { e.target.style.borderColor = '#2563eb' }}
-              onBlur={e =>  { e.target.style.borderColor = '#1e293b' }}
+              onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
+              onBlur={e =>  { e.target.style.borderColor = '#253349' }}
             />
             {/* Purchase filter pills */}
             <div style={{ display: 'flex', gap: 6 }}>
@@ -797,9 +797,9 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
                     style={{
                       flex: 1, padding: '5px 0', fontSize: 10, fontWeight: 600,
                       borderRadius: 5, cursor: 'pointer', transition: 'all 0.15s',
-                      border: `1px solid ${isActive ? activeColor : '#1e293b'}`,
-                      background: isActive ? activeColor + '22' : '#0f172a',
-                      color: isActive ? activeColor : '#475569',
+                      border: `1px solid ${isActive ? activeColor : '#253349'}`,
+                      background: isActive ? activeColor + '22' : '#111d30',
+                      color: isActive ? activeColor : '#64748b',
                     }}
                   >
                     {f.label}
@@ -812,7 +812,7 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
           {/* List */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {sorted.length === 0 && (
-              <div style={{ padding: 28, textAlign: 'center', color: '#475569', fontSize: 13 }}>
+              <div style={{ padding: 28, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
                 {search ? 'No customers found' : 'No customers yet'}
               </div>
             )}
@@ -840,7 +840,7 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
                       <p style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 14 }}>
                         {c.firstName} {c.lastName}
                       </p>
-                      <p style={{ color: '#475569', fontSize: 11, marginTop: 2 }}>
+                      <p style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>
                         {fmtPhone(c.phone)}
                       </p>
                     </div>
@@ -860,7 +860,7 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
                         No Purchase
                       </span>
                     ) : (
-                      <span style={{ color: '#475569', fontSize: 11 }}>
+                      <span style={{ color: '#64748b', fontSize: 11 }}>
                         {(c.purchases || []).length} purchase{(c.purchases || []).length !== 1 ? 's' : ''}
                       </span>
                     )}
@@ -874,9 +874,9 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
                       </span>
                     ))}
                     {getFragrancePrefs(c).length > 2 && (
-                      <span style={{ color: '#334155', fontSize: 10 }}>+{getFragrancePrefs(c).length - 2}</span>
+                      <span style={{ color: '#415569', fontSize: 10 }}>+{getFragrancePrefs(c).length - 2}</span>
                     )}
-                    <span style={{ marginLeft: 'auto', color: '#334155', fontSize: 11 }}>
+                    <span style={{ marginLeft: 'auto', color: '#415569', fontSize: 11 }}>
                       {last ? fmtDate(last) : '—'}
                     </span>
                   </div>
@@ -903,8 +903,8 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
             background: 'radial-gradient(ellipse at center, rgba(14,116,144,0.04) 0%, transparent 70%)',
           }}>
             <div style={{ fontSize: 48, opacity: 0.25 }}>👥</div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', letterSpacing: 1 }}>CUSTOMERS</p>
-            <p style={{ fontSize: 13, color: '#334155' }}>Select a customer to view details</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#253349', letterSpacing: 1 }}>CUSTOMERS</p>
+            <p style={{ fontSize: 13, color: '#415569' }}>Select a customer to view details</p>
           </div>
         )}
       </div>

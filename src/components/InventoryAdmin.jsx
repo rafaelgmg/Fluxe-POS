@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { CATEGORIES } from '../data/mockData'
 import { LOCATIONS_CFG } from '../config/branding'
 import BarcodeModal, { BarcodeIconButton } from './BarcodeModal'
@@ -18,17 +18,17 @@ function addEntry(setHistory, entry) {
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
-const BLUE   = '#2563eb'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
+const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
-const MUTED  = '#475569'
+const MUTED  = '#64748b'
 const TEXT   = '#f1f5f9'
-const DIM    = '#94a3b8'
+const DIM    = '#a8b8cc'
 const GREEN_COLOR = '#22c55e'
 
 const fmt$   = (n) => `$${(n || 0).toFixed(2)}`
@@ -227,7 +227,7 @@ function DeactivateModal({ product, sales = [], onConfirm, onClose }) {
         {/* Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, padding: '11px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, color: MUTED, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = TEXT }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#64748b'; e.currentTarget.style.color = TEXT }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED }}
           >Cancel</button>
           <button onClick={onConfirm} style={{ flex: 2, padding: '11px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 6, color: '#fca5a5', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
@@ -430,7 +430,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
 
       {/* Location selector bar */}
       <div style={{ background: '#060d1a', borderBottom: `1px solid ${BORDER}`, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-        <span style={{ color: '#334155', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginRight: 4 }}>LOCATION</span>
+        <span style={{ color: '#415569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginRight: 4 }}>LOCATION</span>
         {LOCATIONS_CFG.map(loc => {
           const locQty = filtered.reduce((s, p) => s + (p.qtyByLoc?.[loc.id] ?? 0), 0)
           const isActive = activeLoc === loc.id
@@ -445,12 +445,12 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
               <span style={{
                 padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 700,
                 background: isActive ? 'rgba(37,99,235,0.15)' : 'rgba(30,41,59,0.5)',
-                color: isActive ? BLUE : '#475569',
+                color: isActive ? BLUE : '#64748b',
               }}>{locQty}</span>
             </button>
           )
         })}
-        <span style={{ marginLeft: 'auto', color: '#334155', fontSize: 10 }}>
+        <span style={{ marginLeft: 'auto', color: '#415569', fontSize: 10 }}>
           All locations · {products.reduce((s, p) => s + (p.qty || 0), 0)} total units
         </span>
       </div>
@@ -484,7 +484,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
             <button key={id} onClick={() => { setStatusFilter(id); setEditing(null) }} style={{
               padding: '4px 12px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
               background: statusFilter === id ? `${color}18` : 'transparent',
-              color: statusFilter === id ? color : '#475569',
+              color: statusFilter === id ? color : '#64748b',
               outline: statusFilter === id ? `1px solid ${color}40` : 'none',
             }}>
               {label} <span style={{ opacity: 0.7 }}>{counts[id]}</span>
@@ -518,7 +518,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#334155' }}>No products found</td></tr>
+                <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#415569' }}>No products found</td></tr>
               )}
               {filtered.map((p, i) => {
                 const isEditing = editing?.id === p.id
@@ -530,9 +530,9 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
                     onMouseEnter={e => { if (!isEditing) e.currentTarget.style.background = 'rgba(37,99,235,0.04)' }}
                     onMouseLeave={e => { if (!isEditing) e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)' }}
                   >
-                    <td style={tdS({ color: '#334155', fontSize: 11 })}>{i + 1}</td>
+                    <td style={tdS({ color: '#415569', fontSize: 11 })}>{i + 1}</td>
                     <td style={tdS({ fontSize: 11 })}><span style={{ padding: '2px 7px', borderRadius: 4, background: CARD, border: `1px solid ${BORDER}`, color: DIM, fontSize: 10 }}>{p.category}</span></td>
-                    <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#334155' })}>{p.barcode}</td>
+                    <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#415569' })}>{p.barcode}</td>
                     <td style={tdS({ maxWidth: 220 })}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                         <span style={{ color: p.status === 'inactive' ? MUTED : TEXT, fontWeight: 500, fontSize: 12 }}>{p.name}</span>
@@ -819,7 +819,7 @@ function TransfersView({ products, setProducts }) {
                     color: t.status === 'received' ? GREEN : AMBER,
                     fontSize: 10, fontWeight: 600, marginRight: 8,
                   }}>{t.status}</span>
-                  <span style={{ color: '#334155', fontSize: 10 }}>{fmtTs(t.sent_at)}</span>
+                  <span style={{ color: '#415569', fontSize: 10 }}>{fmtTs(t.sent_at)}</span>
                 </div>
               ))}
             </div>
@@ -902,18 +902,18 @@ function HistoryView({ history, filterProductId, clearFilter }) {
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#334155' }}>No history entries</td></tr>
+              <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#415569' }}>No history entries</td></tr>
             )}
             {filtered.map((h, i) => {
               const color = TYPE_COLORS[h.type] || DIM
               return (
                 <tr key={h.id} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)' }}>
-                  <td style={tdS({ fontSize: 11, color: '#334155' })}>{fmtTs(h.timestamp)}</td>
+                  <td style={tdS({ fontSize: 11, color: '#415569' })}>{fmtTs(h.timestamp)}</td>
                   <td style={tdS()}>
                     <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700, background: `${color}18`, border: `1px solid ${color}40`, color }}>{TYPE_LABELS[h.type] || h.type}</span>
                   </td>
                   <td style={tdS({ color: TEXT, fontWeight: 500 })}>{h.productName}</td>
-                  <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#334155' })}>{h.barcode || '—'}</td>
+                  <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#415569' })}>{h.barcode || '—'}</td>
                   <td style={tdS()}>{h.type === 'transfer' ? `${h.fromLocationName} → ${h.toLocationName}` : h.locationName}</td>
                   <td style={tdS({ textAlign: 'right' })}>{h.before ?? '—'}</td>
                   <td style={tdS({ textAlign: 'right' })}>{h.after ?? '—'}</td>
@@ -971,12 +971,12 @@ export default function InventoryAdmin({ onClose, defaultView = 'management' }) 
       {/* Header */}
       <div style={{ height: 48, background: PANEL, borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16, flexShrink: 0 }}>
         <button onClick={onClose} style={{ background: 'none', border: `1px solid ${BORDER}`, borderRadius: 4, color: MUTED, fontSize: 12, cursor: 'pointer', padding: '4px 10px', transition: 'all 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.color = TEXT; e.currentTarget.style.borderColor = '#475569' }}
+          onMouseEnter={e => { e.currentTarget.style.color = TEXT; e.currentTarget.style.borderColor = '#64748b' }}
           onMouseLeave={e => { e.currentTarget.style.color = MUTED; e.currentTarget.style.borderColor = BORDER }}
         >← Back</button>
         <span style={{ fontSize: 16 }}>📦</span>
         <span style={{ color: TEXT, fontWeight: 700, fontSize: 14 }}>Inventory</span>
-        <span style={{ color: '#334155', fontSize: 12 }}>|</span>
+        <span style={{ color: '#415569', fontSize: 12 }}>|</span>
 
         {/* Tabs */}
         {VIEWS.map(v => (

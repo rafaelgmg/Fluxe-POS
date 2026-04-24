@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ds.js — Design System
  * Dark premium theme — Inter font, gradient primary, glow effects.
  * Import { C, R, GRAD, GLOW, ui } in any component.
@@ -18,27 +18,27 @@ export const FS = {
 // ── Color tokens ──────────────────────────────────────────────────────────────
 export const C = {
   // Backgrounds
-  bg:        '#020817',
-  bgPanel:   '#0a0f1e',
-  bgCard:    '#0f172a',
+  bg:        '#030e1e',
+  bgPanel:   '#0d1526',
+  bgCard:    '#111d30',
   bgHover:   '#131d35',
   bgActive:  '#1a2744',
   bgGlass:   'rgba(255,255,255,0.035)',
 
   // Borders
-  border:      '#1e293b',
+  border:      '#253349',
   borderMd:    '#263354',
-  borderFocus: '#2563eb',
+  borderFocus: '#3b82f6',
   borderGlass: 'rgba(255,255,255,0.07)',
 
   // Text
   text:      '#f1f5f9',
-  textSub:   '#94a3b8',
-  textMuted: '#475569',
-  textDim:   '#334155',
+  textSub:   '#a8b8cc',
+  textMuted: '#64748b',
+  textDim:   '#415569',
 
   // Brand
-  blue:      '#2563eb',
+  blue:      '#3b82f6',
   blueHv:    '#1d4ed8',
   blueDim:   'rgba(37,99,235,0.12)',
   blueGlow:  'rgba(37,99,235,0.30)',
@@ -68,13 +68,13 @@ export const R = {
 
 // ── Gradients ─────────────────────────────────────────────────────────────────
 export const GRAD = {
-  primary:  'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+  primary:  'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
   primaryHv:'linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%)',
   success:  'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)',
   danger:   'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
   amber:    'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
-  dark:     'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)',
-  card:     'linear-gradient(160deg, #0f172a 0%, #0a0f1e 100%)',
+  dark:     'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
+  card:     'linear-gradient(160deg, #111d30 0%, #0d1526 100%)',
 }
 
 // ── Shadows / Glow ────────────────────────────────────────────────────────────

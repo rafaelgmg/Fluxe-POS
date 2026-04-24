@@ -1,4 +1,4 @@
-/**
+﻿/**
  * branding.js — Single source of truth for all business & visual configuration.
  *
  * To white-label Fluxe for another business:
@@ -54,7 +54,7 @@ const branding = {
   // ── Colors ──────────────────────────────────────────────────────────────────
   // Change these to rebrand the entire UI instantly.
   colors: {
-    primary:   '#2563eb',   // Blue — buttons, tabs, highlights
+    primary:   '#3b82f6',   // Blue — buttons, tabs, highlights
     primaryHv: '#1d4ed8',   // Hover state of primary
     accent:    '#f59e0b',   // Gold — header logo, admin highlights
     admin:     '#8b5cf6',   // Purple — admin panel
@@ -62,13 +62,13 @@ const branding = {
     success:   '#22c55e',   // Green — confirmed, saved
     danger:    '#ef4444',   // Red — error, damage, low stock
     warning:   '#f59e0b',   // Amber — discount, warning
-    bg:        '#020817',   // Main background (deep navy)
-    bgDark:    '#0a0f1e',   // Darker panels
-    bgCard:    '#0f172a',   // Cards / modals / inputs
-    border:    '#1e293b',   // Borders
+    bg:        '#030e1e',   // Main background (deep navy)
+    bgDark:    '#0d1526',   // Darker panels
+    bgCard:    '#111d30',   // Cards / modals / inputs
+    border:    '#253349',   // Borders
     textPrimary:   '#f1f5f9',
-    textSecondary: '#94a3b8',
-    textMuted:     '#475569',
+    textSecondary: '#a8b8cc',
+    textMuted:     '#64748b',
   },
 
   // ── Login screen ────────────────────────────────────────────────────────────

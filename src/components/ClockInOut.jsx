@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { loadClockRecords, saveClockRecords } from '../utils/clockStorage'
 import { localId } from '../domain/utils/ids'
@@ -105,14 +105,14 @@ export default function ClockInOut({ onClose, posSession }) {
       backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)', border: '1px solid #1e293b', borderRadius: 10,
+        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)', border: '1px solid #253349', borderRadius: 10,
         width: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
       }}>
         {/* Header */}
         <div style={{
-          padding: '14px 22px', background: '#0f172a',
-          borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 22px', background: '#111d30',
+          borderBottom: '1px solid #253349', display: 'flex', alignItems: 'center', gap: 12,
           flexShrink: 0,
         }}>
           <span style={{ fontSize: 20 }}>⏰</span>
@@ -125,22 +125,22 @@ export default function ClockInOut({ onClose, posSession }) {
           </span>
           <button onClick={onClose} style={{
             padding: '6px 14px', background: 'transparent',
-            border: '1px solid #1e293b', borderRadius: 5,
+            border: '1px solid #253349', borderRadius: 5,
             color: '#64748b', fontSize: 12, cursor: 'pointer', marginLeft: 8,
             transition: 'all 0.15s',
           }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#64748b' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
           >✕ Close</button>
         </div>
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Left: action panel */}
-          <div style={{ width: 280, padding: 20, borderRight: '1px solid #1e293b', flexShrink: 0 }}>
+          <div style={{ width: 280, padding: 20, borderRight: '1px solid #253349', flexShrink: 0 }}>
 
             {/* Current status */}
             <div style={{ marginBottom: 18 }}>
-              <p style={{ color: '#475569', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 10 }}>
+              <p style={{ color: '#64748b', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 10 }}>
                 CURRENT STATUS
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -149,16 +149,16 @@ export default function ClockInOut({ onClose, posSession }) {
                   return (
                     <div key={emp.name} style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '7px 10px', background: '#0f172a', borderRadius: 6,
-                      border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : '#1e293b'}`,
+                      padding: '7px 10px', background: '#111d30', borderRadius: 6,
+                      border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : '#253349'}`,
                       transition: 'all 0.2s ease',
                     }}>
                       <div style={{
                         width: 7, height: 7, borderRadius: '50%',
-                        background: active ? '#22c55e' : '#334155',
+                        background: active ? '#22c55e' : '#415569',
                         boxShadow: active ? '0 0 6px #22c55e' : 'none',
                       }} />
-                      <span style={{ color: '#94a3b8', fontSize: 13, flex: 1 }}>{emp.name}</span>
+                      <span style={{ color: '#a8b8cc', fontSize: 13, flex: 1 }}>{emp.name}</span>
                       {active && (
                         <span style={{ color: '#22c55e', fontSize: 10 }}>
                           {formatTime(active.clockIn)}
@@ -172,15 +172,15 @@ export default function ClockInOut({ onClose, posSession }) {
 
             {/* Employee selector */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ color: '#475569', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
                 EMPLOYEE
               </label>
               <select
                 value={selectedEmp}
                 onChange={e => { setSelectedEmp(e.target.value); setPin(''); setError('') }}
                 style={{
-                  width: '100%', padding: '8px 12px', background: '#0f172a',
-                  border: '1px solid #1e293b', borderRadius: 6,
+                  width: '100%', padding: '8px 12px', background: '#111d30',
+                  border: '1px solid #253349', borderRadius: 6,
                   color: '#f1f5f9', fontSize: 13, outline: 'none', cursor: 'pointer',
                 }}
               >
@@ -190,14 +190,14 @@ export default function ClockInOut({ onClose, posSession }) {
 
             {/* PIN */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ color: '#475569', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
                 PIN
               </label>
               <input
                 type="password" value={pin} readOnly
                 style={{
-                  width: '100%', padding: '8px 12px', background: '#0f172a',
-                  border: `1px solid ${error ? '#ef4444' : '#1e293b'}`,
+                  width: '100%', padding: '8px 12px', background: '#111d30',
+                  border: `1px solid ${error ? '#ef4444' : '#253349'}`,
                   borderRadius: 6, color: '#f1f5f9', fontSize: 20, letterSpacing: 6,
                   outline: 'none', boxSizing: 'border-box',
                 }}
@@ -211,13 +211,13 @@ export default function ClockInOut({ onClose, posSession }) {
               {['7','8','9','4','5','6','1','2','3','0','Clear'].map(k => (
                 <button key={k} onClick={() => handleKey(k)} style={{
                   gridColumn: k === 'Clear' ? 'span 2' : 'auto',
-                  padding: '11px', background: '#0f172a',
-                  border: '1px solid #1e293b', borderRadius: 6,
+                  padding: '11px', background: '#111d30',
+                  border: '1px solid #253349', borderRadius: 6,
                   color: '#f1f5f9', fontSize: k === 'Clear' ? 11 : 16,
                   fontWeight: 600, cursor: 'pointer', transition: 'background 0.1s',
                 }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#131d35' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#0f172a' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#111d30' }}
                 >{k}</button>
               ))}
             </div>
@@ -240,12 +240,12 @@ export default function ClockInOut({ onClose, posSession }) {
 
           {/* Right: today's log */}
           <div style={{ flex: 1, padding: 20, overflowY: 'auto' }}>
-            <p style={{ color: '#475569', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 14 }}>
+            <p style={{ color: '#64748b', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 14 }}>
               TODAY'S LOG — {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
 
             {todayRecords.length === 0 && (
-              <p style={{ color: '#334155', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
+              <p style={{ color: '#415569', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
                 No clock-in records today
               </p>
             )}
@@ -255,7 +255,7 @@ export default function ClockInOut({ onClose, posSession }) {
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(30,41,59,0.5)' }}>
                     {['Employee', 'Clock In', 'Clock Out', 'Hours'].map(h => (
-                      <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#475569', fontWeight: 600, fontSize: 11 }}>{h}</th>
+                      <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: 11 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -264,7 +264,7 @@ export default function ClockInOut({ onClose, posSession }) {
                     <tr key={r.id} style={{ borderBottom: '1px solid rgba(30,41,59,0.5)' }}>
                       <td style={{ padding: '10px', color: '#f1f5f9' }}>{r.employee}</td>
                       <td style={{ padding: '10px', color: '#22c55e' }}>{formatTime(r.clockIn)}</td>
-                      <td style={{ padding: '10px', color: r.clockOut ? '#94a3b8' : '#f59e0b' }}>
+                      <td style={{ padding: '10px', color: r.clockOut ? '#a8b8cc' : '#f59e0b' }}>
                         {r.clockOut ? formatTime(r.clockOut) : '— Active'}
                       </td>
                       <td style={{ padding: '10px', color: '#64748b' }}>
@@ -277,8 +277,8 @@ export default function ClockInOut({ onClose, posSession }) {
             )}
 
             {todayRecords.length > 0 && (
-              <div style={{ marginTop: 20, padding: 16, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 }}>
-                <p style={{ color: '#475569', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 10 }}>
+              <div style={{ marginTop: 20, padding: 16, background: '#111d30', border: '1px solid #253349', borderRadius: 8 }}>
+                <p style={{ color: '#64748b', fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 10 }}>
                   TODAY'S SUMMARY
                 </p>
                 {employees.map(emp => {
@@ -289,7 +289,7 @@ export default function ClockInOut({ onClose, posSession }) {
                   if (empRecs.length === 0) return null
                   return (
                     <div key={emp.name} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ color: '#94a3b8', fontSize: 13 }}>{emp.name}</span>
+                      <span style={{ color: '#a8b8cc', fontSize: 13 }}>{emp.name}</span>
                       <span style={{ color: '#22c55e', fontSize: 13, fontWeight: 600 }}>{h}h {m}m</span>
                     </div>
                   )

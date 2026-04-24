@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CashDrawer.jsx
  * Cash Drawer Options module — PIN gate + 4 operations.
  * Open Register | Add Money | Take Money Out | Cash Count
@@ -13,16 +13,16 @@ import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin } from '../services/supabaseAuth'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
-const BLUE   = '#2563eb'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
+const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
-const MUTED  = '#475569'
-const DIM    = '#94a3b8'
+const MUTED  = '#64748b'
+const DIM    = '#a8b8cc'
 const TEXT   = '#f1f5f9'
 
 // ── Storage ────────────────────────────────────────────────────────────────────

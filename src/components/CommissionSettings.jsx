@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import {
   loadCommissionTiers, saveCommissionTiers,
   nextTierId, DEFAULT_TIERS,
@@ -6,15 +6,15 @@ import {
 } from '../utils/commissionTiersStorage'
 
 // ── Design tokens (match AdminPanel dark theme) ────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
 const TEXT   = '#f1f5f9'
-const MUTED  = '#475569'
-const DIM    = '#94a3b8'
+const MUTED  = '#64748b'
+const DIM    = '#a8b8cc'
 const GREEN  = '#22c55e'
-const BLUE   = '#2563eb'
+const BLUE   = '#3b82f6'
 const AMBER  = '#f59e0b'
 const PURPLE = '#8b5cf6'
 const RED    = '#ef4444'

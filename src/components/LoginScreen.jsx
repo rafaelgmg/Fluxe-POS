@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import {
   ACCOUNTS, REGIONS, LOCATION_MAP, LOGIN_PASSWORD, LOGIN_CHECKBOX,
   BUSINESS, BUSINESS_SHORT, SYSTEM_NAME, SYSTEM_TAG, CREATOR,
@@ -10,7 +10,7 @@ import { verifyEmployeePin, resolveSessionContext } from '../services/supabaseAu
 const LOCATION_PASSWORD = LOGIN_PASSWORD
 const LOC_KEY = 'fluxe-locations-v1'
 
-const BLUE    = '#2563eb'
+const BLUE    = '#3b82f6'
 const BLUE_HV = '#1d4ed8'
 
 // Returns active location names for a region, merging saved settings with branding config
@@ -39,7 +39,7 @@ function Clock() {
     return () => clearInterval(t)
   }, [])
   return (
-    <span style={{ color: '#94a3b8', fontSize: 13 }}>
+    <span style={{ color: '#a8b8cc', fontSize: 13 }}>
       {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
       {'  ·  '}
       {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -154,8 +154,8 @@ export default function LoginScreen({ onLogin, onBack }) {
     onChange: e => onChange(e.target.value),
     style: {
       width: '100%', padding: '9px 12px',
-      background: '#0f172a',
-      border: '1px solid #1e293b',
+      background: '#111d30',
+      border: '1px solid #253349',
       borderRadius: 6, color: '#e2e8f0',
       fontSize: 13, cursor: 'pointer',
       outline: 'none', appearance: 'none',
@@ -166,13 +166,13 @@ export default function LoginScreen({ onLogin, onBack }) {
       transition: 'border-color 0.15s',
     },
     onFocus: e => { e.target.style.borderColor = BLUE },
-    onBlur:  e => { e.target.style.borderColor = '#1e293b' },
+    onBlur:  e => { e.target.style.borderColor = '#253349' },
   })
 
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: '#020817',
+      background: '#030e1e',
       display: 'flex', flexDirection: 'column',
       fontFamily: "'Segoe UI', system-ui, sans-serif",
     }}>
@@ -180,8 +180,8 @@ export default function LoginScreen({ onLogin, onBack }) {
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div style={{
         height: 48,
-        background: '#0a0f1e',
-        borderBottom: '1px solid #1e293b',
+        background: '#0d1526',
+        borderBottom: '1px solid #253349',
         display: 'flex', alignItems: 'center',
         padding: '0 24px', justifyContent: 'space-between',
         flexShrink: 0,
@@ -192,7 +192,7 @@ export default function LoginScreen({ onLogin, onBack }) {
           </span>
           <span style={{
             fontSize: 10, fontWeight: 400, letterSpacing: 0.5,
-            color: '#475569', marginLeft: 2,
+            color: '#64748b', marginLeft: 2,
           }}>— {SYSTEM_TAG}</span>
         </div>
 
@@ -207,13 +207,13 @@ export default function LoginScreen({ onLogin, onBack }) {
             <button key={item.label} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               background: 'none', border: 'none', cursor: 'pointer',
-              color: '#475569', fontSize: 9, fontWeight: 600,
+              color: '#64748b', fontSize: 9, fontWeight: 600,
               gap: 2, padding: '4px 8px', borderRadius: 4,
               transition: 'color 0.15s',
               letterSpacing: 0.3,
             }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#94a3b8' }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#475569' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#a8b8cc' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#64748b' }}
             >
               <span style={{ fontSize: 15 }}>{item.icon}</span>
               {item.label}
@@ -231,8 +231,8 @@ export default function LoginScreen({ onLogin, onBack }) {
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           padding: '40px 48px',
-          background: '#0a0f1e',
-          borderRight: '1px solid #1e293b',
+          background: '#0d1526',
+          borderRight: '1px solid #253349',
         }}>
 
           {/* Version badge */}
@@ -247,7 +247,7 @@ export default function LoginScreen({ onLogin, onBack }) {
             }}>
               v{version}
             </div>
-            <span style={{ color: '#334155', fontSize: 11 }}>{SYSTEM_NAME}</span>
+            <span style={{ color: '#415569', fontSize: 11 }}>{SYSTEM_NAME}</span>
           </div>
 
           <h1 style={{
@@ -268,7 +268,7 @@ export default function LoginScreen({ onLogin, onBack }) {
                 borderRadius: 6, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8,
               }}>
                 <span style={{ color: '#22c55e', fontSize: 12 }}>✓</span>
-                <span style={{ color: '#94a3b8', fontSize: 12 }}>{pendingSession?.location}</span>
+                <span style={{ color: '#a8b8cc', fontSize: 12 }}>{pendingSession?.location}</span>
               </div>
 
               {/* Employee selector */}
@@ -280,8 +280,8 @@ export default function LoginScreen({ onLogin, onBack }) {
                   value={selectedEmp}
                   onChange={e => { setSelectedEmp(e.target.value); setPin(''); setPinError('') }}
                   style={{
-                    width: '100%', padding: '9px 12px', background: '#0f172a',
-                    border: '1px solid #1e293b', borderRadius: 6, color: '#e2e8f0',
+                    width: '100%', padding: '9px 12px', background: '#111d30',
+                    border: '1px solid #253349', borderRadius: 6, color: '#e2e8f0',
                     fontSize: 13, cursor: 'pointer', outline: 'none', appearance: 'none',
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 34,
@@ -301,9 +301,9 @@ export default function LoginScreen({ onLogin, onBack }) {
                   value={verifying ? '······' : pin}
                   readOnly
                   style={{
-                    width: '100%', padding: '9px 12px', background: '#0f172a',
-                    border: `1px solid ${pinError ? '#ef4444' : verifying ? BLUE : '#1e293b'}`,
-                    borderRadius: 6, color: verifying ? '#2563eb' : '#f1f5f9',
+                    width: '100%', padding: '9px 12px', background: '#111d30',
+                    border: `1px solid ${pinError ? '#ef4444' : verifying ? BLUE : '#253349'}`,
+                    borderRadius: 6, color: verifying ? '#3b82f6' : '#f1f5f9',
                     fontSize: 22, letterSpacing: 10, outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.15s',
                     opacity: verifying ? 0.7 : 1,
@@ -320,15 +320,15 @@ export default function LoginScreen({ onLogin, onBack }) {
                     onClick={() => { if (k) pressPin(k) }}
                     disabled={!k}
                     style={{
-                      padding: '13px', background: !k ? 'transparent' : '#0f172a',
-                      border: !k ? 'none' : '1px solid #1e293b', borderRadius: 7,
+                      padding: '13px', background: !k ? 'transparent' : '#111d30',
+                      border: !k ? 'none' : '1px solid #253349', borderRadius: 7,
                       color: k === '⌫' ? '#64748b' : '#f1f5f9',
                       fontSize: k === '⌫' ? 16 : 18,
                       fontWeight: 600, cursor: !k ? 'default' : 'pointer',
                       opacity: !k ? 0 : 1, transition: 'all 0.1s',
                     }}
                     onMouseEnter={e => { if (k) { e.currentTarget.style.background = '#131d35'; e.currentTarget.style.borderColor = '#263354' } }}
-                    onMouseLeave={e => { if (k) { e.currentTarget.style.background = '#0f172a'; e.currentTarget.style.borderColor = '#1e293b' } }}
+                    onMouseLeave={e => { if (k) { e.currentTarget.style.background = '#111d30'; e.currentTarget.style.borderColor = '#253349' } }}
                   >{k}</button>
                 ))}
               </div>
@@ -336,12 +336,12 @@ export default function LoginScreen({ onLogin, onBack }) {
               <button
                 onClick={() => { setStep('location'); setPin(''); setPinError('') }}
                 style={{
-                  padding: '10px', background: 'transparent', border: '1px solid #1e293b',
-                  borderRadius: 6, color: '#475569', fontSize: 13, cursor: 'pointer',
+                  padding: '10px', background: 'transparent', border: '1px solid #253349',
+                  borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer',
                   transition: 'all 0.15s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#475569' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#415569'; e.currentTarget.style.color = '#a8b8cc' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
               >← Back</button>
             </div>
           )}
@@ -396,15 +396,15 @@ export default function LoginScreen({ onLogin, onBack }) {
                   autoComplete="off"
                   style={{
                     width: '100%', padding: '9px 40px 9px 12px',
-                    background: '#0f172a',
-                    border: `1px solid ${error ? '#ef4444' : '#1e293b'}`,
+                    background: '#111d30',
+                    border: `1px solid ${error ? '#ef4444' : '#253349'}`,
                     borderRadius: 6, color: '#e2e8f0',
                     fontSize: 13, outline: 'none',
                     boxSizing: 'border-box',
                     transition: 'border-color 0.15s',
                   }}
                   onFocus={e => { if (!error) e.target.style.borderColor = BLUE }}
-                  onBlur={e => { if (!error) e.target.style.borderColor = '#1e293b' }}
+                  onBlur={e => { if (!error) e.target.style.borderColor = '#253349' }}
                 />
                 <button
                   type="button"
@@ -412,7 +412,7 @@ export default function LoginScreen({ onLogin, onBack }) {
                   style={{
                     position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#475569', fontSize: 14, padding: 2,
+                    color: '#64748b', fontSize: 14, padding: 2,
                   }}
                 >
                   {pwVisible ? '🙈' : '👁'}
@@ -465,21 +465,21 @@ export default function LoginScreen({ onLogin, onBack }) {
               onClick={() => window.close?.()}
               style={{
                 flex: 1, padding: '11px',
-                background: '#0f172a',
-                border: '1px solid #1e293b',
+                background: '#111d30',
+                border: '1px solid #253349',
                 borderRadius: 6, color: '#64748b',
                 fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background    = '#1e293b'
-                e.currentTarget.style.color         = '#94a3b8'
-                e.currentTarget.style.borderColor   = '#334155'
+                e.currentTarget.style.background    = '#253349'
+                e.currentTarget.style.color         = '#a8b8cc'
+                e.currentTarget.style.borderColor   = '#415569'
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.background    = '#0f172a'
+                e.currentTarget.style.background    = '#111d30'
                 e.currentTarget.style.color         = '#64748b'
-                e.currentTarget.style.borderColor   = '#1e293b'
+                e.currentTarget.style.borderColor   = '#253349'
               }}
             >
               Exit
@@ -489,7 +489,7 @@ export default function LoginScreen({ onLogin, onBack }) {
 
           {/* Version footer */}
           <div style={{ marginTop: 32, alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 16 }}>
-            <p style={{ color: '#334155', fontSize: 12 }}>
+            <p style={{ color: '#415569', fontSize: 12 }}>
               v{version} · {CREATOR}
             </p>
             {onBack && (
@@ -497,11 +497,11 @@ export default function LoginScreen({ onLogin, onBack }) {
                 onClick={onBack}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: '#334155', fontSize: 11, padding: 0,
+                  color: '#415569', fontSize: 11, padding: 0,
                   textDecoration: 'underline',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#475569' }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#334155' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#64748b' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#415569' }}
               >
                 ← Change account
               </button>
@@ -512,7 +512,7 @@ export default function LoginScreen({ onLogin, onBack }) {
         {/* ── Right: branding panel ──────────────────────────────────────── */}
         <div style={{
           flex: 1,
-          background: 'linear-gradient(135deg, #0a0f1e 0%, #0f172a 40%, #0c1a3a 100%)',
+          background: 'linear-gradient(135deg, #0d1526 0%, #111d30 40%, #0c1a3a 100%)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           position: 'relative', overflow: 'hidden',
@@ -548,12 +548,12 @@ export default function LoginScreen({ onLogin, onBack }) {
             }}>
               {SYSTEM_NAME}
             </h2>
-            <p style={{ fontSize: 12, color: '#475569', letterSpacing: 2, marginBottom: 6, textTransform: 'uppercase' }}>
+            <p style={{ fontSize: 12, color: '#64748b', letterSpacing: 2, marginBottom: 6, textTransform: 'uppercase' }}>
               {SYSTEM_TAG}
             </p>
             <p style={{
               fontSize: 11, fontWeight: 500, letterSpacing: 1.5,
-              color: '#334155', marginBottom: 56,
+              color: '#415569', marginBottom: 56,
             }}>
               by {CREATOR}
             </p>
@@ -582,7 +582,7 @@ export default function LoginScreen({ onLogin, onBack }) {
           {/* Bottom note */}
           <p style={{
             position: 'absolute', bottom: 20,
-            color: '#334155', fontSize: 12, letterSpacing: 0.3,
+            color: '#415569', fontSize: 12, letterSpacing: 0.3,
           }}>
             {LOCATIONS_CFG[0].name} · {LOCATIONS_CFG[0].address}
           </p>

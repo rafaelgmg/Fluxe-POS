@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LockScreen.jsx
  *
  * Tela de bloqueio de estação (Lock Station).
@@ -19,14 +19,14 @@ import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin } from '../services/supabaseAuth'
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
-const BG     = '#020817'
+const BG     = '#030e1e'
 const PANEL  = '#080f1f'
 const CARD   = '#0d1829'
-const BORDER = '#1e293b'
-const BLUE   = '#2563eb'
+const BORDER = '#253349'
+const BLUE   = '#3b82f6'
 const RED    = '#ef4444'
-const MUTED  = '#475569'
-const DIM    = '#94a3b8'
+const MUTED  = '#64748b'
+const DIM    = '#a8b8cc'
 const TEXT   = '#f1f5f9'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -52,13 +52,13 @@ function LockIcon({ size = 64 }) {
         fill="none"
       />
       {/* Body */}
-      <rect x="10" y="28" width="44" height="30" rx="5" fill="#1e293b" stroke="#334155" strokeWidth="1.5" />
+      <rect x="10" y="28" width="44" height="30" rx="5" fill="#253349" stroke="#415569" strokeWidth="1.5" />
       {/* Red stripe */}
       <rect x="10" y="36" width="44" height="6" fill="#ef4444" opacity="0.7" />
       <rect x="10" y="42" width="44" height="6" fill="#ef4444" opacity="0.4" />
       {/* Keyhole */}
-      <circle cx="32" cy="44" r="4" fill="#0a0f1e" />
-      <rect x="30" y="46" width="4" height="6" rx="1" fill="#0a0f1e" />
+      <circle cx="32" cy="44" r="4" fill="#0d1526" />
+      <rect x="30" y="46" width="4" height="6" rx="1" fill="#0d1526" />
     </svg>
   )
 }
@@ -190,12 +190,12 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
               You will need to sign in again to continue
             </p>
             {lockedBy && (
-              <p style={{ color: '#334155', fontSize: 12, marginTop: 4 }}>
+              <p style={{ color: '#415569', fontSize: 12, marginTop: 4 }}>
                 Locked by {lockedBy} · {elapsed} ago
               </p>
             )}
             {!lockedBy && (
-              <p style={{ color: '#334155', fontSize: 12, marginTop: 4 }}>
+              <p style={{ color: '#415569', fontSize: 12, marginTop: 4 }}>
                 Locked {elapsed} ago
               </p>
             )}
@@ -221,7 +221,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
       ) : (
         /* ── UNLOCK FORM ───────────────────────────────────────────────── */
         <div style={{
-          background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)',
+          background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
           border: `1px solid ${BORDER}`, borderRadius: 12,
           width: 360, padding: 28,
           boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
@@ -271,7 +271,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
               value={selected}
               onChange={e => { setSelected(e.target.value); setPin(''); setError('') }}
               style={{
-                width: '100%', padding: '9px 12px', background: '#0f172a',
+                width: '100%', padding: '9px 12px', background: '#111d30',
                 border: `1px solid ${BORDER}`, borderRadius: 6,
                 color: TEXT, fontSize: 13, outline: 'none', cursor: 'pointer',
               }}
@@ -292,7 +292,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
               value={pin}
               readOnly
               style={{
-                width: '100%', padding: '10px 14px', background: '#0f172a',
+                width: '100%', padding: '10px 14px', background: '#111d30',
                 border: `1px solid ${error ? RED : BORDER}`,
                 borderRadius: 6, color: TEXT,
                 fontSize: 22, letterSpacing: 10, outline: 'none', boxSizing: 'border-box',
@@ -315,7 +315,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
             disabled={pin.length === 0}
             style={{
               width: '100%', padding: '13px',
-              background: pin.length > 0 ? BLUE : '#1e293b',
+              background: pin.length > 0 ? BLUE : '#253349',
               border: 'none', borderRadius: 7,
               color: pin.length > 0 ? '#fff' : MUTED,
               fontSize: 15, fontWeight: 700,
@@ -332,7 +332,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
       )}
 
       {/* Bottom brand */}
-      <p style={{ color: '#1e293b', fontSize: 11, position: 'absolute', bottom: 18 }}>
+      <p style={{ color: '#253349', fontSize: 11, position: 'absolute', bottom: 18 }}>
         Fluxe — Station secured
       </p>
     </div>

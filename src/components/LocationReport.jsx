@@ -1,29 +1,29 @@
-import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { loadAllProducts } from '../utils/productsStorage'
 import { fetchProducts } from '../services/supabaseRead'
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
-const BLUE   = '#2563eb'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
+const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
-const MUTED  = '#475569'
+const MUTED  = '#64748b'
 const TEXT   = '#f1f5f9'
-const DIM    = '#94a3b8'
+const DIM    = '#a8b8cc'
 const TEAL   = '#06b6d4'
 
 const PAY_COLORS = {
   'Cash':            '#22c55e',
-  'Credit Card':     '#2563eb',
+  'Credit Card':     '#3b82f6',
   'External Credit': '#f59e0b',
   'Check':           '#8b5cf6',
 }
-const PAY_COLOR_DEFAULT = '#94a3b8'
+const PAY_COLOR_DEFAULT = '#a8b8cc'
 
 const fmt$ = (n) => `$${(n || 0).toFixed(2)}`
 
@@ -352,22 +352,22 @@ export default function LocationReport({ onClose, sales = [] }) {
             <div>
               <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 }}>TOTAL SPARE</p>
               <p style={{ color: DIM, fontSize: 15, fontWeight: 700 }}>{fmt$(metrics.spare)}</p>
-              <p style={{ color: '#334155', fontSize: 9 }}>Sales above min price</p>
+              <p style={{ color: '#415569', fontSize: 9 }}>Sales above min price</p>
             </div>
             <div>
               <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 }}>INVENTORY LOSSES</p>
               <p style={{ color: DIM, fontSize: 15, fontWeight: 700 }}>$0.00</p>
-              <p style={{ color: '#334155', fontSize: 9 }}>Damage / loss reports</p>
+              <p style={{ color: '#415569', fontSize: 9 }}>Damage / loss reports</p>
             </div>
             <div>
               <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 }}>INVENTORY COST</p>
               <p style={{ color: DIM, fontSize: 15, fontWeight: 700 }}>{fmt$(metrics.invCost)}</p>
-              <p style={{ color: '#334155', fontSize: 9 }}>Cost of goods sold</p>
+              <p style={{ color: '#415569', fontSize: 9 }}>Cost of goods sold</p>
             </div>
             <div>
               <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 }}>CURRENT INV VALUE</p>
               <p style={{ color: DIM, fontSize: 15, fontWeight: 700 }}>{fmt$(currentInvValue)}</p>
-              <p style={{ color: '#334155', fontSize: 9 }}>At cost · {locCfg?.name}</p>
+              <p style={{ color: '#415569', fontSize: 9 }}>At cost · {locCfg?.name}</p>
             </div>
           </div>
         </div>
@@ -391,7 +391,7 @@ export default function LocationReport({ onClose, sales = [] }) {
                 </thead>
                 <tbody>
                   {dailySales.length === 0 && (
-                    <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: '#334155', fontSize: 12 }}>No sales in this period</td></tr>
+                    <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: '#415569', fontSize: 12 }}>No sales in this period</td></tr>
                   )}
                   {dailySales.map((d, i) => (
                     <tr key={d.key} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)', borderBottom: `1px solid rgba(30,41,59,0.3)` }}>

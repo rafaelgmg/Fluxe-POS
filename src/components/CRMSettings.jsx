@@ -1,24 +1,24 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import {
   loadCRMSettings, saveCRMSettings,
   ALL_FIELDS, DEFAULT_SETTINGS,
 } from '../utils/crmSettingsStorage'
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
 const TEXT   = '#f1f5f9'
-const SUB    = '#94a3b8'
-const MUTED  = '#475569'
-const DIM    = '#334155'
-const BLUE   = '#2563eb'
+const SUB    = '#a8b8cc'
+const MUTED  = '#64748b'
+const DIM    = '#415569'
+const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 
-const STAR_COLORS = ['', '#94a3b8', '#f59e0b', '#f59e0b', '#f59e0b', '#22c55e']
+const STAR_COLORS = ['', '#a8b8cc', '#f59e0b', '#f59e0b', '#f59e0b', '#22c55e']
 
 export default function CRMSettings() {
   const [settings, setSettings] = useState(loadCRMSettings)
@@ -213,7 +213,7 @@ export default function CRMSettings() {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <button onClick={handleSave} style={{
           padding: '11px 28px',
-          background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
           border: 'none', borderRadius: 10, color: '#fff',
           fontSize: 14, fontWeight: 700, cursor: 'pointer',
           boxShadow: '0 0 20px rgba(37,99,235,0.35)',

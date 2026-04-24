@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { getLoyaltyStars, starsLabel, calcCRMScore } from '../utils/loyaltyEngine'
@@ -10,21 +10,21 @@ const FRAGRANCE_OPTIONS = [
 ]
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
 const TEXT   = '#f1f5f9'
-const SUB    = '#94a3b8'
-const MUTED  = '#475569'
-const DIM    = '#334155'
-const BLUE   = '#2563eb'
+const SUB    = '#a8b8cc'
+const MUTED  = '#64748b'
+const DIM    = '#415569'
+const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 const PURPLE = '#8b5cf6'
 
-const STAR_COLORS = ['', '#94a3b8', '#f59e0b', '#f59e0b', '#f59e0b', '#22c55e']
+const STAR_COLORS = ['', '#a8b8cc', '#f59e0b', '#f59e0b', '#f59e0b', '#22c55e']
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtDate(iso) {
@@ -130,7 +130,7 @@ function AddCustomerModal({ onSave, onClose }) {
       zIndex: 3000, backdropFilter: 'blur(4px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)',
+        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
         border: `1px solid ${BORDER}`, borderRadius: 16,
         width: 560, maxHeight: '90vh', overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
@@ -214,7 +214,7 @@ function AddCustomerModal({ onSave, onClose }) {
         <div style={{ padding: '14px 24px', borderTop: `1px solid ${BORDER}`, display: 'flex', gap: 10, flexShrink: 0 }}>
           <button onClick={handleSave} style={{
             flex: 1, padding: '11px',
-            background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
             border: 'none', borderRadius: 10, color: '#fff',
             fontSize: 14, fontWeight: 700, cursor: 'pointer',
             boxShadow: '0 0 20px rgba(37,99,235,0.35)',
@@ -347,7 +347,7 @@ function CustomerProfile({ customer, onClose, onSave, onDelete }) {
       zIndex: 3000, backdropFilter: 'blur(4px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)',
+        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
         border: `1px solid ${BORDER}`, borderRadius: 16,
         width: 720, maxHeight: '92vh', overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
@@ -410,7 +410,7 @@ function CustomerProfile({ customer, onClose, onSave, onDelete }) {
             )}
             {tab === 'info' && editing && (
               <>
-                <button onClick={handleSave} style={{ padding: '7px 14px', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                <button onClick={handleSave} style={{ padding: '7px 14px', background: 'linear-gradient(135deg, #3b82f6, #7c3aed)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Save</button>
                 <button onClick={cancelEdit} style={{ padding: '7px 14px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 8, color: MUTED, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
               </>
             )}
@@ -434,7 +434,7 @@ function CustomerProfile({ customer, onClose, onSave, onDelete }) {
             zIndex: 10, borderRadius: 16, backdropFilter: 'blur(4px)',
           }}>
             <div style={{
-              background: '#0f172a', border: '1px solid rgba(239,68,68,0.3)',
+              background: '#111d30', border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 12, padding: '28px 32px', width: 380, textAlign: 'center',
               boxShadow: '0 16px 48px rgba(239,68,68,0.15)',
             }}>
@@ -659,7 +659,7 @@ function CustomerProfile({ customer, onClose, onSave, onDelete }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <p style={{ color: MUTED, fontSize: 12 }}>Manage scheduled visits for this customer.</p>
                 <button onClick={() => setShowApptForm(v => !v)} style={{
-                  padding: '7px 14px', background: showApptForm ? 'transparent' : 'linear-gradient(135deg,#2563eb,#7c3aed)',
+                  padding: '7px 14px', background: showApptForm ? 'transparent' : 'linear-gradient(135deg,#3b82f6,#7c3aed)',
                   border: showApptForm ? `1px solid ${BORDER}` : 'none', borderRadius: 8,
                   color: showApptForm ? MUTED : '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}>{showApptForm ? 'Cancel' : '+ New Appointment'}</button>
@@ -697,7 +697,7 @@ function CustomerProfile({ customer, onClose, onSave, onDelete }) {
                   </div>
                   <button onClick={handleAddAppt} disabled={!apptForm.date} style={{
                     width: '100%', padding: '9px',
-                    background: apptForm.date ? 'linear-gradient(135deg,#2563eb,#7c3aed)' : DIM,
+                    background: apptForm.date ? 'linear-gradient(135deg,#3b82f6,#7c3aed)' : DIM,
                     border: 'none', borderRadius: 8, color: '#fff',
                     fontSize: 13, fontWeight: 700, cursor: apptForm.date ? 'pointer' : 'not-allowed',
                   }}>Save Appointment</button>
@@ -817,7 +817,7 @@ function CustomerProfile({ customer, onClose, onSave, onDelete }) {
               </div>
 
               <button onClick={handleSaveAi} style={{
-                padding: '10px', background: 'linear-gradient(135deg,#2563eb,#7c3aed)',
+                padding: '10px', background: 'linear-gradient(135deg,#3b82f6,#7c3aed)',
                 border: 'none', borderRadius: 9, color: '#fff',
                 fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 boxShadow: '0 0 16px rgba(37,99,235,0.3)',
@@ -970,7 +970,7 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
             onClick={() => setShowAdd(true)}
             style={{
               padding: '8px 18px',
-              background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
               border: 'none', borderRadius: 8, color: '#fff',
               fontSize: 13, fontWeight: 700, cursor: 'pointer',
               boxShadow: '0 0 16px rgba(37,99,235,0.3)',

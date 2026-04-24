@@ -1,7 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { SYSTEM_NAME, SYSTEM_TAG, BUSINESS, CREATOR } from '../config/branding'
 
-const BLUE    = '#2563eb'
+const BLUE    = '#3b82f6'
 const BLUE_HV = '#1d4ed8'
 
 export default function AccountLoginScreen({ onLogin }) {
@@ -31,8 +31,8 @@ export default function AccountLoginScreen({ onLogin }) {
 
   const inputStyle = (hasError) => ({
     width: '100%', padding: '10px 12px',
-    background: '#0f172a',
-    border: `1px solid ${hasError ? '#ef4444' : '#1e293b'}`,
+    background: '#111d30',
+    border: `1px solid ${hasError ? '#ef4444' : '#253349'}`,
     borderRadius: 6, color: '#e2e8f0',
     fontSize: 13, outline: 'none',
     boxSizing: 'border-box',
@@ -42,15 +42,15 @@ export default function AccountLoginScreen({ onLogin }) {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: '#020817',
+      background: '#030e1e',
       display: 'flex', flexDirection: 'column',
       fontFamily: "'Segoe UI', system-ui, sans-serif",
     }}>
 
       {/* Top bar — same as LoginScreen */}
       <div style={{
-        height: 48, background: '#0a0f1e',
-        borderBottom: '1px solid #1e293b',
+        height: 48, background: '#0d1526',
+        borderBottom: '1px solid #253349',
         display: 'flex', alignItems: 'center',
         padding: '0 24px', flexShrink: 0,
       }}>
@@ -58,7 +58,7 @@ export default function AccountLoginScreen({ onLogin }) {
           <span style={{ fontWeight: 800, fontSize: 15, color: '#f1f5f9', letterSpacing: 2 }}>
             {SYSTEM_NAME.toUpperCase()}
           </span>
-          <span style={{ fontSize: 10, color: '#475569', marginLeft: 2 }}>— {SYSTEM_TAG}</span>
+          <span style={{ fontSize: 10, color: '#64748b', marginLeft: 2 }}>— {SYSTEM_TAG}</span>
         </div>
       </div>
 
@@ -71,8 +71,8 @@ export default function AccountLoginScreen({ onLogin }) {
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           padding: '40px 48px',
-          background: '#0a0f1e',
-          borderRight: '1px solid #1e293b',
+          background: '#0d1526',
+          borderRight: '1px solid #253349',
         }}>
 
           <div style={{ alignSelf: 'flex-start', marginBottom: 32 }}>
@@ -94,7 +94,7 @@ export default function AccountLoginScreen({ onLogin }) {
           </h1>
           <p style={{
             alignSelf: 'flex-start',
-            color: '#475569', fontSize: 13, marginBottom: 28,
+            color: '#64748b', fontSize: 13, marginBottom: 28,
           }}>
             {BUSINESS}
           </p>
@@ -118,7 +118,7 @@ export default function AccountLoginScreen({ onLogin }) {
                 autoComplete="username"
                 style={inputStyle(!!error)}
                 onFocus={e => { if (!error) e.target.style.borderColor = BLUE }}
-                onBlur={e => { if (!error) e.target.style.borderColor = '#1e293b' }}
+                onBlur={e => { if (!error) e.target.style.borderColor = '#253349' }}
               />
             </div>
 
@@ -140,7 +140,7 @@ export default function AccountLoginScreen({ onLogin }) {
                   autoComplete="current-password"
                   style={{ ...inputStyle(!!error), paddingRight: 40 }}
                   onFocus={e => { if (!error) e.target.style.borderColor = BLUE }}
-                  onBlur={e => { if (!error) e.target.style.borderColor = '#1e293b' }}
+                  onBlur={e => { if (!error) e.target.style.borderColor = '#253349' }}
                 />
                 <button
                   type="button"
@@ -148,7 +148,7 @@ export default function AccountLoginScreen({ onLogin }) {
                   style={{
                     position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#475569', fontSize: 14, padding: 2,
+                    color: '#64748b', fontSize: 14, padding: 2,
                   }}
                 >
                   {pwVisible ? '🙈' : '👁'}
@@ -180,7 +180,7 @@ export default function AccountLoginScreen({ onLogin }) {
             Continue →
           </button>
 
-          <p style={{ color: '#334155', fontSize: 12, marginTop: 32, alignSelf: 'flex-start' }}>
+          <p style={{ color: '#415569', fontSize: 12, marginTop: 32, alignSelf: 'flex-start' }}>
             v1.0.0 · {CREATOR}
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function AccountLoginScreen({ onLogin }) {
         {/* Right — branding panel (identical to LoginScreen) */}
         <div style={{
           flex: 1,
-          background: 'linear-gradient(135deg, #0a0f1e 0%, #0f172a 40%, #0c1a3a 100%)',
+          background: 'linear-gradient(135deg, #0d1526 0%, #111d30 40%, #0c1a3a 100%)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           position: 'relative', overflow: 'hidden',
@@ -218,12 +218,12 @@ export default function AccountLoginScreen({ onLogin }) {
             }}>
               {SYSTEM_NAME}
             </h2>
-            <p style={{ fontSize: 12, color: '#475569', letterSpacing: 2, marginBottom: 6, textTransform: 'uppercase' }}>
+            <p style={{ fontSize: 12, color: '#64748b', letterSpacing: 2, marginBottom: 6, textTransform: 'uppercase' }}>
               {SYSTEM_TAG}
             </p>
             <p style={{
               fontSize: 11, fontWeight: 500, letterSpacing: 1.5,
-              color: '#334155', marginBottom: 56,
+              color: '#415569', marginBottom: 56,
             }}>by {CREATOR}</p>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Receipts.jsx
  * Locate, view, and reprint any stored invoice.
  * Mirrors Nova POS "Receipts" module: search by number, Print Latest, Open Latest.
@@ -47,23 +47,23 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
     refund:    '#ef4444',
     normal:    '#22c55e',  // legacy localStorage fallback
     deleted:   '#64748b',  // legacy localStorage fallback
-  }[invoice.status] || '#94a3b8'
+  }[invoice.status] || '#a8b8cc'
 
   return (
     <div style={{
-      position: 'absolute', inset: 0, background: '#020817',
+      position: 'absolute', inset: 0, background: '#030e1e',
       display: 'flex', flexDirection: 'column', zIndex: 10,
     }}>
       {/* Header */}
       <div style={{
-        padding: '14px 20px', borderBottom: '1px solid #1e293b',
+        padding: '14px 20px', borderBottom: '1px solid #253349',
         display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0,
       }}>
         <button
           onClick={onClose}
           style={{
-            background: 'rgba(30,41,59,0.6)', border: '1px solid #1e293b',
-            borderRadius: 6, color: '#94a3b8', padding: '6px 12px',
+            background: 'rgba(30,41,59,0.6)', border: '1px solid #253349',
+            borderRadius: 6, color: '#a8b8cc', padding: '6px 12px',
             cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6,
           }}
         >← Back</button>
@@ -89,7 +89,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
           <button
             onClick={() => onPrint(invoice)}
             style={{
-              background: '#2563eb', border: 'none', borderRadius: 6,
+              background: '#3b82f6', border: 'none', borderRadius: 6,
               color: '#fff', padding: '8px 18px', cursor: 'pointer',
               fontSize: 13, fontWeight: 700,
             }}
@@ -117,21 +117,21 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
               { label: 'Location', value: invoice.location || '—' },
             ].map(({ label, value }) => (
               <div key={label} style={{
-                background: '#0f172a', border: '1px solid #1e293b',
+                background: '#111d30', border: '1px solid #253349',
                 borderRadius: 8, padding: '12px 16px',
               }}>
-                <div style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>{label}</div>
                 <div style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 600 }}>{value}</div>
               </div>
             ))}
           </div>
 
           {/* Items */}
-          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 8, overflow: 'hidden' }}>
             <div style={{
               display: 'grid', gridTemplateColumns: '1fr 60px 80px 90px',
-              padding: '8px 16px', background: '#0a0f1e',
-              fontSize: 10, color: '#475569', fontWeight: 600, letterSpacing: 0.6,
+              padding: '8px 16px', background: '#0d1526',
+              fontSize: 10, color: '#64748b', fontWeight: 600, letterSpacing: 0.6,
               textTransform: 'uppercase',
             }}>
               <span>Product</span>
@@ -146,7 +146,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
                 <div key={i} style={{
                   display: 'grid', gridTemplateColumns: '1fr 60px 80px 90px',
                   padding: '10px 16px',
-                  borderTop: '1px solid #1e293b',
+                  borderTop: '1px solid #253349',
                   alignItems: 'center',
                 }}>
                   <div>
@@ -158,8 +158,8 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
                       </div>
                     )}
                   </div>
-                  <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{item.qty}</div>
-                  <div style={{ textAlign: 'right', color: '#94a3b8', fontSize: 13 }}>{fmt$(item.salePrice)}</div>
+                  <div style={{ textAlign: 'center', color: '#a8b8cc', fontSize: 13 }}>{item.qty}</div>
+                  <div style={{ textAlign: 'right', color: '#a8b8cc', fontSize: 13 }}>{fmt$(item.salePrice)}</div>
                   <div style={{ textAlign: 'right', color: '#f1f5f9', fontSize: 13, fontWeight: 600 }}>{fmt$(item.subtotal)}</div>
                 </div>
               )
@@ -168,7 +168,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
 
           {/* Totals */}
           <div style={{
-            background: '#0f172a', border: '1px solid #1e293b',
+            background: '#111d30', border: '1px solid #253349',
             borderRadius: 8, padding: '16px 20px',
             display: 'flex', flexDirection: 'column', gap: 8, alignSelf: 'flex-end', minWidth: 260,
           }}>
@@ -177,7 +177,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
               { label: 'Tax',      value: tax      },
               ...(tip > 0 ? [{ label: 'Tip', value: tip }] : []),
             ].map(({ label, value }) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#94a3b8' }}>
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#a8b8cc' }}>
                 <span>{label}</span>
                 <span>{fmt$(value)}</span>
               </div>
@@ -185,7 +185,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
 
             <div style={{
               display: 'flex', justifyContent: 'space-between',
-              borderTop: '1px solid #334155', paddingTop: 8, marginTop: 4,
+              borderTop: '1px solid #415569', paddingTop: 8, marginTop: 4,
               fontSize: 16, fontWeight: 700, color: '#f1f5f9',
             }}>
               <span>TOTAL</span>
@@ -261,8 +261,8 @@ export default function Receipts({ onClose, posSession }) {
       }}>
         <div style={{
           width: '90%', maxWidth: 800, height: '88vh',
-          background: '#020817', borderRadius: 12,
-          border: '1px solid #1e293b', boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+          background: '#030e1e', borderRadius: 12,
+          border: '1px solid #253349', boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
           position: 'relative', overflow: 'hidden',
         }}>
           <InvoiceDetail
@@ -276,7 +276,7 @@ export default function Receipts({ onClose, posSession }) {
   }
 
   // ── Shared button styles ──────────────────────────────────────────────────
-  const quickBtn = (color = '#2563eb') => ({
+  const quickBtn = (color = '#3b82f6') => ({
     background: color === 'ghost'
       ? 'rgba(37,99,235,0.1)'
       : color,
@@ -295,14 +295,14 @@ export default function Receipts({ onClose, posSession }) {
     }}>
       <div style={{
         width: 560, maxHeight: '88vh',
-        background: '#0a0f1e', borderRadius: 12,
-        border: '1px solid #1e293b', boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+        background: '#0d1526', borderRadius: 12,
+        border: '1px solid #253349', boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
 
         {/* ── Header ── */}
         <div style={{
-          padding: '16px 22px', borderBottom: '1px solid #1e293b',
+          padding: '16px 22px', borderBottom: '1px solid #253349',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexShrink: 0,
         }}>
@@ -310,7 +310,7 @@ export default function Receipts({ onClose, posSession }) {
             <span style={{ fontSize: 20 }}>🧾</span>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9' }}>Locate Receipt</div>
-              <div style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>Search for invoice</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>Search for invoice</div>
             </div>
           </div>
 
@@ -318,8 +318,8 @@ export default function Receipts({ onClose, posSession }) {
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {currentLocation && (
               <div style={{
-                display: 'flex', background: '#0f172a',
-                border: '1px solid #1e293b', borderRadius: 8, overflow: 'hidden',
+                display: 'flex', background: '#111d30',
+                border: '1px solid #253349', borderRadius: 8, overflow: 'hidden',
               }}>
                 {[
                   { key: 'current', label: currentLocation },
@@ -331,7 +331,7 @@ export default function Receipts({ onClose, posSession }) {
                     style={{
                       padding: '5px 12px', border: 'none', cursor: 'pointer', fontSize: 11,
                       fontWeight: locScope === key ? 700 : 400,
-                      background: locScope === key ? '#2563eb' : 'transparent',
+                      background: locScope === key ? '#3b82f6' : 'transparent',
                       color: locScope === key ? '#fff' : '#64748b',
                       transition: 'all 0.15s',
                     }}
@@ -342,7 +342,7 @@ export default function Receipts({ onClose, posSession }) {
             <button
               onClick={onClose}
               style={{
-                background: 'none', border: '1px solid #1e293b', borderRadius: 6,
+                background: 'none', border: '1px solid #253349', borderRadius: 6,
                 color: '#64748b', width: 28, height: 28, cursor: 'pointer',
                 fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
@@ -364,21 +364,21 @@ export default function Receipts({ onClose, posSession }) {
                 autoFocus
                 style={{
                   flex: 1, padding: '9px 14px',
-                  background: '#0f172a', border: '1px solid #1e293b',
+                  background: '#111d30', border: '1px solid #253349',
                   borderRadius: 8, color: '#f1f5f9', fontSize: 14, outline: 'none',
                 }}
-                onFocus={e => { e.target.style.borderColor = '#2563eb' }}
-                onBlur={e => { e.target.style.borderColor = '#1e293b' }}
+                onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
+                onBlur={e => { e.target.style.borderColor = '#253349' }}
               />
               <button
                 onClick={handleSearch}
                 style={{
-                  background: '#2563eb', border: 'none', borderRadius: 8,
+                  background: '#3b82f6', border: 'none', borderRadius: 8,
                   color: '#fff', padding: '9px 20px', cursor: 'pointer',
                   fontSize: 14, fontWeight: 700, flexShrink: 0,
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#2563eb' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#3b82f6' }}
               >Search</button>
             </div>
 
@@ -430,16 +430,16 @@ export default function Receipts({ onClose, posSession }) {
           {/* ── Latest + quick actions ── */}
           {latestSale && (
             <div style={{ padding: '0 22px 14px' }}>
-              <div style={{ borderTop: '1px solid #1e293b', paddingTop: 14, marginBottom: 10 }}>
-                <div style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10 }}>
+              <div style={{ borderTop: '1px solid #253349', paddingTop: 14, marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10 }}>
                   Latest Receipt {locScope === 'current' && currentLocation ? `· ${currentLocation}` : '· All Locations'}
                 </div>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 14px', background: '#0f172a',
-                  border: '1px solid #1e293b', borderRadius: 8, gap: 12,
+                  padding: '10px 14px', background: '#111d30',
+                  border: '1px solid #253349', borderRadius: 8, gap: 12,
                 }}>
-                  <div style={{ fontSize: 12, color: '#94a3b8', minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: '#a8b8cc', minWidth: 0 }}>
                     <span style={{ fontWeight: 700, color: '#f1f5f9' }}>#{latestSale.number}</span>
                     {' · '}{fmtDateTime(latestSale.timestamp)}
                     {' · '}{latestSale.employee}
@@ -456,13 +456,13 @@ export default function Receipts({ onClose, posSession }) {
 
           {/* ── Recent receipts list ── */}
           <div style={{ padding: '0 22px 22px' }}>
-            <div style={{ borderTop: '1px solid #1e293b', paddingTop: 14 }}>
-              <div style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 }}>
+            <div style={{ borderTop: '1px solid #253349', paddingTop: 14 }}>
+              <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 }}>
                 Recent Receipts ({recentSales.length})
               </div>
 
               {recentSales.length === 0 && (
-                <div style={{ color: '#475569', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
+                <div style={{ color: '#64748b', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
                   No receipts found
                 </div>
               )}
@@ -477,8 +477,8 @@ export default function Receipts({ onClose, posSession }) {
                       justifyContent: 'space-between', gap: 12,
                       padding: '9px 12px',
                       background: isLatest ? 'rgba(37,99,235,0.06)' : 'transparent',
-                      borderBottom: '1px solid #1e293b',
-                      borderLeft: isLatest ? '2px solid #2563eb' : '2px solid transparent',
+                      borderBottom: '1px solid #253349',
+                      borderLeft: isLatest ? '2px solid #3b82f6' : '2px solid transparent',
                     }}
                   >
                     {/* Info */}
@@ -489,7 +489,7 @@ export default function Receipts({ onClose, posSession }) {
                         </span>
                         {isLatest && (
                           <span style={{
-                            fontSize: 9, fontWeight: 700, color: '#2563eb',
+                            fontSize: 9, fontWeight: 700, color: '#3b82f6',
                             background: 'rgba(37,99,235,0.15)', padding: '1px 6px', borderRadius: 6,
                             textTransform: 'uppercase', letterSpacing: 0.5,
                           }}>Latest</span>
@@ -497,7 +497,7 @@ export default function Receipts({ onClose, posSession }) {
                         {locScope === 'all' && inv.location && (
                           <span style={{
                             fontSize: 9, color: '#64748b',
-                            background: '#0f172a', border: '1px solid #1e293b',
+                            background: '#111d30', border: '1px solid #253349',
                             padding: '1px 6px', borderRadius: 6,
                           }}>{inv.location}</span>
                         )}
@@ -505,9 +505,9 @@ export default function Receipts({ onClose, posSession }) {
                       <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
                         {fmtDateTime(inv.timestamp)} · {inv.employee}
                         {' · '}
-                        <span style={{ color: '#94a3b8' }}>{fmt$(inv.total)}</span>
+                        <span style={{ color: '#a8b8cc' }}>{fmt$(inv.total)}</span>
                         {' · '}
-                        <span style={{ color: '#475569' }}>{inv.paymentMethod}</span>
+                        <span style={{ color: '#64748b' }}>{inv.paymentMethod}</span>
                       </div>
                     </div>
 
@@ -526,8 +526,8 @@ export default function Receipts({ onClose, posSession }) {
                         onClick={() => setOpenInvoice(inv)}
                         title="Open invoice"
                         style={{
-                          background: 'rgba(30,41,59,0.6)', border: '1px solid #1e293b',
-                          borderRadius: 6, color: '#94a3b8', padding: '4px 10px',
+                          background: 'rgba(30,41,59,0.6)', border: '1px solid #253349',
+                          borderRadius: 6, color: '#a8b8cc', padding: '4px 10px',
                           cursor: 'pointer', fontSize: 11, fontWeight: 600,
                         }}
                       >Open</button>

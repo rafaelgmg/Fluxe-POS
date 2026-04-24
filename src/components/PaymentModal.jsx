@@ -1,4 +1,4 @@
-/**
+﻿/**
  * PaymentModal.jsx
  * ──────────────────────────────────────────────────────────────────────────────
  * Supports both single-method and split-payment (cash + card, etc.).
@@ -25,7 +25,7 @@ import { useState, useMemo } from 'react'
 
 const ALL_METHODS = [
   { id: 'cash',     label: 'Cash',            icon: '💵', color: '#22c55e', prefKey: 'acceptCash'       },
-  { id: 'card',     label: 'Credit Card',     icon: '💳', color: '#2563eb', prefKey: 'acceptCard'       },
+  { id: 'card',     label: 'Credit Card',     icon: '💳', color: '#3b82f6', prefKey: 'acceptCard'       },
   { id: 'external', label: 'External Credit', icon: '📱', color: '#8b5cf6', prefKey: 'acceptExtCredit'  },
   { id: 'check',    label: 'Check',           icon: '✍️', color: '#f59e0b', prefKey: 'acceptCheck'      },
 ]
@@ -90,11 +90,11 @@ function DiscoverIcon() {
 function OtherCardIcon() {
   return (
     <svg viewBox="0 0 60 36" width="54" height="33" xmlns="http://www.w3.org/2000/svg">
-      <rect width="60" height="36" rx="5" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+      <rect width="60" height="36" rx="5" fill="#253349" stroke="#415569" strokeWidth="1" />
       <rect x="8" y="10" width="10" height="8" rx="2" fill="#64748b" />
-      <path d="M25 14 a4 4 0 0 1 0 8"  stroke="#475569" strokeWidth="1.5" fill="none" />
-      <path d="M28 11 a8 8 0 0 1 0 14" stroke="#334155" strokeWidth="1.5" fill="none" />
-      <rect x="0" y="24" width="60" height="5" rx="0" fill="#334155" />
+      <path d="M25 14 a4 4 0 0 1 0 8"  stroke="#64748b" strokeWidth="1.5" fill="none" />
+      <path d="M28 11 a8 8 0 0 1 0 14" stroke="#415569" strokeWidth="1.5" fill="none" />
+      <rect x="0" y="24" width="60" height="5" rx="0" fill="#415569" />
       <text x="30" y="22" textAnchor="middle" fill="#64748b" fontSize="7"
         fontFamily="Arial, sans-serif" fontWeight="bold" letterSpacing="1">OTHER</text>
     </svg>
@@ -110,16 +110,16 @@ const COINS = [1, 0.25, 0.10, 0.05, 0.01]
 
 // ── Shared styles ──────────────────────────────────────────────────────────────
 const LABEL = {
-  color: '#475569', fontSize: 11, fontWeight: 600,
+  color: '#64748b', fontSize: 11, fontWeight: 600,
   letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, display: 'block',
 }
 const INPUT = {
   width: '100%', padding: '11px 14px',
-  background: '#0b1426', border: '1px solid #1e293b', borderRadius: 8,
+  background: '#0b1426', border: '1px solid #253349', borderRadius: 8,
   color: '#f1f5f9', fontSize: 14, outline: 'none', fontFamily: 'inherit',
 }
 const CARD_DARK = {
-  background: '#080f1e', border: '1px solid #1e293b',
+  background: '#080f1e', border: '1px solid #253349',
   borderRadius: 12, padding: 16, marginBottom: 12,
 }
 
@@ -256,7 +256,7 @@ export default function PaymentModal({
     }
   }
 
-  const activeColor = METHODS.find(m => m.id === method)?.color || '#2563eb'
+  const activeColor = METHODS.find(m => m.id === method)?.color || '#3b82f6'
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -267,8 +267,8 @@ export default function PaymentModal({
       zIndex: 1000, backdropFilter: 'blur(4px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)',
-        border: '1px solid #1e293b', borderRadius: 20,
+        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
+        border: '1px solid #253349', borderRadius: 20,
         width: 540, maxHeight: '93vh', overflowY: 'auto',
         padding: 28,
         boxShadow: '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(37,99,235,0.07) inset',
@@ -278,7 +278,7 @@ export default function PaymentModal({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Complete Sale</h2>
           <button onClick={onCancel} style={{
-            background: 'none', border: 'none', color: '#475569',
+            background: 'none', border: 'none', color: '#64748b',
             fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 4,
           }}>✕</button>
         </div>
@@ -289,14 +289,14 @@ export default function PaymentModal({
         }}>
           {/* Total Due */}
           <div style={{
-            background: '#070e1c', border: '1px solid #1e293b',
+            background: '#070e1c', border: '1px solid #253349',
             borderRadius: 12, padding: '14px 18px', textAlign: 'center',
           }}>
-            <p style={{ color: '#475569', fontSize: 10, letterSpacing: 0.8, fontWeight: 600, marginBottom: 5 }}>TOTAL DUE</p>
-            <p style={{ color: '#94a3b8', fontSize: 32, fontWeight: 800, letterSpacing: -1, lineHeight: 1, margin: 0 }}>
+            <p style={{ color: '#64748b', fontSize: 10, letterSpacing: 0.8, fontWeight: 600, marginBottom: 5 }}>TOTAL DUE</p>
+            <p style={{ color: '#a8b8cc', fontSize: 32, fontWeight: 800, letterSpacing: -1, lineHeight: 1, margin: 0 }}>
               ${total.toFixed(2)}
             </p>
-            <p style={{ color: '#1e293b', fontSize: 11, marginTop: 4 }}>
+            <p style={{ color: '#253349', fontSize: 11, marginTop: 4 }}>
               ${subtotal.toFixed(2)} + tax ${tax.toFixed(2)}
             </p>
           </div>
@@ -308,7 +308,7 @@ export default function PaymentModal({
             borderRadius: 12, padding: '14px 18px', textAlign: 'center',
             transition: 'all 0.3s',
           }}>
-            <p style={{ color: '#475569', fontSize: 10, letterSpacing: 0.8, fontWeight: 600, marginBottom: 5 }}>
+            <p style={{ color: '#64748b', fontSize: 10, letterSpacing: 0.8, fontWeight: 600, marginBottom: 5 }}>
               {remaining > 0 ? 'REMAINING' : '✓ PAID IN FULL'}
             </p>
             <p style={{
@@ -319,7 +319,7 @@ export default function PaymentModal({
               ${remaining.toFixed(2)}
             </p>
             {payments.length > 0 && (
-              <p style={{ color: '#475569', fontSize: 11, marginTop: 4 }}>
+              <p style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
                 ${totalPaid.toFixed(2)} collected
               </p>
             )}
@@ -329,17 +329,17 @@ export default function PaymentModal({
         {/* ── Payments already added ── */}
         {payments.length > 0 && (
           <div style={{
-            background: '#080f1e', border: '1px solid #1e293b',
+            background: '#080f1e', border: '1px solid #253349',
             borderRadius: 12, padding: '10px 14px', marginBottom: 14,
           }}>
-            <p style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>
+            <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>
               PAYMENTS COLLECTED
             </p>
             {payments.map((p, idx) => (
               <div key={idx} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '7px 0',
-                borderBottom: idx < payments.length - 1 ? '1px solid #0f172a' : 'none',
+                borderBottom: idx < payments.length - 1 ? '1px solid #111d30' : 'none',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 15 }}>
@@ -353,7 +353,7 @@ export default function PaymentModal({
                       </span>
                     )}
                     {p.method === 'card' && p.authorizationNumber && (
-                      <span style={{ color: '#475569', fontSize: 11, marginLeft: 8 }}>
+                      <span style={{ color: '#64748b', fontSize: 11, marginLeft: 8 }}>
                         Auth: {p.authorizationNumber}
                       </span>
                     )}
@@ -367,13 +367,13 @@ export default function PaymentModal({
                     onClick={() => removePayment(idx)}
                     title="Remove this payment"
                     style={{
-                      background: 'none', border: '1px solid #1e293b', borderRadius: 4,
-                      color: '#475569', fontSize: 12, cursor: 'pointer',
+                      background: 'none', border: '1px solid #253349', borderRadius: 4,
+                      color: '#64748b', fontSize: 12, cursor: 'pointer',
                       width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#1e293b'; e.currentTarget.style.color = '#475569' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
                   >✕</button>
                 </div>
               </div>
@@ -389,7 +389,7 @@ export default function PaymentModal({
               borderRadius: 12, padding: 16, marginBottom: 12,
               transition: 'border-color 0.2s',
             }}>
-              <p style={{ color: '#475569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 10 }}>
+              <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 10 }}>
                 ADD PAYMENT
               </p>
 
@@ -403,7 +403,7 @@ export default function PaymentModal({
                       onClick={() => { setMethod(m.id); setEntryAmount('') }}
                       style={{
                         flex: 1, padding: '10px 4px', borderRadius: 10,
-                        border: `1px solid ${active ? m.color : '#1e293b'}`,
+                        border: `1px solid ${active ? m.color : '#253349'}`,
                         background: active ? `${m.color}1a` : '#0b1426',
                         color: active ? '#f1f5f9' : '#64748b',
                         fontSize: 12, fontWeight: active ? 700 : 400,
@@ -481,8 +481,8 @@ export default function PaymentModal({
                     {COINS.map(d => (
                       <button key={d} onClick={() => addDenom(d)} style={{
                         padding: '5px 10px', borderRadius: 6,
-                        border: '1px solid #94a3b828',
-                        background: '#94a3b80a', color: '#94a3b8',
+                        border: '1px solid #a8b8cc28',
+                        background: '#a8b8cc0a', color: '#a8b8cc',
                         fontSize: 12, fontWeight: 600, cursor: 'pointer',
                       }}>${d.toFixed(2)}</button>
                     ))}
@@ -493,12 +493,12 @@ export default function PaymentModal({
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '10px 16px', borderRadius: 10,
                     background: changeDue > 0 ? '#22c55e12' : '#070e1c',
-                    border: `1px solid ${changeDue > 0 ? '#22c55e38' : '#0f172a'}`,
+                    border: `1px solid ${changeDue > 0 ? '#22c55e38' : '#111d30'}`,
                     transition: 'all 0.2s',
                   }}>
                     <span style={{ color: '#64748b', fontSize: 13, fontWeight: 600 }}>Change Due</span>
                     <span style={{
-                      color: changeDue > 0 ? '#22c55e' : '#1e293b',
+                      color: changeDue > 0 ? '#22c55e' : '#253349',
                       fontSize: 26, fontWeight: 800, transition: 'color 0.2s',
                     }}>${changeDue.toFixed(2)}</span>
                   </div>
@@ -522,7 +522,7 @@ export default function PaymentModal({
                         <button key={b.id} onClick={() => setCardBrand(b.id)} style={{
                           flex: 1, padding: '8px 4px 6px',
                           borderRadius: 10,
-                          border: `2px solid ${active ? b.color : '#1e293b'}`,
+                          border: `2px solid ${active ? b.color : '#253349'}`,
                           background: active ? `${b.color}14` : '#080f1e',
                           cursor: 'pointer', transition: 'all 0.18s',
                           boxShadow: active ? `0 0 12px ${b.color}35` : 'none',
@@ -537,7 +537,7 @@ export default function PaymentModal({
                           </div>
                           <span style={{
                             fontSize: 9, fontWeight: active ? 700 : 500,
-                            color: active ? b.color : '#475569', letterSpacing: 0.3,
+                            color: active ? b.color : '#64748b', letterSpacing: 0.3,
                           }}>{b.label}</span>
                         </button>
                       )
@@ -587,7 +587,7 @@ export default function PaymentModal({
                     style={{ ...INPUT, letterSpacing: 2, fontWeight: 600 }}
                   />
                   <p style={{ color: '#64748b', fontSize: 11, marginTop: 8 }}>
-                    Make check payable to: <b style={{ color: '#94a3b8' }}>Perfume Passage</b>
+                    Make check payable to: <b style={{ color: '#a8b8cc' }}>Perfume Passage</b>
                   </p>
                 </>
               )}
@@ -603,8 +603,8 @@ export default function PaymentModal({
                 background: canAdd
                   ? `linear-gradient(135deg, ${activeColor} 0%, ${activeColor}cc 100%)`
                   : '#0b1426',
-                border: canAdd ? 'none' : '1px solid #1e293b',
-                color: canAdd ? '#fff' : '#334155',
+                border: canAdd ? 'none' : '1px solid #253349',
+                color: canAdd ? '#fff' : '#415569',
                 fontSize: 14, fontWeight: 700,
                 cursor: canAdd ? 'pointer' : 'not-allowed',
                 boxShadow: canAdd ? `0 0 18px ${activeColor}35` : 'none',
@@ -625,18 +625,18 @@ export default function PaymentModal({
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '10px 14px', background: '#0b1426',
-              border: '1px solid #2563eb40', borderRadius: 8,
+              border: '1px solid #3b82f640', borderRadius: 8,
             }}>
               <div>
                 <span style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>
                   {linkedCustomer.firstName} {linkedCustomer.lastName}
                 </span>
                 {linkedCustomer.phone && (
-                  <span style={{ color: '#475569', fontSize: 12, marginLeft: 10 }}>{linkedCustomer.phone}</span>
+                  <span style={{ color: '#64748b', fontSize: 12, marginLeft: 10 }}>{linkedCustomer.phone}</span>
                 )}
               </div>
               <button onClick={() => { setLinkedCustomer(null); setCustSearch('') }}
-                style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 16, padding: 4 }}>✕</button>
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 16, padding: 4 }}>✕</button>
             </div>
           ) : (
             <>
@@ -650,7 +650,7 @@ export default function PaymentModal({
               {showCustDropdown && custResults.length > 0 && (
                 <div style={{
                   position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
-                  background: '#0d1829', border: '1px solid #1e293b',
+                  background: '#0d1829', border: '1px solid #253349',
                   borderRadius: 8, boxShadow: '0 8px 28px rgba(0,0,0,0.6)', marginTop: 4,
                 }}>
                   {custResults.map(c => (
@@ -659,14 +659,14 @@ export default function PaymentModal({
                       style={{
                         display: 'block', width: '100%', padding: '10px 14px',
                         textAlign: 'left', background: 'transparent',
-                        border: 'none', borderBottom: '1px solid #1e293b',
+                        border: 'none', borderBottom: '1px solid #253349',
                         color: '#f1f5f9', fontSize: 13, cursor: 'pointer',
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#0f172a'}
+                      onMouseEnter={e => e.currentTarget.style.background = '#111d30'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ fontWeight: 600 }}>{c.firstName} {c.lastName}</span>
-                      {c.phone && <span style={{ color: '#475569', marginLeft: 10, fontSize: 12 }}>{c.phone}</span>}
+                      {c.phone && <span style={{ color: '#64748b', marginLeft: 10, fontSize: 12 }}>{c.phone}</span>}
                     </button>
                   ))}
                 </div>
@@ -698,20 +698,20 @@ export default function PaymentModal({
               onClick={() => onConfirm(buildPayload('none'))}
               style={{
                 flex: 1, padding: '10px 8px', borderRadius: 8,
-                background: 'rgba(255,255,255,0.02)', border: '1px solid #1e293b',
-                color: canConfirm ? '#64748b' : '#334155',
+                background: 'rgba(255,255,255,0.02)', border: '1px solid #253349',
+                color: canConfirm ? '#64748b' : '#415569',
                 fontSize: 12, fontWeight: 500,
                 cursor: canConfirm ? 'pointer' : 'not-allowed',
               }}
             >✓ Confirm (no receipt)</button>
             <button onClick={onCancel} style={{
               flex: 1, padding: '10px 8px', borderRadius: 8,
-              background: 'rgba(255,255,255,0.02)', border: '1px solid #1e293b',
-              color: '#475569', fontSize: 12, cursor: 'pointer',
+              background: 'rgba(255,255,255,0.02)', border: '1px solid #253349',
+              color: '#64748b', fontSize: 12, cursor: 'pointer',
             }}>Cancel</button>
           </div>
           {!canConfirm && payments.length === 0 && (
-            <p style={{ color: '#334155', fontSize: 11, textAlign: 'center', marginTop: 2 }}>
+            <p style={{ color: '#415569', fontSize: 11, textAlign: 'center', marginTop: 2 }}>
               Add at least one payment to complete this sale
             </p>
           )}
@@ -733,9 +733,9 @@ function ActionButton({ label, disabled, primary, onClick }) {
     <button disabled={disabled} onClick={onClick} style={{
       flex: 1, padding: '13px 6px', borderRadius: 10,
       background: disabled ? '#0b1426' : primary
-        ? 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)' : '#0b1426',
-      border: disabled ? '1px solid #1e293b' : primary ? 'none' : '1px solid #1e293b',
-      color: disabled ? '#334155' : primary ? '#fff' : '#94a3b8',
+        ? 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)' : '#0b1426',
+      border: disabled ? '1px solid #253349' : primary ? 'none' : '1px solid #253349',
+      color: disabled ? '#415569' : primary ? '#fff' : '#a8b8cc',
       fontSize: 13, fontWeight: primary ? 700 : 600,
       cursor: disabled ? 'not-allowed' : 'pointer',
       boxShadow: !disabled && primary ? '0 0 20px rgba(37,99,235,0.38)' : 'none',

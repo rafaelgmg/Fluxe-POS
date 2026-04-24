@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 
 /**
  * BarcodeModal — modal para digitar ou escanear um barcode.
@@ -47,8 +47,8 @@ export default function BarcodeModal({ onConfirm, onClose, title = 'Scan / Enter
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(160deg, #0d1829 0%, #0a0f1e 100%)',
-          border: '1px solid #1e293b', borderRadius: 16,
+          background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
+          border: '1px solid #253349', borderRadius: 16,
           padding: '28px 28px 24px', width: 360,
           boxShadow: '0 24px 80px rgba(0,0,0,0.75)',
         }}
@@ -57,17 +57,17 @@ export default function BarcodeModal({ onConfirm, onClose, title = 'Scan / Enter
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* Barcode icon */}
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 5v14M7 5v14M11 5v14M15 5v14M19 5v14" />
-              <rect x="1" y="3" width="22" height="18" rx="2" stroke="#2563eb" strokeWidth="1.5" fill="none"/>
+              <rect x="1" y="3" width="22" height="18" rx="2" stroke="#3b82f6" strokeWidth="1.5" fill="none"/>
             </svg>
             <span style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 15 }}>{title}</span>
           </div>
           <button
             onClick={onClose}
             style={{
-              background: 'none', border: '1px solid #1e293b', borderRadius: 6,
-              color: '#475569', fontSize: 16, cursor: 'pointer',
+              background: 'none', border: '1px solid #253349', borderRadius: 6,
+              color: '#64748b', fontSize: 16, cursor: 'pointer',
               width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >×</button>
@@ -81,14 +81,14 @@ export default function BarcodeModal({ onConfirm, onClose, title = 'Scan / Enter
           onKeyDown={handleKey}
           placeholder="Scan or type barcode..."
           style={{
-            width: '100%', padding: '11px 14px', background: '#020817',
-            border: '1px solid #2563eb', borderRadius: 8,
+            width: '100%', padding: '11px 14px', background: '#030e1e',
+            border: '1px solid #3b82f6', borderRadius: 8,
             color: '#f1f5f9', fontSize: 15, outline: 'none',
             boxSizing: 'border-box', letterSpacing: 1,
           }}
         />
 
-        <p style={{ color: '#334155', fontSize: 11, marginTop: 8, marginBottom: 20 }}>
+        <p style={{ color: '#415569', fontSize: 11, marginTop: 8, marginBottom: 20 }}>
           Press Enter or click Confirm to search
         </p>
 
@@ -98,7 +98,7 @@ export default function BarcodeModal({ onConfirm, onClose, title = 'Scan / Enter
             onClick={handleConfirm}
             style={{
               flex: 1, padding: '11px',
-              background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
               border: 'none', borderRadius: 10,
               color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
               boxShadow: '0 0 20px rgba(37,99,235,0.35)',
@@ -111,8 +111,8 @@ export default function BarcodeModal({ onConfirm, onClose, title = 'Scan / Enter
             onClick={onClose}
             style={{
               flex: 1, padding: '10px', background: 'transparent',
-              border: '1px solid #1e293b', borderRadius: 8,
-              color: '#475569', fontSize: 14, cursor: 'pointer',
+              border: '1px solid #253349', borderRadius: 8,
+              color: '#64748b', fontSize: 14, cursor: 'pointer',
             }}
           >Cancel</button>
         </div>
@@ -137,7 +137,7 @@ export function BarcodeIconButton({ onClick, active = false, size = 18 }) {
       style={{
         padding: '6px 10px', cursor: 'pointer', borderRadius: 6,
         background: active ? 'rgba(37,99,235,0.15)' : 'transparent',
-        border: `1px solid ${active ? 'rgba(37,99,235,0.5)' : '#1e293b'}`,
+        border: `1px solid ${active ? 'rgba(37,99,235,0.5)' : '#253349'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all 0.15s', flexShrink: 0,
       }}
@@ -147,11 +147,11 @@ export function BarcodeIconButton({ onClick, active = false, size = 18 }) {
       }}
       onMouseLeave={e => {
         e.currentTarget.style.background = active ? 'rgba(37,99,235,0.15)' : 'transparent'
-        e.currentTarget.style.borderColor = active ? 'rgba(37,99,235,0.5)' : '#1e293b'
+        e.currentTarget.style.borderColor = active ? 'rgba(37,99,235,0.5)' : '#253349'
       }}
     >
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-        stroke={active ? '#2563eb' : '#475569'} strokeWidth="2"
+        stroke={active ? '#3b82f6' : '#64748b'} strokeWidth="2"
         strokeLinecap="round" strokeLinejoin="round"
       >
         <rect x="1" y="3" width="22" height="18" rx="2"/>

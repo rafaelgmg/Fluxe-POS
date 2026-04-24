@@ -1,14 +1,14 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+﻿import { useState, useMemo, useRef, useEffect } from 'react'
 import { loadUsers, saveUsers, hadStorageError } from '../utils/usersStorage'
 import { upsertUserToSupabase } from '../services/supabaseWrite'
 
 const POSITIONS = ['Sales', 'Manager', 'Admin']
 
 const PURPLE = '#8b5cf6'
-const BG     = '#020817'
-const PANEL  = '#0a0f1e'
-const CARD   = '#0f172a'
-const BORDER = '#1e293b'
+const BG     = '#030e1e'
+const PANEL  = '#0d1526'
+const CARD   = '#111d30'
+const BORDER = '#253349'
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
 
@@ -20,7 +20,7 @@ function Avatar({ user, size = 36 }) {
         style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${BORDER}`, flexShrink: 0 }} />
     )
   }
-  const colors = ['#2563eb', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#22c55e']
+  const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#22c55e']
   const bg = colors[user.id % colors.length]
   return (
     <div style={{
@@ -42,7 +42,7 @@ function StatusBadge({ status }) {
     <span style={{
       fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700,
       background: active ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)',
-      border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : '#1e293b'}`,
+      border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : '#253349'}`,
       color: active ? '#22c55e' : '#64748b',
     }}>
       {active ? '● Active' : '○ Inactive'}
@@ -107,14 +107,14 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
       boxSizing: 'border-box', outline: 'none',
       ...extra.style,
     },
-    onFocus: e => { e.target.style.borderColor = errors[key] ? '#ef4444' : '#2563eb' },
+    onFocus: e => { e.target.style.borderColor = errors[key] ? '#ef4444' : '#3b82f6' },
     onBlur:  e => { e.target.style.borderColor = errors[key] ? '#ef4444' : BORDER },
     ...extra,
   })
 
   const lbl = (text, optional) => (
-    <label style={{ color: '#475569', fontSize: 11, marginBottom: 3, display: 'block', letterSpacing: 0.4 }}>
-      {text}{optional && <span style={{ color: '#334155', marginLeft: 4, fontWeight: 400 }}>(optional)</span>}
+    <label style={{ color: '#64748b', fontSize: 11, marginBottom: 3, display: 'block', letterSpacing: 0.4 }}>
+      {text}{optional && <span style={{ color: '#415569', marginLeft: 4, fontWeight: 400 }}>(optional)</span>}
     </label>
   )
   const err = (key) => errors[key] && (
@@ -167,7 +167,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
           </div>
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display: 'none' }} />
           <div>
-            <p style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600 }}>Profile Photo</p>
+            <p style={{ color: '#a8b8cc', fontSize: 12, fontWeight: 600 }}>Profile Photo</p>
             <button onClick={() => fileRef.current?.click()} style={{
               marginTop: 4, padding: '4px 10px', background: 'transparent',
               border: `1px solid ${BORDER}`, borderRadius: 4,
@@ -182,8 +182,8 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
             {form.photo && (
               <button onClick={() => set('photo', null)} style={{
                 marginTop: 4, marginLeft: 6, padding: '4px 10px', background: 'transparent',
-                border: '1px solid #1e293b', borderRadius: 4,
-                color: '#475569', fontSize: 11, cursor: 'pointer',
+                border: '1px solid #253349', borderRadius: 4,
+                color: '#64748b', fontSize: 11, cursor: 'pointer',
               }}>Remove</button>
             )}
           </div>
@@ -246,9 +246,9 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
               <button key={s} onClick={() => set('status', s)} style={{
                 flex: 1, padding: '7px',
                 background: form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)') : BG,
-                border: `1px solid ${form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.4)' : '#475569') : BORDER}`,
+                border: `1px solid ${form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.4)' : '#64748b') : BORDER}`,
                 borderRadius: 4,
-                color: form.status === s ? (s === 'active' ? '#22c55e' : '#94a3b8') : '#64748b',
+                color: form.status === s ? (s === 'active' ? '#22c55e' : '#a8b8cc') : '#64748b',
                 fontSize: 12, fontWeight: form.status === s ? 700 : 400,
                 cursor: 'pointer', transition: 'all 0.2s ease',
               }}>
@@ -428,7 +428,7 @@ export default function UsersScreen({ onBack }) {
           fontSize: 18, cursor: 'pointer', paddingRight: 4, lineHeight: 1,
         }}>←</button>
         <span style={{ color: PURPLE, fontWeight: 700, fontSize: 13 }}>👥 Users</span>
-        <span style={{ color: '#475569', fontSize: 11 }}>Settings</span>
+        <span style={{ color: '#64748b', fontSize: 11 }}>Settings</span>
         <div style={{ width: 1, height: 16, background: BORDER, margin: '0 4px' }} />
 
         <input
@@ -438,7 +438,7 @@ export default function UsersScreen({ onBack }) {
             padding: '6px 12px', background: BG, border: `1px solid ${BORDER}`,
             borderRadius: 4, color: '#f1f5f9', fontSize: 13, width: 220, outline: 'none',
           }}
-          onFocus={e => { e.target.style.borderColor = '#2563eb' }}
+          onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
           onBlur={e =>  { e.target.style.borderColor = BORDER }}
         />
 
@@ -454,7 +454,7 @@ export default function UsersScreen({ onBack }) {
           </button>
         ))}
 
-        <span style={{ color: '#475569', fontSize: 12 }}>{filtered.length} user{filtered.length !== 1 ? 's' : ''}</span>
+        <span style={{ color: '#64748b', fontSize: 12 }}>{filtered.length} user{filtered.length !== 1 ? 's' : ''}</span>
 
         <div style={{ marginLeft: 'auto' }}>
           <button onClick={openNew} style={{
@@ -476,7 +476,7 @@ export default function UsersScreen({ onBack }) {
               <tr>
                 {['', 'Name', 'Position', 'Email', 'Phone', 'Status', ''].map((h, i) => (
                   <th key={i} style={{
-                    padding: '8px 12px', textAlign: 'left', color: '#475569',
+                    padding: '8px 12px', textAlign: 'left', color: '#64748b',
                     fontWeight: 600, fontSize: 11, background: CARD,
                     borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap',
                   }}>{h}</th>
@@ -486,7 +486,7 @@ export default function UsersScreen({ onBack }) {
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#334155' }}>
+                  <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#415569' }}>
                     No users found
                   </td>
                 </tr>
@@ -521,18 +521,18 @@ export default function UsersScreen({ onBack }) {
                       <span style={{
                         fontSize: 11, padding: '2px 8px', borderRadius: 4,
                         background: CARD, border: `1px solid ${BORDER}`,
-                        color: '#94a3b8',
+                        color: '#a8b8cc',
                       }}>{u.position}</span>
                     </td>
 
                     {/* Email */}
-                    <td style={{ padding: '10px 12px', color: '#475569', fontSize: 12 }}>
-                      {u.email || <span style={{ color: '#334155' }}>—</span>}
+                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 12 }}>
+                      {u.email || <span style={{ color: '#415569' }}>—</span>}
                     </td>
 
                     {/* Phone */}
-                    <td style={{ padding: '10px 12px', color: '#475569', fontSize: 12 }}>
-                      {u.phone || <span style={{ color: '#334155' }}>—</span>}
+                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 12 }}>
+                      {u.phone || <span style={{ color: '#415569' }}>—</span>}
                     </td>
 
                     {/* Status */}

@@ -1,4 +1,4 @@
-/* ── Reset ────────────────────────────────────────────────────────────────── */
+﻿/* ── Reset ────────────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -14,7 +14,7 @@ html {
 
 body {
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: #020817;
+  background: #030e1e;
   color: #f1f5f9;
   height: 100vh;
   overflow: hidden;
@@ -25,11 +25,11 @@ body {
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  {
-  background: #1e293b;
+  background: #253349;
   border-radius: 99px;
   transition: background 0.2s;
 }
-::-webkit-scrollbar-thumb:hover { background: #334155; }
+::-webkit-scrollbar-thumb:hover { background: #415569; }
 ::-webkit-scrollbar-corner { background: transparent; }
 
 /* ── Focus ────────────────────────────────────────────────────────────────── */
@@ -97,7 +97,7 @@ input, textarea, select {
 
 /* ── Utility classes ──────────────────────────────────────────────────────── */
 .grad-primary {
-  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%);
 }
 .glow-blue {
   box-shadow: 0 0 20px rgba(37,99,235,0.35);
