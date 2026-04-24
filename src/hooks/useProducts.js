@@ -12,17 +12,24 @@ export function useProducts() {
   // Phase 1: hydrate from Supabase after initial localStorage render.
   // Falls back silently to localStorage data if Supabase is unavailable.
   useEffect(() => {
+    let cancelled = false
     awaitOrgSession().then(() => fetchProducts()).then(remote => {
-      if (!remote) return
-      // Merge: remote provides live stock (qty/qtyByLoc), local provides category name
-      // because Supabase products table stores category_id (UUID) not the name string
-      const localMap = Object.fromEntries(loadAllProducts().map(p => [p.barcode, p]))
-      const merged = remote.map(p => ({
-        ...p,
-        category: localMap[p.barcode]?.category || p.category || '',
-      }))
-      setProducts(merged)
+      if (!remote || cancelled) return
+      // Use functional updater to merge against CURRENT state (not stale closure).
+      // This preserves products added locally while the fetch was in-flight.
+      setProducts(current => {
+        const localMap  = Object.fromEntries(current.map(p => [p.barcode, p]))
+        const merged    = remote.map(p => ({
+          ...p,
+          category: localMap[p.barcode]?.category || p.category || '',
+        }))
+        // Keep local-only products not yet synced to Supabase
+        const remoteSet = new Set(remote.map(p => p.barcode))
+        current.forEach(p => { if (!remoteSet.has(p.barcode)) merged.push(p) })
+        return merged
+      })
     })
+    return () => { cancelled = true }
   }, [])
 
   /**
