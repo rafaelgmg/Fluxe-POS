@@ -102,13 +102,11 @@ export default function LoginScreen({ onLogin, onBack }) {
   const pressPin = (val) => {
     if (verifying) return
     if (val === '⌫') { setPin(p => p.slice(0, -1)); setPinError(''); return }
-    if (pin.length >= 6) return
+    if (pin.length >= 4) return
     setPin(prev => prev + val)
   }
 
-  // Trigger async verification once PIN reaches minimum length.
-  // Tries at 4, 5, and 6 digits — stops as soon as RPC returns a match
-  // or reports failure when max length is reached.
+  // Trigger async verification once PIN reaches 4 digits.
   useEffect(() => {
     const next = pin
     if (next.length < 4 || verifying) return
@@ -123,16 +121,15 @@ export default function LoginScreen({ onLogin, onBack }) {
           setPinError('')
           setVerifying(false)
           onLogin(pendingSession, result)
-        } else if (next.length >= 6) {
-          // Max length reached with no match — wrong PIN
+        } else {
           setPinError('Incorrect PIN — try again')
           setTimeout(() => { setPin(''); setPinError(''); setVerifying(false) }, 700)
-        } else {
-          // Could be a longer PIN (5 or 6 digits) — wait for more input
-          setVerifying(false)
         }
       } catch {
-        if (!cancelled) setVerifying(false)
+        if (!cancelled) {
+          setPinError('Incorrect PIN — try again')
+          setTimeout(() => { setPin(''); setPinError(''); setVerifying(false) }, 700)
+        }
       }
     }
 

@@ -31,6 +31,7 @@
 
 import { getLocationUUID, getOrgId, isSupabaseConfigured } from './supabaseRead'
 import { getAccessToken } from './supabaseSession'
+import { awaitOrgSession } from './supabaseAuth'
 
 // ── HTTP layer ────────────────────────────────────────────────────────────────
 
@@ -796,8 +797,10 @@ export async function upsertUserToSupabase(user) {
       const inserted = await sbPost('/users', row, 'return=representation')
       supabaseId = inserted?.id ?? null
     }
-    // Hash and store PIN server-side via RPC — plaintext never written to DB column
+    // Hash and store PIN server-side via RPC — plaintext never written to DB column.
+    // Ensure machine account is authenticated first (set_user_pin requires `authenticated` role).
     if (supabaseId && user.pin) {
+      await awaitOrgSession().catch(() => null)
       await sbPost('/rpc/set_user_pin', { p_user_id: supabaseId, p_plain_pin: user.pin })
         .catch(e => console.warn('[Fluxe] set_user_pin RPC failed:', e.message))
     }
