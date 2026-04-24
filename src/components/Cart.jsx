@@ -23,7 +23,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
         {items.length > 0 && (
           <span style={{
             fontSize: 11, marginLeft: 4,
-            color: totalSpare < 0 ? '#ef4444' : '#64748b'
+            color: totalSpare < 0 ? '#ef4444' : '#94a3b8'
           }}>
             {totalSpare < 0 ? '-' : '+'}{Math.floor(Math.abs(totalSpare))}
           </span>
@@ -43,7 +43,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
         display: 'grid', gridTemplateColumns: '1fr 48px 68px 68px 28px',
         padding: '8px 12px', background: '#111d30',
         borderBottom: '1px solid #253349',
-        fontSize: 11, color: '#64748b', fontWeight: 600, letterSpacing: 0.4,
+        fontSize: 11, color: '#94a3b8', fontWeight: 600, letterSpacing: 0.4,
       }}>
         <span>PRODUCT</span>
         <span style={{ textAlign: 'center' }}>QTY</span>
@@ -88,7 +88,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
               }}
             >
               <div>
-                <p style={{ fontSize: 14, color: isExchange ? '#64748b' : '#f1f5f9', lineHeight: 1.3, fontWeight: 600 }}>
+                <p style={{ fontSize: 14, color: isExchange ? '#94a3b8' : '#f1f5f9', lineHeight: 1.3, fontWeight: 600 }}>
                   {item.product.name}
                 </p>
                 {isReturn && (
@@ -98,30 +98,30 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
                   <p style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>⚠ Damaged</p>
                 )}
                 {!isExchange && item.discount > 0 && (
-                  <p style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                  <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
                     −${item.discount.toFixed(2)} disc
                   </p>
                 )}
               </div>
-              <span style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: '#a8b8cc' }}>
+              <span style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: '#cbd0e0' }}>
                 {item.qty}
               </span>
-              <span style={{ textAlign: 'right', fontSize: 14, color: '#a8b8cc' }}>
+              <span style={{ textAlign: 'right', fontSize: 14, color: '#cbd0e0' }}>
                 ${item.systemPrice.toFixed(2)}
               </span>
               <span style={{
                 textAlign: 'right', fontSize: 15, fontWeight: 700,
-                color: isExchange ? '#64748b' : '#22c55e'
+                color: isExchange ? '#94a3b8' : '#22c55e'
               }}>
                 ${item.subtotal.toFixed(2)}
               </span>
               <button onClick={e => { e.stopPropagation(); onRemove(idx) }} style={{
-                background: 'none', border: 'none', color: '#64748b',
+                background: 'none', border: 'none', color: '#94a3b8',
                 fontSize: 17, cursor: 'pointer', textAlign: 'center',
                 transition: 'color 0.1s',
               }}
                 onMouseEnter={e => { e.currentTarget.style.color = '#ef4444' }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#64748b' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8' }}
               >×</button>
             </div>
           )
@@ -131,11 +131,11 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       {/* Totals */}
       <div style={{ padding: '14px 16px', borderTop: '1px solid #253349', background: '#111d30' }}>
         {[
-          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#a8b8cc' },
-          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#64748b' }] : []),
+          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#cbd0e0' },
+          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#94a3b8' }] : []),
         ].map(row => (
           <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ color: '#64748b', fontSize: 13 }}>{row.label}</span>
+            <span style={{ color: '#94a3b8', fontSize: 13 }}>{row.label}</span>
             <span style={{ color: row.color, fontSize: 13 }}>{row.value}</span>
           </div>
         ))}
@@ -181,13 +181,13 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
             background: 'rgba(255,255,255,0.03)',
             border: `1px solid ${empty ? '#253349' : '#263354'}`,
             borderRadius: 10,
-            color: empty ? '#415569' : '#64748b',
+            color: empty ? '#415569' : '#94a3b8',
             fontSize: 12, fontWeight: 500,
             cursor: empty ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s ease',
           }}
           onMouseEnter={e => { if (!empty) { e.currentTarget.style.borderColor = 'rgba(37,99,235,0.4)'; e.currentTarget.style.color = '#93c5fd'; e.currentTarget.style.background = 'rgba(37,99,235,0.06)' } }}
-          onMouseLeave={e => { if (!empty) { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' } }}
+          onMouseLeave={e => { if (!empty) { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' } }}
         >
           ❄️ Freeze Sale
         </button>

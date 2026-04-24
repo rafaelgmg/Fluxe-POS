@@ -79,13 +79,13 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
           }}>🔒</div>
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{title}</h2>
-            <p style={{ color: '#64748b', fontSize: 11, marginTop: 1 }}>{subtitle}</p>
+            <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 1 }}>{subtitle}</p>
           </div>
         </div>
 
         {/* Employee select */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+          <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
             SELECT EMPLOYEE
           </label>
           <select
@@ -105,7 +105,7 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
 
         {/* PIN display */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+          <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
             PIN
           </label>
           <input
@@ -133,7 +133,7 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
               style={{
                 padding: '13px', background: !k ? 'transparent' : '#111d30',
                 border: !k ? 'none' : '1px solid #253349', borderRadius: 7,
-                color: k === '⌫' ? '#64748b' : '#f1f5f9',
+                color: k === '⌫' ? '#94a3b8' : '#f1f5f9',
                 fontSize: k === '⌫' ? 16 : 18,
                 fontWeight: 600, cursor: (!k || verifying) ? 'default' : 'pointer',
                 opacity: !k ? 0 : verifying ? 0.5 : 1, transition: 'all 0.1s',
@@ -171,11 +171,11 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             style={{
               flex: 1, padding: '12px',
               background: 'transparent', border: '1px solid #253349',
-              borderRadius: 6, color: '#64748b', fontSize: 14, cursor: verifying ? 'not-allowed' : 'pointer',
+              borderRadius: 6, color: '#94a3b8', fontSize: 14, cursor: verifying ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { if (!verifying) { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#a8b8cc' } }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
+            onMouseEnter={e => { if (!verifying) { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#cbd0e0' } }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
           >
             Cancel
           </button>

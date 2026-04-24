@@ -26,16 +26,16 @@ const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
-const MUTED  = '#64748b'
+const MUTED  = '#94a3b8'
 const TEXT   = '#f1f5f9'
-const DIM    = '#a8b8cc'
+const DIM    = '#cbd0e0'
 const GREEN_COLOR = '#22c55e'
 
 const fmt$   = (n) => `$${(n || 0).toFixed(2)}`
 const fmtTs  = (ts) => new Date(ts).toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })
 
 const TYPE_LABELS = { adjustment: 'Adjustment', transfer: 'Transfer', product_update: 'Product Update', removal: 'Removal', count_set: 'Count Set', status_change: 'Status Change' }
-const TYPE_COLORS = { adjustment: BLUE, transfer: '#8b5cf6', product_update: AMBER, removal: RED, count_set: GREEN_COLOR, status_change: '#64748b' }
+const TYPE_COLORS = { adjustment: BLUE, transfer: '#8b5cf6', product_update: AMBER, removal: RED, count_set: GREEN_COLOR, status_change: '#94a3b8' }
 
 // ─── Adjust Stock Modal ───────────────────────────────────────────────────────
 // locId + locName come from parent (active location) — no location picker here
@@ -227,7 +227,7 @@ function DeactivateModal({ product, sales = [], onConfirm, onClose }) {
         {/* Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, padding: '11px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, color: MUTED, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#64748b'; e.currentTarget.style.color = TEXT }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.color = TEXT }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED }}
           >Cancel</button>
           <button onClick={onConfirm} style={{ flex: 2, padding: '11px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 6, color: '#fca5a5', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
@@ -445,7 +445,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
               <span style={{
                 padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 700,
                 background: isActive ? 'rgba(37,99,235,0.15)' : 'rgba(30,41,59,0.5)',
-                color: isActive ? BLUE : '#64748b',
+                color: isActive ? BLUE : '#94a3b8',
               }}>{locQty}</span>
             </button>
           )
@@ -484,7 +484,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
             <button key={id} onClick={() => { setStatusFilter(id); setEditing(null) }} style={{
               padding: '4px 12px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
               background: statusFilter === id ? `${color}18` : 'transparent',
-              color: statusFilter === id ? color : '#64748b',
+              color: statusFilter === id ? color : '#94a3b8',
               outline: statusFilter === id ? `1px solid ${color}40` : 'none',
             }}>
               {label} <span style={{ opacity: 0.7 }}>{counts[id]}</span>
@@ -971,7 +971,7 @@ export default function InventoryAdmin({ onClose, defaultView = 'management' }) 
       {/* Header */}
       <div style={{ height: 48, background: PANEL, borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16, flexShrink: 0 }}>
         <button onClick={onClose} style={{ background: 'none', border: `1px solid ${BORDER}`, borderRadius: 4, color: MUTED, fontSize: 12, cursor: 'pointer', padding: '4px 10px', transition: 'all 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.color = TEXT; e.currentTarget.style.borderColor = '#64748b' }}
+          onMouseEnter={e => { e.currentTarget.style.color = TEXT; e.currentTarget.style.borderColor = '#94a3b8' }}
           onMouseLeave={e => { e.currentTarget.style.color = MUTED; e.currentTarget.style.borderColor = BORDER }}
         >← Back</button>
         <span style={{ fontSize: 16 }}>📦</span>

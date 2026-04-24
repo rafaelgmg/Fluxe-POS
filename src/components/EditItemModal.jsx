@@ -149,7 +149,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
           <button onClick={onCancel} style={{
             marginLeft: 'auto', background: 'transparent',
             border: `1px solid ${BORDER}`, borderRadius: 6,
-            color: '#64748b', width: 28, height: 28, fontSize: 16, cursor: 'pointer',
+            color: '#94a3b8', width: 28, height: 28, fontSize: 16, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>×</button>
         </div>
@@ -164,10 +164,10 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
               boxShadow: `0 0 20px ${BLUE}20`,
             }}>🧴</div>
 
-            <p style={{ color: '#64748b', fontSize: 13, marginBottom: 4, fontFamily: "'Courier New', Courier, monospace" }}>
+            <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 4, fontFamily: "'Courier New', Courier, monospace" }}>
               {product.barcode}
               {product.minPrice != null && (
-                <span style={{ color: '#64748b', marginLeft: 4 }}>
+                <span style={{ color: '#94a3b8', marginLeft: 4 }}>
                   .{product.minPrice}
                 </span>
               )}
@@ -176,7 +176,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
               {product.name}
             </p>
             {product.description && (
-              <p style={{ color: '#64748b', fontSize: 12, marginBottom: 12 }}>{product.description}</p>
+              <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 12 }}>{product.description}</p>
             )}
 
             {/* Action buttons */}
@@ -197,7 +197,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
 
             {/* Price */}
             <div style={{ marginBottom: 10 }}>
-              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
+              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
                 PRICE PER ITEM
               </label>
               <input readOnly value={priceInput}
@@ -209,7 +209,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
 
             {/* Quantity */}
             <div style={{ marginBottom: 10 }}>
-              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
+              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
                 QUANTITY
               </label>
               <input readOnly value={qty}
@@ -220,7 +220,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
 
             {/* Subtotal */}
             <div>
-              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
+              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
                 SUBTOTAL
               </label>
               <input readOnly value={subtotal.toFixed(2)} style={{
@@ -259,11 +259,11 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
             <button onClick={onCancel} style={{
               width: '100%', padding: '10px', background: 'transparent',
               border: `1px solid ${BORDER}`, borderRadius: 6,
-              color: '#64748b', fontSize: 13, cursor: 'pointer',
+              color: '#94a3b8', fontSize: 13, cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#a8b8cc' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#64748b' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#cbd0e0' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#94a3b8' }}
             >Cancel</button>
           </div>
         </div>
@@ -288,11 +288,11 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                 <h3 style={{ color: '#f1f5f9', fontSize: 15, fontWeight: 700 }}>Add Discount</h3>
                 <button onClick={() => setShowDiscount(false)} style={{
                   marginLeft: 'auto', background: 'transparent', border: `1px solid ${BORDER}`,
-                  borderRadius: 5, color: '#64748b', width: 26, height: 26, fontSize: 15, cursor: 'pointer'
+                  borderRadius: 5, color: '#94a3b8', width: 26, height: 26, fontSize: 15, cursor: 'pointer'
                 }}>×</button>
               </div>
 
-              <p style={{ color: '#64748b', fontSize: 12, marginBottom: 10, letterSpacing: 0.3 }}>SELECT DISCOUNT TYPE</p>
+              <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 10, letterSpacing: 0.3 }}>SELECT DISCOUNT TYPE</p>
               <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
                 {[['pct','%','f59e0b'],['dollar','$','2563eb']].map(([type, sym, col]) => (
                   <button key={type}
@@ -301,13 +301,13 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                       flex: 1, padding: '13px 0',
                       border: `2px solid ${discType === type ? `#${col}` : BORDER}`,
                       borderRadius: 6, background: discType === type ? `#${col}20` : BGCARD,
-                      color: discType === type ? '#f1f5f9' : '#64748b',
+                      color: discType === type ? '#f1f5f9' : '#94a3b8',
                       fontSize: 22, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s ease',
                     }}>{sym}</button>
                 ))}
               </div>
 
-              <p style={{ color: '#64748b', fontSize: 12, marginBottom: 8 }}>ENTER VALUE</p>
+              <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>ENTER VALUE</p>
               <input readOnly value={discInput} style={{
                 width: '100%', padding: '9px 12px', background: BGCARD,
                 border: `1px solid ${AMBER}50`, borderRadius: 6,
@@ -339,7 +339,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                 }}>Apply</button>
                 <button onClick={() => setShowDiscount(false)} style={{
                   flex: 1, padding: '11px', background: 'transparent',
-                  border: `1px solid ${BORDER}`, borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer',
+                  border: `1px solid ${BORDER}`, borderRadius: 6, color: '#94a3b8', fontSize: 13, cursor: 'pointer',
                 }}>Cancel</button>
               </div>
             </div>
@@ -360,7 +360,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
               <h3 style={{ color: '#f1f5f9', fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
                 Exchange — {product.name}
               </h3>
-              <p style={{ color: '#64748b', fontSize: 13, marginBottom: 22 }}>
+              <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 22 }}>
                 What would you like to do?
               </p>
 
@@ -375,7 +375,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                   <span style={{ fontSize: 22 }}>📦</span>
                   <div>
                     <p style={{ color: '#86efac', fontWeight: 700, marginBottom: 2 }}>Return to Inventory</p>
-                    <p style={{ color: '#64748b', fontSize: 11, fontWeight: 400 }}>
+                    <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 400 }}>
                       Product returns · Spare +${product.systemPrice.toFixed(2)}
                     </p>
                   </div>
@@ -390,7 +390,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                   <span style={{ fontSize: 22 }}>⚠️</span>
                   <div>
                     <p style={{ color: '#fca5a5', fontWeight: 700, marginBottom: 2 }}>Report as Damaged</p>
-                    <p style={{ color: '#64748b', fontSize: 11, fontWeight: 400 }}>
+                    <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 400 }}>
                       Product written off · No spare added
                     </p>
                   </div>
@@ -400,7 +400,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
               <button onClick={() => setShowExchange(false)} style={{
                 width: '100%', padding: '10px', background: 'transparent',
                 border: `1px solid ${BORDER}`, borderRadius: 6,
-                color: '#64748b', fontSize: 13, cursor: 'pointer',
+                color: '#94a3b8', fontSize: 13, cursor: 'pointer',
               }}>Cancel</button>
             </div>
           </div>

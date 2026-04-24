@@ -67,7 +67,7 @@ export default function BarcodeModal({ onConfirm, onClose, title = 'Scan / Enter
             onClick={onClose}
             style={{
               background: 'none', border: '1px solid #253349', borderRadius: 6,
-              color: '#64748b', fontSize: 16, cursor: 'pointer',
+              color: '#94a3b8', fontSize: 16, cursor: 'pointer',
               width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >×</button>
@@ -112,7 +112,7 @@ export default function BarcodeModal({ onConfirm, onClose, title = 'Scan / Enter
             style={{
               flex: 1, padding: '10px', background: 'transparent',
               border: '1px solid #253349', borderRadius: 8,
-              color: '#64748b', fontSize: 14, cursor: 'pointer',
+              color: '#94a3b8', fontSize: 14, cursor: 'pointer',
             }}
           >Cancel</button>
         </div>
@@ -151,7 +151,7 @@ export function BarcodeIconButton({ onClick, active = false, size = 18 }) {
       }}
     >
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-        stroke={active ? '#3b82f6' : '#64748b'} strokeWidth="2"
+        stroke={active ? '#3b82f6' : '#94a3b8'} strokeWidth="2"
         strokeLinecap="round" strokeLinejoin="round"
       >
         <rect x="1" y="3" width="22" height="18" rx="2"/>

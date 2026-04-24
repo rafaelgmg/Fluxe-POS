@@ -35,7 +35,7 @@ const CARD_BRANDS = [
   { id: 'mastercard', label: 'Mastercard', color: '#eb001b' },
   { id: 'amex',       label: 'Amex',       color: '#2b7de9' },
   { id: 'discover',   label: 'Discover',   color: '#f76f20' },
-  { id: 'other',      label: 'Other',      color: '#64748b' },
+  { id: 'other',      label: 'Other',      color: '#94a3b8' },
 ]
 
 // ── Card brand SVG icons (unchanged) ──────────────────────────────────────────
@@ -91,11 +91,11 @@ function OtherCardIcon() {
   return (
     <svg viewBox="0 0 60 36" width="54" height="33" xmlns="http://www.w3.org/2000/svg">
       <rect width="60" height="36" rx="5" fill="#253349" stroke="#415569" strokeWidth="1" />
-      <rect x="8" y="10" width="10" height="8" rx="2" fill="#64748b" />
-      <path d="M25 14 a4 4 0 0 1 0 8"  stroke="#64748b" strokeWidth="1.5" fill="none" />
+      <rect x="8" y="10" width="10" height="8" rx="2" fill="#94a3b8" />
+      <path d="M25 14 a4 4 0 0 1 0 8"  stroke="#94a3b8" strokeWidth="1.5" fill="none" />
       <path d="M28 11 a8 8 0 0 1 0 14" stroke="#415569" strokeWidth="1.5" fill="none" />
       <rect x="0" y="24" width="60" height="5" rx="0" fill="#415569" />
-      <text x="30" y="22" textAnchor="middle" fill="#64748b" fontSize="7"
+      <text x="30" y="22" textAnchor="middle" fill="#94a3b8" fontSize="7"
         fontFamily="Arial, sans-serif" fontWeight="bold" letterSpacing="1">OTHER</text>
     </svg>
   )
@@ -110,7 +110,7 @@ const COINS = [1, 0.25, 0.10, 0.05, 0.01]
 
 // ── Shared styles ──────────────────────────────────────────────────────────────
 const LABEL = {
-  color: '#64748b', fontSize: 11, fontWeight: 600,
+  color: '#94a3b8', fontSize: 11, fontWeight: 600,
   letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, display: 'block',
 }
 const INPUT = {
@@ -278,7 +278,7 @@ export default function PaymentModal({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Complete Sale</h2>
           <button onClick={onCancel} style={{
-            background: 'none', border: 'none', color: '#64748b',
+            background: 'none', border: 'none', color: '#94a3b8',
             fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 4,
           }}>✕</button>
         </div>
@@ -292,8 +292,8 @@ export default function PaymentModal({
             background: '#070e1c', border: '1px solid #253349',
             borderRadius: 12, padding: '14px 18px', textAlign: 'center',
           }}>
-            <p style={{ color: '#64748b', fontSize: 10, letterSpacing: 0.8, fontWeight: 600, marginBottom: 5 }}>TOTAL DUE</p>
-            <p style={{ color: '#a8b8cc', fontSize: 32, fontWeight: 800, letterSpacing: -1, lineHeight: 1, margin: 0 }}>
+            <p style={{ color: '#94a3b8', fontSize: 10, letterSpacing: 0.8, fontWeight: 600, marginBottom: 5 }}>TOTAL DUE</p>
+            <p style={{ color: '#cbd0e0', fontSize: 32, fontWeight: 800, letterSpacing: -1, lineHeight: 1, margin: 0 }}>
               ${total.toFixed(2)}
             </p>
             <p style={{ color: '#253349', fontSize: 11, marginTop: 4 }}>
@@ -308,7 +308,7 @@ export default function PaymentModal({
             borderRadius: 12, padding: '14px 18px', textAlign: 'center',
             transition: 'all 0.3s',
           }}>
-            <p style={{ color: '#64748b', fontSize: 10, letterSpacing: 0.8, fontWeight: 600, marginBottom: 5 }}>
+            <p style={{ color: '#94a3b8', fontSize: 10, letterSpacing: 0.8, fontWeight: 600, marginBottom: 5 }}>
               {remaining > 0 ? 'REMAINING' : '✓ PAID IN FULL'}
             </p>
             <p style={{
@@ -319,7 +319,7 @@ export default function PaymentModal({
               ${remaining.toFixed(2)}
             </p>
             {payments.length > 0 && (
-              <p style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
+              <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 4 }}>
                 ${totalPaid.toFixed(2)} collected
               </p>
             )}
@@ -332,7 +332,7 @@ export default function PaymentModal({
             background: '#080f1e', border: '1px solid #253349',
             borderRadius: 12, padding: '10px 14px', marginBottom: 14,
           }}>
-            <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>
+            <p style={{ color: '#94a3b8', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>
               PAYMENTS COLLECTED
             </p>
             {payments.map((p, idx) => (
@@ -353,7 +353,7 @@ export default function PaymentModal({
                       </span>
                     )}
                     {p.method === 'card' && p.authorizationNumber && (
-                      <span style={{ color: '#64748b', fontSize: 11, marginLeft: 8 }}>
+                      <span style={{ color: '#94a3b8', fontSize: 11, marginLeft: 8 }}>
                         Auth: {p.authorizationNumber}
                       </span>
                     )}
@@ -368,12 +368,12 @@ export default function PaymentModal({
                     title="Remove this payment"
                     style={{
                       background: 'none', border: '1px solid #253349', borderRadius: 4,
-                      color: '#64748b', fontSize: 12, cursor: 'pointer',
+                      color: '#94a3b8', fontSize: 12, cursor: 'pointer',
                       width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
                   >✕</button>
                 </div>
               </div>
@@ -389,7 +389,7 @@ export default function PaymentModal({
               borderRadius: 12, padding: 16, marginBottom: 12,
               transition: 'border-color 0.2s',
             }}>
-              <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 10 }}>
+              <p style={{ color: '#94a3b8', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 10 }}>
                 ADD PAYMENT
               </p>
 
@@ -405,7 +405,7 @@ export default function PaymentModal({
                         flex: 1, padding: '10px 4px', borderRadius: 10,
                         border: `1px solid ${active ? m.color : '#253349'}`,
                         background: active ? `${m.color}1a` : '#0b1426',
-                        color: active ? '#f1f5f9' : '#64748b',
+                        color: active ? '#f1f5f9' : '#94a3b8',
                         fontSize: 12, fontWeight: active ? 700 : 400,
                         cursor: 'pointer', transition: 'all 0.18s',
                         boxShadow: active ? `0 0 12px ${m.color}28` : 'none',
@@ -481,8 +481,8 @@ export default function PaymentModal({
                     {COINS.map(d => (
                       <button key={d} onClick={() => addDenom(d)} style={{
                         padding: '5px 10px', borderRadius: 6,
-                        border: '1px solid #a8b8cc28',
-                        background: '#a8b8cc0a', color: '#a8b8cc',
+                        border: '1px solid #cbd0e028',
+                        background: '#cbd0e00a', color: '#cbd0e0',
                         fontSize: 12, fontWeight: 600, cursor: 'pointer',
                       }}>${d.toFixed(2)}</button>
                     ))}
@@ -496,7 +496,7 @@ export default function PaymentModal({
                     border: `1px solid ${changeDue > 0 ? '#22c55e38' : '#111d30'}`,
                     transition: 'all 0.2s',
                   }}>
-                    <span style={{ color: '#64748b', fontSize: 13, fontWeight: 600 }}>Change Due</span>
+                    <span style={{ color: '#94a3b8', fontSize: 13, fontWeight: 600 }}>Change Due</span>
                     <span style={{
                       color: changeDue > 0 ? '#22c55e' : '#253349',
                       fontSize: 26, fontWeight: 800, transition: 'color 0.2s',
@@ -537,7 +537,7 @@ export default function PaymentModal({
                           </div>
                           <span style={{
                             fontSize: 9, fontWeight: active ? 700 : 500,
-                            color: active ? b.color : '#64748b', letterSpacing: 0.3,
+                            color: active ? b.color : '#94a3b8', letterSpacing: 0.3,
                           }}>{b.label}</span>
                         </button>
                       )
@@ -586,8 +586,8 @@ export default function PaymentModal({
                     placeholder="e.g. 1042"
                     style={{ ...INPUT, letterSpacing: 2, fontWeight: 600 }}
                   />
-                  <p style={{ color: '#64748b', fontSize: 11, marginTop: 8 }}>
-                    Make check payable to: <b style={{ color: '#a8b8cc' }}>Perfume Passage</b>
+                  <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 8 }}>
+                    Make check payable to: <b style={{ color: '#cbd0e0' }}>Perfume Passage</b>
                   </p>
                 </>
               )}
@@ -632,11 +632,11 @@ export default function PaymentModal({
                   {linkedCustomer.firstName} {linkedCustomer.lastName}
                 </span>
                 {linkedCustomer.phone && (
-                  <span style={{ color: '#64748b', fontSize: 12, marginLeft: 10 }}>{linkedCustomer.phone}</span>
+                  <span style={{ color: '#94a3b8', fontSize: 12, marginLeft: 10 }}>{linkedCustomer.phone}</span>
                 )}
               </div>
               <button onClick={() => { setLinkedCustomer(null); setCustSearch('') }}
-                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 16, padding: 4 }}>✕</button>
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 16, padding: 4 }}>✕</button>
             </div>
           ) : (
             <>
@@ -666,7 +666,7 @@ export default function PaymentModal({
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ fontWeight: 600 }}>{c.firstName} {c.lastName}</span>
-                      {c.phone && <span style={{ color: '#64748b', marginLeft: 10, fontSize: 12 }}>{c.phone}</span>}
+                      {c.phone && <span style={{ color: '#94a3b8', marginLeft: 10, fontSize: 12 }}>{c.phone}</span>}
                     </button>
                   ))}
                 </div>
@@ -699,7 +699,7 @@ export default function PaymentModal({
               style={{
                 flex: 1, padding: '10px 8px', borderRadius: 8,
                 background: 'rgba(255,255,255,0.02)', border: '1px solid #253349',
-                color: canConfirm ? '#64748b' : '#415569',
+                color: canConfirm ? '#94a3b8' : '#415569',
                 fontSize: 12, fontWeight: 500,
                 cursor: canConfirm ? 'pointer' : 'not-allowed',
               }}
@@ -707,7 +707,7 @@ export default function PaymentModal({
             <button onClick={onCancel} style={{
               flex: 1, padding: '10px 8px', borderRadius: 8,
               background: 'rgba(255,255,255,0.02)', border: '1px solid #253349',
-              color: '#64748b', fontSize: 12, cursor: 'pointer',
+              color: '#94a3b8', fontSize: 12, cursor: 'pointer',
             }}>Cancel</button>
           </div>
           {!canConfirm && payments.length === 0 && (
@@ -735,7 +735,7 @@ function ActionButton({ label, disabled, primary, onClick }) {
       background: disabled ? '#0b1426' : primary
         ? 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)' : '#0b1426',
       border: disabled ? '1px solid #253349' : primary ? 'none' : '1px solid #253349',
-      color: disabled ? '#415569' : primary ? '#fff' : '#a8b8cc',
+      color: disabled ? '#415569' : primary ? '#fff' : '#cbd0e0',
       fontSize: 13, fontWeight: primary ? 700 : 600,
       cursor: disabled ? 'not-allowed' : 'pointer',
       boxShadow: !disabled && primary ? '0 0 20px rgba(37,99,235,0.38)' : 'none',

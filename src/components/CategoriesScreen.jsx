@@ -21,8 +21,8 @@ const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
-const MUTED  = '#64748b'
-const DIM    = '#a8b8cc'
+const MUTED  = '#94a3b8'
+const DIM    = '#cbd0e0'
 const TEXT   = '#f1f5f9'
 const PURPLE = '#8b5cf6'
 
@@ -189,7 +189,7 @@ function EditPanel({ cat, onSave, onClose }) {
             }}>
               <strong>Rate is automatic</strong> — uses the day tier table:<br />
               $600+ → 20% · $1000+ → 25% · $1500+ → 30%<br />
-              <span style={{ color: '#64748b' }}>Configure tiers in Admin → Users → Commission Settings</span>
+              <span style={{ color: '#94a3b8' }}>Configure tiers in Admin → Users → Commission Settings</span>
             </div>
           )}
           {rateRequired && commissionRate && (
@@ -233,7 +233,7 @@ function EditPanel({ cat, onSave, onClose }) {
                   <p style={{ color: spareCommissionEnabled ? AMBER : MUTED, fontSize: 11, fontWeight: 700, margin: 0 }}>
                     Also pay spare commission
                   </p>
-                  <p style={{ color: '#64748b', fontSize: 10, margin: '2px 0 0' }}>
+                  <p style={{ color: '#94a3b8', fontSize: 10, margin: '2px 0 0' }}>
                     Spare will use the NC spare rate (configured in Commission Settings)
                   </p>
                 </div>

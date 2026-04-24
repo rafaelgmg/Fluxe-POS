@@ -51,7 +51,7 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
   })
 
   const lbl = (text, optional) => (
-    <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, marginBottom: 6, display: 'block', letterSpacing: 0.5 }}>
+    <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, marginBottom: 6, display: 'block', letterSpacing: 0.5 }}>
       {text}
       {optional && <span style={{ color: '#415569', marginLeft: 4, fontWeight: 400 }}>(optional)</span>}
     </label>
@@ -79,7 +79,7 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
             <h2 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700, marginBottom: 2 }}>
               {standalone ? '➕ Capture Client' : '👤 Customer Info'}
             </h2>
-            <p style={{ color: '#64748b', fontSize: 12 }}>
+            <p style={{ color: '#94a3b8', fontSize: 12 }}>
               {standalone
                 ? 'Save this contact — no sale required'
                 : 'Link this sale to a customer — or skip'}
@@ -90,7 +90,7 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
               background: '#111d30', border: '1px solid #253349',
               borderRadius: 6, padding: '6px 12px', textAlign: 'right'
             }}>
-              <p style={{ color: '#64748b', fontSize: 10 }}>Invoice #{invoice.number}</p>
+              <p style={{ color: '#94a3b8', fontSize: 10 }}>Invoice #{invoice.number}</p>
               <p style={{ color: '#22c55e', fontWeight: 800, fontSize: 16 }}>${invoice.total.toFixed(2)}</p>
             </div>
           )}
@@ -149,7 +149,7 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
                       padding: '5px 12px', borderRadius: 20,
                       border: `1px solid ${active ? '#3b82f6' : '#253349'}`,
                       background: active ? 'rgba(37,99,235,0.15)' : '#111d30',
-                      color: active ? '#93c5fd' : '#64748b',
+                      color: active ? '#93c5fd' : '#94a3b8',
                       fontSize: 12, cursor: 'pointer',
                       fontWeight: active ? 700 : 400,
                       transition: 'all 0.12s',
@@ -224,11 +224,11 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
             style={{
               flex: 1, padding: '13px',
               background: 'transparent', border: '1px solid #253349',
-              borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer',
+              borderRadius: 6, color: '#94a3b8', fontSize: 13, cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#a8b8cc' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#cbd0e0' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
           >
             Skip
           </button>

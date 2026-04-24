@@ -48,7 +48,7 @@ function InventoryPinGate({ onUnlock, onClose }) {
         <h2 style={{ color: '#f1f5f9', fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
           Inventory Management
         </h2>
-        <p style={{ color: '#64748b', fontSize: 12, marginBottom: 20 }}>
+        <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 20 }}>
           Sign in to access inventory
         </p>
 
@@ -100,7 +100,7 @@ function InventoryPinGate({ onUnlock, onClose }) {
         </div>
         <button onClick={onClose} style={{
           width: '100%', padding: '10px', background: 'transparent',
-          border: '1px solid #253349', borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer',
+          border: '1px solid #253349', borderRadius: 6, color: '#94a3b8', fontSize: 13, cursor: 'pointer',
           transition: 'all 0.15s',
         }}>Cancel</button>
       </div>
@@ -339,7 +339,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
     <button key={id} onClick={() => setTab(id)} style={{
       padding: '8px 14px', background: 'transparent',
       border: 'none', borderBottom: tab === id ? '2px solid #3b82f6' : '2px solid transparent',
-      color: tab === id ? '#93c5fd' : '#64748b',
+      color: tab === id ? '#93c5fd' : '#94a3b8',
       fontSize: 12, cursor: 'pointer', fontWeight: tab === id ? 600 : 400, whiteSpace: 'nowrap',
       transition: 'color 0.15s',
     }}>{label}</button>
@@ -348,14 +348,14 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
   const TH = ({ children, w }) => (
     <th style={{
       padding: '7px 10px', background: '#111d30', textAlign: 'left',
-      color: '#64748b', fontWeight: 600, fontSize: 11,
+      color: '#94a3b8', fontWeight: 600, fontSize: 11,
       width: w, borderRight: '1px solid #253349', whiteSpace: 'nowrap', letterSpacing: 0.3,
     }}>{children}</th>
   )
   const TD = ({ children, center, color }) => (
     <td style={{
       padding: '7px 10px', fontSize: 12,
-      color: color || '#a8b8cc', textAlign: center ? 'center' : 'left',
+      color: color || '#cbd0e0', textAlign: center ? 'center' : 'left',
       borderRight: '1px solid #253349',
     }}>{children}</td>
   )
@@ -384,11 +384,11 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
         </span>
         <button onClick={onClose} style={{
           marginLeft: 'auto', padding: '5px 14px', background: 'transparent',
-          border: '1px solid #253349', borderRadius: 5, color: '#64748b', fontSize: 12, cursor: 'pointer',
+          border: '1px solid #253349', borderRadius: 5, color: '#94a3b8', fontSize: 12, cursor: 'pointer',
           transition: 'all 0.15s',
         }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
         >✕ Close</button>
       </div>
 
@@ -398,7 +398,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
         borderBottom: '1px solid #253349', display: 'flex', alignItems: 'flex-end', gap: 0, flexShrink: 0
       }}>
         <div style={{ marginRight: 20, paddingBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: '#64748b', fontSize: 11, fontWeight: 600, letterSpacing: 0.4 }}>LOCATION:</span>
+          <span style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, letterSpacing: 0.4 }}>LOCATION:</span>
           <select value={location} onChange={e => setLocation(e.target.value)}
             style={{ padding: '5px 10px', background: '#111d30', border: '1px solid #253349', borderRadius: 5, color: '#f1f5f9', fontSize: 12, outline: 'none' }}>
             {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
@@ -426,15 +426,15 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
                 placeholder="Search product or barcode..."
                 style={{ padding: '6px 12px', background: '#111d30', border: '1px solid #253349', borderRadius: 5, color: '#f1f5f9', fontSize: 13, width: 240 }} />
               <span style={{ color: '#555', fontSize: 18 }}>⊞</span>
-              <span style={{ color: '#64748b', fontSize: 12, flex: 1 }}>
-                Current Location: <strong style={{ color: '#a8b8cc' }}>{location}</strong>
+              <span style={{ color: '#94a3b8', fontSize: 12, flex: 1 }}>
+                Current Location: <strong style={{ color: '#cbd0e0' }}>{location}</strong>
               </span>
               <button onClick={handleCountSubmit} style={{
                 padding: '6px 16px', background: countSaved ? '#22c55e' : PRIMARY,
                 border: 'none', borderRadius: 4, color: '#fff', fontSize: 13,
                 fontWeight: 600, cursor: 'pointer'
               }}>{countSaved ? '✓ Saved' : 'Submit Count'}</button>
-              <button style={{ padding: '6px 12px', background: 'transparent', border: '1px solid #253349', borderRadius: 5, color: '#64748b', fontSize: 12, cursor: 'pointer' }}>
+              <button style={{ padding: '6px 12px', background: 'transparent', border: '1px solid #253349', borderRadius: 5, color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>
                 🖨 Print
               </button>
             </div>
@@ -503,8 +503,8 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
         {tab === 'byCategory' && (
           <div style={{ flex: 1, overflowY: 'auto' }}>
             <div style={{ padding: '10px 16px', background: '#0d1526', borderBottom: '1px solid #253349', flexShrink: 0 }}>
-              <span style={{ color: '#64748b', fontSize: 12 }}>
-                Current Location: <strong style={{ color: '#a8b8cc' }}>{location}</strong>
+              <span style={{ color: '#94a3b8', fontSize: 12 }}>
+                Current Location: <strong style={{ color: '#cbd0e0' }}>{location}</strong>
               </span>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -554,16 +554,16 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
                 placeholder="Search..."
                 style={{ padding: '6px 12px', background: '#111d30', border: '1px solid #253349', borderRadius: 5, color: '#f1f5f9', fontSize: 13, width: 200, outline: 'none' }} />
               <span style={{ color: '#555', fontSize: 18 }}>⊞</span>
-              <span style={{ color: '#64748b', fontSize: 12 }}>
-                Current Location: <strong style={{ color: '#a8b8cc' }}>{location}</strong>
+              <span style={{ color: '#94a3b8', fontSize: 12 }}>
+                Current Location: <strong style={{ color: '#cbd0e0' }}>{location}</strong>
               </span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#64748b', fontSize: 12, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>
                 <input type="checkbox" defaultChecked /> Show products in the inventory at this location
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#64748b', fontSize: 12, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>
                 <input type="checkbox" checked={showNotIn} onChange={e => setShowNotIn(e.target.checked)} /> Show products that are not in the inventory at this location
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#64748b', fontSize: 12, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>
                 <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} /> Show inactive products
               </label>
               <button style={{ marginLeft: 'auto', padding: '6px 14px', background: PRIMARY, border: 'none', borderRadius: 5, color: '#fff', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
@@ -666,7 +666,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
 
                 <span style={{ color: '#aaa', fontSize: 13 }}>Select Reason:</span>
                 <select value={lossReason} onChange={e => setLossReason(e.target.value)}
-                  style={{ width: 220, padding: '6px 10px', background: '#111d30', border: '1px solid #253349', borderRadius: 5, color: lossReason ? '#f1f5f9' : '#64748b', fontSize: 13, cursor: 'pointer', outline: 'none' }}>
+                  style={{ width: 220, padding: '6px 10px', background: '#111d30', border: '1px solid #253349', borderRadius: 5, color: lossReason ? '#f1f5f9' : '#94a3b8', fontSize: 13, cursor: 'pointer', outline: 'none' }}>
                   <option value="">Select reason...</option>
                   {LOSS_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
@@ -742,8 +742,8 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
               padding: '8px 16px', background: '#0d1526', borderBottom: '1px solid #253349',
               display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
             }}>
-              <span style={{ color: '#64748b', fontSize: 12, flex: 1 }}>
-                Incoming transfers for: <strong style={{ color: '#a8b8cc' }}>{location}</strong>
+              <span style={{ color: '#94a3b8', fontSize: 12, flex: 1 }}>
+                Incoming transfers for: <strong style={{ color: '#cbd0e0' }}>{location}</strong>
               </span>
               <button onClick={() => { setNtDest(LOCATIONS_CFG.find(l => l.name !== location)?.id || ''); setShowNewTransfer(true) }} style={{
                 padding: '6px 14px', background: PRIMARY, border: 'none', borderRadius: 5,
@@ -823,21 +823,21 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
               <span style={{ fontSize: 20 }}>📦</span>
               <h2 style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>New Transfer</h2>
               <button onClick={() => setShowNewTransfer(false)} style={{
-                marginLeft: 'auto', background: 'none', border: 'none', color: '#64748b', fontSize: 20, cursor: 'pointer',
+                marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer',
               }}>×</button>
             </div>
 
             {/* From */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>FROM</label>
-              <div style={{ padding: '8px 12px', background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#a8b8cc', fontSize: 13 }}>
+              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>FROM</label>
+              <div style={{ padding: '8px 12px', background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#cbd0e0', fontSize: 13 }}>
                 {location}
               </div>
             </div>
 
             {/* To */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>TO</label>
+              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>TO</label>
               <select value={ntDest} onChange={e => setNtDest(e.target.value)} style={{
                 width: '100%', padding: '8px 12px', background: '#111d30', border: '1px solid #253349',
                 borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none', cursor: 'pointer',
@@ -850,12 +850,12 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
 
             {/* Product */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>PRODUCT</label>
+              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>PRODUCT</label>
               {ntProduct ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#111d30', border: '1px solid #3b82f6', borderRadius: 6 }}>
                   <span style={{ color: '#f1f5f9', fontSize: 13, flex: 1 }}>{ntProduct.name}</span>
                   <span style={{ color: '#415569', fontSize: 11, fontFamily: 'monospace' }}>{ntProduct.barcode}</span>
-                  <button onClick={() => setNtProduct(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 16 }}>×</button>
+                  <button onClick={() => setNtProduct(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 16 }}>×</button>
                 </div>
               ) : (
                 <>
@@ -885,14 +885,14 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
 
             {/* Qty */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>QTY</label>
+              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>QTY</label>
               <input type="number" min="1" value={ntQty} onChange={e => setNtQty(Math.max(1, parseInt(e.target.value) || 1))}
                 style={{ width: 100, padding: '8px 12px', background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none' }} />
             </div>
 
             {/* Note */}
             <div style={{ marginBottom: 22 }}>
-              <label style={{ color: '#64748b', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>NOTE (optional)</label>
+              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5 }}>NOTE (optional)</label>
               <input value={ntNote} onChange={e => setNtNote(e.target.value)}
                 style={{ width: '100%', padding: '8px 12px', background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
             </div>
@@ -900,7 +900,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowNewTransfer(false)} style={{
                 flex: 1, padding: '10px', background: 'transparent', border: '1px solid #253349',
-                borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer',
+                borderRadius: 6, color: '#94a3b8', fontSize: 13, cursor: 'pointer',
               }}>Cancel</button>
               <button onClick={handleSendTransfer} disabled={!ntProduct || ntQty < 1 || !ntDest || ntSending} style={{
                 flex: 2, padding: '10px', background: (!ntProduct || !ntDest) ? '#111d30' : PRIMARY,
@@ -931,7 +931,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
               <input placeholder="Search..." autoFocus
                 onChange={e => setSearch(e.target.value)}
                 style={{ flex: 1, padding: '5px 10px', background: '#111d30', border: '1px solid #253349', borderRadius: 5, color: '#f1f5f9', fontSize: 13, outline: 'none' }} />
-              <button onClick={() => setShowProductPicker(false)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 20, cursor: 'pointer' }}>×</button>
+              <button onClick={() => setShowProductPicker(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 20, cursor: 'pointer' }}>×</button>
             </div>
             <div style={{ overflowY: 'auto' }}>
               {filtered.map(p => (

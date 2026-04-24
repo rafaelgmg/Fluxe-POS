@@ -12,7 +12,7 @@ const BG     = '#030e1e'
 const PANEL  = '#0d1526'
 const CARD   = '#111d30'
 const BORDER = '#253349'
-const MUTED  = '#64748b'
+const MUTED  = '#94a3b8'
 const TEXT   = '#f1f5f9'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ function fmtDateTime(iso) {
 }
 
 const METHOD_COLOR = { cash: '#22c55e', card: '#3b82f6', external: '#8b5cf6', check: '#f59e0b' }
-function methodColor(m) { return METHOD_COLOR[(m || '').toLowerCase()] || '#64748b' }
+function methodColor(m) { return METHOD_COLOR[(m || '').toLowerCase()] || '#94a3b8' }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -268,7 +268,7 @@ export default function Dashboard({ onClose, sales = [] }) {
           <KpiCard icon="💵" label="NET REVENUE"     value={kpis.netRevenue}    color="#22c55e" sub={`${kpis.saleCount} sale${kpis.saleCount !== 1 ? 's' : ''}`} />
           <KpiCard icon="💰" label="GROSS REVENUE"   value={kpis.grossRevenue}  color="#60a5fa" />
           <KpiCard icon="🏛️"  label="TAX COLLECTED"  value={kpis.taxRevenue}    color="#f59e0b" />
-          <KpiCard icon="📦" label="INVENTORY COST"  value={kpis.inventoryCost} color="#a8b8cc" />
+          <KpiCard icon="📦" label="INVENTORY COST"  value={kpis.inventoryCost} color="#cbd0e0" />
           <KpiCard
             icon={kpis.netProfit >= 0 ? '📈' : '📉'}
             label="NET PROFIT"

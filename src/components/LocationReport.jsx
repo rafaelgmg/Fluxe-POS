@@ -12,9 +12,9 @@ const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
-const MUTED  = '#64748b'
+const MUTED  = '#94a3b8'
 const TEXT   = '#f1f5f9'
-const DIM    = '#a8b8cc'
+const DIM    = '#cbd0e0'
 const TEAL   = '#06b6d4'
 
 const PAY_COLORS = {
@@ -23,7 +23,7 @@ const PAY_COLORS = {
   'External Credit': '#f59e0b',
   'Check':           '#8b5cf6',
 }
-const PAY_COLOR_DEFAULT = '#a8b8cc'
+const PAY_COLOR_DEFAULT = '#cbd0e0'
 
 const fmt$ = (n) => `$${(n || 0).toFixed(2)}`
 

@@ -67,8 +67,8 @@ const branding = {
     bgCard:    '#111d30',   // Cards / modals / inputs
     border:    '#253349',   // Borders
     textPrimary:   '#f1f5f9',
-    textSecondary: '#a8b8cc',
-    textMuted:     '#64748b',
+    textSecondary: '#cbd0e0',
+    textMuted:     '#94a3b8',
   },
 
   // ── Login screen ────────────────────────────────────────────────────────────

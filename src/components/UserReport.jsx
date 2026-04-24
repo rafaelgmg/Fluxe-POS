@@ -24,9 +24,9 @@ const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
 const PURPLE = '#8b5cf6'
-const MUTED  = '#64748b'
+const MUTED  = '#94a3b8'
 const TEXT   = '#f1f5f9'
-const DIM    = '#a8b8cc'
+const DIM    = '#cbd0e0'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt$ = (n) => `$${(n || 0).toFixed(2)}`
@@ -1620,7 +1620,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
                                   </div>
                                 )}
                               </td>
-                              <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#64748b' })}>{line.barcode}</td>
+                              <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#94a3b8' })}>{line.barcode}</td>
                               <td style={tdS({ color: TEXT, fontWeight: 600, maxWidth: 160 })}>{line.name}</td>
                               <td style={tdS({ color: MUTED, maxWidth: 140 })}>{line.description || '—'}</td>
                               <td style={tdS()}>{line.size}</td>

@@ -201,9 +201,9 @@ const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
-const MUTED  = '#64748b'
+const MUTED  = '#94a3b8'
 const TEXT   = '#f1f5f9'
-const DIM    = '#a8b8cc'
+const DIM    = '#cbd0e0'
 const LOC_COLOR = '#e74c3c'
 
 // ─── Shared UI helpers ────────────────────────────────────────────────────────
@@ -499,7 +499,7 @@ function StatusBadge({ live }) {
       borderRadius: 8,
       background: live ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)',
       border: `1px solid ${live ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'}`,
-      color: live ? GREEN : '#64748b',
+      color: live ? GREEN : '#94a3b8',
       marginLeft: 8, verticalAlign: 'middle', flexShrink: 0,
     }}>{live ? '● LIVE' : '○ SAVED'}</span>
   )
@@ -1023,16 +1023,16 @@ function TabMerchant({ form, set }) {
 
 // ── Bonus group editor ────────────────────────────────────────────────────────
 // Module-scope to avoid React reconciliation issues (never nest component defs)
-const BONUS_RANK_COLORS = { 1: '#f59e0b', 2: '#a8b8cc', 3: '#cd7c2f' }
+const BONUS_RANK_COLORS = { 1: '#f59e0b', 2: '#cbd0e0', 3: '#cd7c2f' }
 
 function BonusGroupEditor({ cfg, onChange }) {
   const set = (key, val) => onChange({ ...cfg, [key]: val })
-  const labelStyle = { color: '#64748b', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 4 }
+  const labelStyle = { color: '#94a3b8', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 4 }
   const field = (label, key, color) => (
     <div>
       <label style={{ ...labelStyle, color }}>{label}</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ color: '#64748b', fontSize: 11 }}>$</span>
+        <span style={{ color: '#94a3b8', fontSize: 11 }}>$</span>
         <input
           type="number" min="0" step="1"
           value={cfg[key] ?? 0}
@@ -1057,7 +1057,7 @@ function BonusGroupEditor({ cfg, onChange }) {
         {field('2ND PLACE', 'top2', BONUS_RANK_COLORS[2])}
         {field('3RD PLACE', 'top3', BONUS_RANK_COLORS[3])}
         <div style={{ width: 1, background: '#253349', alignSelf: 'stretch', margin: '0 4px' }} />
-        {field('MIN. TO QUALIFY ($)', 'minimumToQualify', '#64748b')}
+        {field('MIN. TO QUALIFY ($)', 'minimumToQualify', '#94a3b8')}
       </div>
       <p style={{ color: '#415569', fontSize: 9, marginTop: 6 }}>
         Minimum to qualify = employees below this value are excluded from the ranked pool (not placed 4th — simply ineligible).
@@ -1109,7 +1109,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
         transition: 'all 0.15s', boxShadow: active ? `0 0 10px ${BLUE}20` : 'none', minWidth: 0,
       }}>
         <div style={{ fontSize: 11, fontWeight: active ? 700 : 600, marginBottom: 1 }}>{m.label}</div>
-        <div style={{ fontSize: 9, color: active ? '#a8b8cc' : '#415569' }}>{m.desc}</div>
+        <div style={{ fontSize: 9, color: active ? '#cbd0e0' : '#415569' }}>{m.desc}</div>
       </button>
     )
   }
@@ -1252,7 +1252,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
                         transition: 'all 0.15s',
                       }}>
                         <div style={{ fontSize: 11, fontWeight: active ? 700 : 600, marginBottom: 2 }}>{l}</div>
-                        <div style={{ fontSize: 9, color: active ? '#a8b8cc' : '#415569' }}>{d}</div>
+                        <div style={{ fontSize: 9, color: active ? '#cbd0e0' : '#415569' }}>{d}</div>
                       </button>
                     )
                   })}
@@ -1270,9 +1270,9 @@ function CompetitionCard({ form, set, allLocations = [] }) {
               onClick={() => set('competitionMode', 'none')}
               style={{
                 padding: '8px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                border: `1px solid ${mode === 'none' ? '#64748b' : BORDER}`,
+                border: `1px solid ${mode === 'none' ? '#94a3b8' : BORDER}`,
                 background: mode === 'none' ? 'rgba(100,116,139,0.15)' : 'transparent',
-                color: mode === 'none' ? '#a8b8cc' : MUTED, transition: 'all 0.15s',
+                color: mode === 'none' ? '#cbd0e0' : MUTED, transition: 'all 0.15s',
               }}
             >
               None — competition screen shows "no competition configured"
@@ -1529,8 +1529,8 @@ function RecipientRow({ user, channels = {}, onChannelToggle, onRemove }) {
 
       {/* Contact */}
       <div style={{ fontSize: 10, width: 148, flexShrink: 0, lineHeight: 1.6 }}>
-        <div style={{ color: user.phone ? '#a8b8cc' : '#2d3748' }}>📱 {user.phone || 'No phone'}</div>
-        <div style={{ color: user.email ? '#a8b8cc' : '#2d3748' }}>✉ {user.email ? (user.email.length > 18 ? user.email.slice(0,18)+'…' : user.email) : 'No email'}</div>
+        <div style={{ color: user.phone ? '#cbd0e0' : '#2d3748' }}>📱 {user.phone || 'No phone'}</div>
+        <div style={{ color: user.email ? '#cbd0e0' : '#2d3748' }}>✉ {user.email ? (user.email.length > 18 ? user.email.slice(0,18)+'…' : user.email) : 'No email'}</div>
       </div>
 
       {/* Channel toggles */}
@@ -1986,7 +1986,7 @@ function LocationList({ locations, onEdit, onAdd }) {
             <button key={id} onClick={() => setStatusFilter(id)} style={{
               padding: '4px 12px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
               background: statusFilter === id ? `${color}18` : 'transparent',
-              color: statusFilter === id ? color : '#64748b',
+              color: statusFilter === id ? color : '#94a3b8',
               outline: statusFilter === id ? `1px solid ${color}40` : 'none',
             }}>
               {label} <span style={{ opacity: 0.7 }}>{counts[id]}</span>

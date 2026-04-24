@@ -39,7 +39,7 @@ function Clock() {
     return () => clearInterval(t)
   }, [])
   return (
-    <span style={{ color: '#a8b8cc', fontSize: 13 }}>
+    <span style={{ color: '#cbd0e0', fontSize: 13 }}>
       {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
       {'  ·  '}
       {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -192,7 +192,7 @@ export default function LoginScreen({ onLogin, onBack }) {
           </span>
           <span style={{
             fontSize: 10, fontWeight: 400, letterSpacing: 0.5,
-            color: '#64748b', marginLeft: 2,
+            color: '#94a3b8', marginLeft: 2,
           }}>— {SYSTEM_TAG}</span>
         </div>
 
@@ -207,13 +207,13 @@ export default function LoginScreen({ onLogin, onBack }) {
             <button key={item.label} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               background: 'none', border: 'none', cursor: 'pointer',
-              color: '#64748b', fontSize: 9, fontWeight: 600,
+              color: '#94a3b8', fontSize: 9, fontWeight: 600,
               gap: 2, padding: '4px 8px', borderRadius: 4,
               transition: 'color 0.15s',
               letterSpacing: 0.3,
             }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#a8b8cc' }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#64748b' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#cbd0e0' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8' }}
             >
               <span style={{ fontSize: 15 }}>{item.icon}</span>
               {item.label}
@@ -268,12 +268,12 @@ export default function LoginScreen({ onLogin, onBack }) {
                 borderRadius: 6, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8,
               }}>
                 <span style={{ color: '#22c55e', fontSize: 12 }}>✓</span>
-                <span style={{ color: '#a8b8cc', fontSize: 12 }}>{pendingSession?.location}</span>
+                <span style={{ color: '#cbd0e0', fontSize: 12 }}>{pendingSession?.location}</span>
               </div>
 
               {/* Employee selector */}
               <div>
-                <label style={{ display: 'block', color: '#64748b', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
+                <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
                   SELECT EMPLOYEE
                 </label>
                 <select
@@ -293,7 +293,7 @@ export default function LoginScreen({ onLogin, onBack }) {
 
               {/* PIN dots display */}
               <div>
-                <label style={{ display: 'block', color: '#64748b', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
+                <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
                   PIN
                 </label>
                 <input
@@ -322,7 +322,7 @@ export default function LoginScreen({ onLogin, onBack }) {
                     style={{
                       padding: '13px', background: !k ? 'transparent' : '#111d30',
                       border: !k ? 'none' : '1px solid #253349', borderRadius: 7,
-                      color: k === '⌫' ? '#64748b' : '#f1f5f9',
+                      color: k === '⌫' ? '#94a3b8' : '#f1f5f9',
                       fontSize: k === '⌫' ? 16 : 18,
                       fontWeight: 600, cursor: !k ? 'default' : 'pointer',
                       opacity: !k ? 0 : 1, transition: 'all 0.1s',
@@ -337,11 +337,11 @@ export default function LoginScreen({ onLogin, onBack }) {
                 onClick={() => { setStep('location'); setPin(''); setPinError('') }}
                 style={{
                   padding: '10px', background: 'transparent', border: '1px solid #253349',
-                  borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer',
+                  borderRadius: 6, color: '#94a3b8', fontSize: 13, cursor: 'pointer',
                   transition: 'all 0.15s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#415569'; e.currentTarget.style.color = '#a8b8cc' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#415569'; e.currentTarget.style.color = '#cbd0e0' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
               >← Back</button>
             </div>
           )}
@@ -353,7 +353,7 @@ export default function LoginScreen({ onLogin, onBack }) {
 
             {/* Select Account */}
             <div>
-              <label style={{ display: 'block', color: '#64748b', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
                 SELECT ACCOUNT
               </label>
               <select {...sel(account, setAccount)}>
@@ -363,7 +363,7 @@ export default function LoginScreen({ onLogin, onBack }) {
 
             {/* Select Region */}
             <div>
-              <label style={{ display: 'block', color: '#64748b', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
                 SELECT REGION
               </label>
               <select {...sel(region, handleRegionChange)}>
@@ -373,7 +373,7 @@ export default function LoginScreen({ onLogin, onBack }) {
 
             {/* Select Location */}
             <div>
-              <label style={{ display: 'block', color: '#64748b', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
                 SELECT LOCATION
               </label>
               <select {...sel(location, setLocation)}>
@@ -383,7 +383,7 @@ export default function LoginScreen({ onLogin, onBack }) {
 
             {/* Location Password */}
             <div>
-              <label style={{ display: 'block', color: '#64748b', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5 }}>
                 LOCATION PASSWORD
               </label>
               <div style={{ position: 'relative' }}>
@@ -412,7 +412,7 @@ export default function LoginScreen({ onLogin, onBack }) {
                   style={{
                     position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#64748b', fontSize: 14, padding: 2,
+                    color: '#94a3b8', fontSize: 14, padding: 2,
                   }}
                 >
                   {pwVisible ? '🙈' : '👁'}
@@ -434,7 +434,7 @@ export default function LoginScreen({ onLogin, onBack }) {
                 onChange={e => setOnlyThis(e.target.checked)}
                 style={{ accentColor: BLUE, cursor: 'pointer', width: 14, height: 14 }}
               />
-              <span style={{ color: '#64748b', fontSize: 12 }}>
+              <span style={{ color: '#94a3b8', fontSize: 12 }}>
                 Remember this location
               </span>
             </label>
@@ -467,18 +467,18 @@ export default function LoginScreen({ onLogin, onBack }) {
                 flex: 1, padding: '11px',
                 background: '#111d30',
                 border: '1px solid #253349',
-                borderRadius: 6, color: '#64748b',
+                borderRadius: 6, color: '#94a3b8',
                 fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.background    = '#253349'
-                e.currentTarget.style.color         = '#a8b8cc'
+                e.currentTarget.style.color         = '#cbd0e0'
                 e.currentTarget.style.borderColor   = '#415569'
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.background    = '#111d30'
-                e.currentTarget.style.color         = '#64748b'
+                e.currentTarget.style.color         = '#94a3b8'
                 e.currentTarget.style.borderColor   = '#253349'
               }}
             >
@@ -500,7 +500,7 @@ export default function LoginScreen({ onLogin, onBack }) {
                   color: '#415569', fontSize: 11, padding: 0,
                   textDecoration: 'underline',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#64748b' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#94a3b8' }}
                 onMouseLeave={e => { e.currentTarget.style.color = '#415569' }}
               >
                 ← Change account
@@ -548,7 +548,7 @@ export default function LoginScreen({ onLogin, onBack }) {
             }}>
               {SYSTEM_NAME}
             </h2>
-            <p style={{ fontSize: 12, color: '#64748b', letterSpacing: 2, marginBottom: 6, textTransform: 'uppercase' }}>
+            <p style={{ fontSize: 12, color: '#94a3b8', letterSpacing: 2, marginBottom: 6, textTransform: 'uppercase' }}>
               {SYSTEM_TAG}
             </p>
             <p style={{

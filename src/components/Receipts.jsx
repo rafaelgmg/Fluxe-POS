@@ -43,11 +43,11 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
 
   const statusColor = {
     completed: '#22c55e',  // Supabase enum value
-    voided:    '#64748b',  // Supabase enum value
+    voided:    '#94a3b8',  // Supabase enum value
     refund:    '#ef4444',
     normal:    '#22c55e',  // legacy localStorage fallback
-    deleted:   '#64748b',  // legacy localStorage fallback
-  }[invoice.status] || '#a8b8cc'
+    deleted:   '#94a3b8',  // legacy localStorage fallback
+  }[invoice.status] || '#cbd0e0'
 
   return (
     <div style={{
@@ -63,7 +63,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
           onClick={onClose}
           style={{
             background: 'rgba(30,41,59,0.6)', border: '1px solid #253349',
-            borderRadius: 6, color: '#a8b8cc', padding: '6px 12px',
+            borderRadius: 6, color: '#cbd0e0', padding: '6px 12px',
             cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6,
           }}
         >← Back</button>
@@ -79,7 +79,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
               {(invoice.status || 'normal').toUpperCase()}
             </span>
           </div>
-          <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>
+          <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
             {fmtDateTime(invoice.timestamp)}
             {invoice.location && <span> · {invoice.location}</span>}
           </div>
@@ -120,7 +120,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
                 background: '#111d30', border: '1px solid #253349',
                 borderRadius: 8, padding: '12px 16px',
               }}>
-                <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>{label}</div>
                 <div style={{ fontSize: 14, color: '#f1f5f9', fontWeight: 600 }}>{value}</div>
               </div>
             ))}
@@ -131,7 +131,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
             <div style={{
               display: 'grid', gridTemplateColumns: '1fr 60px 80px 90px',
               padding: '8px 16px', background: '#0d1526',
-              fontSize: 10, color: '#64748b', fontWeight: 600, letterSpacing: 0.6,
+              fontSize: 10, color: '#94a3b8', fontWeight: 600, letterSpacing: 0.6,
               textTransform: 'uppercase',
             }}>
               <span>Product</span>
@@ -151,15 +151,15 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
                 }}>
                   <div>
                     <div style={{ fontSize: 13, color: '#f1f5f9' }}>{item.name}</div>
-                    {item.size && <div style={{ fontSize: 11, color: '#64748b' }}>{item.size}</div>}
+                    {item.size && <div style={{ fontSize: 11, color: '#94a3b8' }}>{item.size}</div>}
                     {item.discount > 0 && (
                       <div style={{ fontSize: 11, color: '#f59e0b' }}>
                         -{fmt$(item.discount * item.qty)} discount
                       </div>
                     )}
                   </div>
-                  <div style={{ textAlign: 'center', color: '#a8b8cc', fontSize: 13 }}>{item.qty}</div>
-                  <div style={{ textAlign: 'right', color: '#a8b8cc', fontSize: 13 }}>{fmt$(item.salePrice)}</div>
+                  <div style={{ textAlign: 'center', color: '#cbd0e0', fontSize: 13 }}>{item.qty}</div>
+                  <div style={{ textAlign: 'right', color: '#cbd0e0', fontSize: 13 }}>{fmt$(item.salePrice)}</div>
                   <div style={{ textAlign: 'right', color: '#f1f5f9', fontSize: 13, fontWeight: 600 }}>{fmt$(item.subtotal)}</div>
                 </div>
               )
@@ -177,7 +177,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
               { label: 'Tax',      value: tax      },
               ...(tip > 0 ? [{ label: 'Tip', value: tip }] : []),
             ].map(({ label, value }) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#a8b8cc' }}>
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#cbd0e0' }}>
                 <span>{label}</span>
                 <span>{fmt$(value)}</span>
               </div>
@@ -310,7 +310,7 @@ export default function Receipts({ onClose, posSession }) {
             <span style={{ fontSize: 20 }}>🧾</span>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: '#f1f5f9' }}>Locate Receipt</div>
-              <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>Search for invoice</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>Search for invoice</div>
             </div>
           </div>
 
@@ -332,7 +332,7 @@ export default function Receipts({ onClose, posSession }) {
                       padding: '5px 12px', border: 'none', cursor: 'pointer', fontSize: 11,
                       fontWeight: locScope === key ? 700 : 400,
                       background: locScope === key ? '#3b82f6' : 'transparent',
-                      color: locScope === key ? '#fff' : '#64748b',
+                      color: locScope === key ? '#fff' : '#94a3b8',
                       transition: 'all 0.15s',
                     }}
                   >{label}</button>
@@ -343,7 +343,7 @@ export default function Receipts({ onClose, posSession }) {
               onClick={onClose}
               style={{
                 background: 'none', border: '1px solid #253349', borderRadius: 6,
-                color: '#64748b', width: 28, height: 28, cursor: 'pointer',
+                color: '#94a3b8', width: 28, height: 28, cursor: 'pointer',
                 fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >×</button>
@@ -405,7 +405,7 @@ export default function Receipts({ onClose, posSession }) {
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>
                     Receipt #{searchResult.invoice.number}
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
                     {fmtDateTime(searchResult.invoice.timestamp)}
                     {' · '}{searchResult.invoice.employee}
                     {' · '}{fmt$(searchResult.invoice.total)}
@@ -431,7 +431,7 @@ export default function Receipts({ onClose, posSession }) {
           {latestSale && (
             <div style={{ padding: '0 22px 14px' }}>
               <div style={{ borderTop: '1px solid #253349', paddingTop: 14, marginBottom: 10 }}>
-                <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 10 }}>
                   Latest Receipt {locScope === 'current' && currentLocation ? `· ${currentLocation}` : '· All Locations'}
                 </div>
                 <div style={{
@@ -439,7 +439,7 @@ export default function Receipts({ onClose, posSession }) {
                   padding: '10px 14px', background: '#111d30',
                   border: '1px solid #253349', borderRadius: 8, gap: 12,
                 }}>
-                  <div style={{ fontSize: 12, color: '#a8b8cc', minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: '#cbd0e0', minWidth: 0 }}>
                     <span style={{ fontWeight: 700, color: '#f1f5f9' }}>#{latestSale.number}</span>
                     {' · '}{fmtDateTime(latestSale.timestamp)}
                     {' · '}{latestSale.employee}
@@ -457,12 +457,12 @@ export default function Receipts({ onClose, posSession }) {
           {/* ── Recent receipts list ── */}
           <div style={{ padding: '0 22px 22px' }}>
             <div style={{ borderTop: '1px solid #253349', paddingTop: 14 }}>
-              <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 }}>
                 Recent Receipts ({recentSales.length})
               </div>
 
               {recentSales.length === 0 && (
-                <div style={{ color: '#64748b', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
+                <div style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', padding: '16px 0' }}>
                   No receipts found
                 </div>
               )}
@@ -496,18 +496,18 @@ export default function Receipts({ onClose, posSession }) {
                         )}
                         {locScope === 'all' && inv.location && (
                           <span style={{
-                            fontSize: 9, color: '#64748b',
+                            fontSize: 9, color: '#94a3b8',
                             background: '#111d30', border: '1px solid #253349',
                             padding: '1px 6px', borderRadius: 6,
                           }}>{inv.location}</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
                         {fmtDateTime(inv.timestamp)} · {inv.employee}
                         {' · '}
-                        <span style={{ color: '#a8b8cc' }}>{fmt$(inv.total)}</span>
+                        <span style={{ color: '#cbd0e0' }}>{fmt$(inv.total)}</span>
                         {' · '}
-                        <span style={{ color: '#64748b' }}>{inv.paymentMethod}</span>
+                        <span style={{ color: '#94a3b8' }}>{inv.paymentMethod}</span>
                       </div>
                     </div>
 
@@ -527,7 +527,7 @@ export default function Receipts({ onClose, posSession }) {
                         title="Open invoice"
                         style={{
                           background: 'rgba(30,41,59,0.6)', border: '1px solid #253349',
-                          borderRadius: 6, color: '#a8b8cc', padding: '4px 10px',
+                          borderRadius: 6, color: '#cbd0e0', padding: '4px 10px',
                           cursor: 'pointer', fontSize: 11, fontWeight: 600,
                         }}
                       >Open</button>

@@ -43,7 +43,7 @@ function StatusBadge({ status }) {
       fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700,
       background: active ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)',
       border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : '#253349'}`,
-      color: active ? '#22c55e' : '#64748b',
+      color: active ? '#22c55e' : '#94a3b8',
     }}>
       {active ? '● Active' : '○ Inactive'}
     </span>
@@ -113,7 +113,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
   })
 
   const lbl = (text, optional) => (
-    <label style={{ color: '#64748b', fontSize: 11, marginBottom: 3, display: 'block', letterSpacing: 0.4 }}>
+    <label style={{ color: '#94a3b8', fontSize: 11, marginBottom: 3, display: 'block', letterSpacing: 0.4 }}>
       {text}{optional && <span style={{ color: '#415569', marginLeft: 4, fontWeight: 400 }}>(optional)</span>}
     </label>
   )
@@ -137,7 +137,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
           {isNew ? '＋ New User' : '✏ Edit User'}
         </span>
         <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: '#64748b',
+          background: 'none', border: 'none', color: '#94a3b8',
           fontSize: 20, cursor: 'pointer', lineHeight: 1,
         }}>×</button>
       </div>
@@ -167,15 +167,15 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
           </div>
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display: 'none' }} />
           <div>
-            <p style={{ color: '#a8b8cc', fontSize: 12, fontWeight: 600 }}>Profile Photo</p>
+            <p style={{ color: '#cbd0e0', fontSize: 12, fontWeight: 600 }}>Profile Photo</p>
             <button onClick={() => fileRef.current?.click()} style={{
               marginTop: 4, padding: '4px 10px', background: 'transparent',
               border: `1px solid ${BORDER}`, borderRadius: 4,
-              color: '#64748b', fontSize: 11, cursor: 'pointer',
+              color: '#94a3b8', fontSize: 11, cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = PURPLE; e.currentTarget.style.color = '#c4b5fd' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#64748b' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#94a3b8' }}
             >
               {form.photo ? 'Change Photo' : 'Upload Photo'}
             </button>
@@ -183,7 +183,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
               <button onClick={() => set('photo', null)} style={{
                 marginTop: 4, marginLeft: 6, padding: '4px 10px', background: 'transparent',
                 border: '1px solid #253349', borderRadius: 4,
-                color: '#64748b', fontSize: 11, cursor: 'pointer',
+                color: '#94a3b8', fontSize: 11, cursor: 'pointer',
               }}>Remove</button>
             )}
           </div>
@@ -246,9 +246,9 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
               <button key={s} onClick={() => set('status', s)} style={{
                 flex: 1, padding: '7px',
                 background: form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)') : BG,
-                border: `1px solid ${form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.4)' : '#64748b') : BORDER}`,
+                border: `1px solid ${form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.4)' : '#94a3b8') : BORDER}`,
                 borderRadius: 4,
-                color: form.status === s ? (s === 'active' ? '#22c55e' : '#a8b8cc') : '#64748b',
+                color: form.status === s ? (s === 'active' ? '#22c55e' : '#cbd0e0') : '#94a3b8',
                 fontSize: 12, fontWeight: form.status === s ? 700 : 400,
                 cursor: 'pointer', transition: 'all 0.2s ease',
               }}>
@@ -285,7 +285,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
               }}>Yes, Delete</button>
               <button onClick={() => setConfirmDelete(false)} style={{
                 flex: 1, padding: '7px', background: 'transparent', border: `1px solid ${BORDER}`,
-                borderRadius: 4, color: '#64748b', fontSize: 12, cursor: 'pointer',
+                borderRadius: 4, color: '#94a3b8', fontSize: 12, cursor: 'pointer',
               }}>Cancel</button>
             </div>
           </div>
@@ -424,11 +424,11 @@ export default function UsersScreen({ onBack }) {
         display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0,
       }}>
         <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: '#64748b',
+          background: 'none', border: 'none', color: '#94a3b8',
           fontSize: 18, cursor: 'pointer', paddingRight: 4, lineHeight: 1,
         }}>←</button>
         <span style={{ color: PURPLE, fontWeight: 700, fontSize: 13 }}>👥 Users</span>
-        <span style={{ color: '#64748b', fontSize: 11 }}>Settings</span>
+        <span style={{ color: '#94a3b8', fontSize: 11 }}>Settings</span>
         <div style={{ width: 1, height: 16, background: BORDER, margin: '0 4px' }} />
 
         <input
@@ -447,14 +447,14 @@ export default function UsersScreen({ onBack }) {
             padding: '5px 12px', fontSize: 11, cursor: 'pointer',
             background: filterStatus === s ? PURPLE + '22' : 'transparent',
             border: `1px solid ${filterStatus === s ? PURPLE : BORDER}`,
-            borderRadius: 4, color: filterStatus === s ? '#c4b5fd' : '#64748b',
+            borderRadius: 4, color: filterStatus === s ? '#c4b5fd' : '#94a3b8',
             fontWeight: filterStatus === s ? 700 : 400, transition: 'all 0.2s ease',
           }}>
             {s === 'all' ? 'All' : s === 'active' ? '● Active' : '○ Inactive'}
           </button>
         ))}
 
-        <span style={{ color: '#64748b', fontSize: 12 }}>{filtered.length} user{filtered.length !== 1 ? 's' : ''}</span>
+        <span style={{ color: '#94a3b8', fontSize: 12 }}>{filtered.length} user{filtered.length !== 1 ? 's' : ''}</span>
 
         <div style={{ marginLeft: 'auto' }}>
           <button onClick={openNew} style={{
@@ -476,7 +476,7 @@ export default function UsersScreen({ onBack }) {
               <tr>
                 {['', 'Name', 'Position', 'Email', 'Phone', 'Status', ''].map((h, i) => (
                   <th key={i} style={{
-                    padding: '8px 12px', textAlign: 'left', color: '#64748b',
+                    padding: '8px 12px', textAlign: 'left', color: '#94a3b8',
                     fontWeight: 600, fontSize: 11, background: CARD,
                     borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap',
                   }}>{h}</th>
@@ -521,17 +521,17 @@ export default function UsersScreen({ onBack }) {
                       <span style={{
                         fontSize: 11, padding: '2px 8px', borderRadius: 4,
                         background: CARD, border: `1px solid ${BORDER}`,
-                        color: '#a8b8cc',
+                        color: '#cbd0e0',
                       }}>{u.position}</span>
                     </td>
 
                     {/* Email */}
-                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 12 }}>
+                    <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>
                       {u.email || <span style={{ color: '#415569' }}>—</span>}
                     </td>
 
                     {/* Phone */}
-                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: 12 }}>
+                    <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>
                       {u.phone || <span style={{ color: '#415569' }}>—</span>}
                     </td>
 

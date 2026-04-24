@@ -21,8 +21,8 @@ const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
-const MUTED  = '#64748b'
-const DIM    = '#a8b8cc'
+const MUTED  = '#94a3b8'
+const DIM    = '#cbd0e0'
 const TEXT   = '#f1f5f9'
 
 // ── Storage ────────────────────────────────────────────────────────────────────

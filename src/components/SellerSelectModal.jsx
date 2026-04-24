@@ -42,14 +42,14 @@ function EmployeeButton({ emp, isActive, onClick }) {
             border: `2px solid ${isActive ? '#3b82f6' : '#415569'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 16, fontWeight: 800,
-            color: isActive ? '#93c5fd' : '#64748b',
+            color: isActive ? '#93c5fd' : '#94a3b8',
             flexShrink: 0,
           }}>
             {emp.name[0]}
           </div>
       }
       <div style={{ flex: 1 }}>
-        <p style={{ color: isActive ? '#f1f5f9' : '#a8b8cc', fontWeight: isActive ? 700 : 500, fontSize: 14 }}>
+        <p style={{ color: isActive ? '#f1f5f9' : '#cbd0e0', fontWeight: isActive ? 700 : 500, fontSize: 14 }}>
           {emp.name}
         </p>
         <p style={{ color: '#415569', fontSize: 11, marginTop: 2 }}>{emp.role}</p>
@@ -104,7 +104,7 @@ export default function SellerSelectModal({ total, onConfirm, onCancel }) {
           }}>👤</div>
           <div>
             <p style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 15 }}>Select Seller</p>
-            <p style={{ color: '#64748b', fontSize: 11, marginTop: 1 }}>
+            <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 1 }}>
               {showAll ? 'All active sellers' : 'Clocked in today'}
             </p>
           </div>
@@ -113,7 +113,7 @@ export default function SellerSelectModal({ total, onConfirm, onCancel }) {
             border: '1px solid #253349', borderRadius: 6,
             padding: '5px 12px', textAlign: 'right',
           }}>
-            <p style={{ color: '#64748b', fontSize: 10 }}>Total</p>
+            <p style={{ color: '#94a3b8', fontSize: 10 }}>Total</p>
             <p style={{ color: '#22c55e', fontWeight: 800, fontSize: 16 }}>${total.toFixed(2)}</p>
           </div>
         </div>
@@ -125,7 +125,7 @@ export default function SellerSelectModal({ total, onConfirm, onCancel }) {
             display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
-            <span style={{ color: '#64748b', fontSize: 11 }}>
+            <span style={{ color: '#94a3b8', fontSize: 11 }}>
               {clocked.length} seller{clocked.length > 1 ? 's' : ''} clocked in
             </span>
           </div>
@@ -153,11 +153,11 @@ export default function SellerSelectModal({ total, onConfirm, onCancel }) {
                 background: 'transparent',
                 border: '1px dashed #253349',
                 borderRadius: 6, cursor: 'pointer',
-                color: '#64748b', fontSize: 12,
+                color: '#94a3b8', fontSize: 12,
                 transition: 'all 0.2s ease',
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#415569'; e.currentTarget.style.color = '#a8b8cc' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#415569'; e.currentTarget.style.color = '#cbd0e0' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
             >
               Not on that list? → Select another seller
             </button>
@@ -192,11 +192,11 @@ export default function SellerSelectModal({ total, onConfirm, onCancel }) {
             style={{
               flex: 1, padding: '13px',
               background: 'transparent', border: '1px solid #253349',
-              borderRadius: 6, color: '#64748b', fontSize: 13, cursor: 'pointer',
+              borderRadius: 6, color: '#94a3b8', fontSize: 13, cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#64748b' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
           >
             Cancel
           </button>

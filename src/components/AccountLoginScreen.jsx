@@ -58,7 +58,7 @@ export default function AccountLoginScreen({ onLogin }) {
           <span style={{ fontWeight: 800, fontSize: 15, color: '#f1f5f9', letterSpacing: 2 }}>
             {SYSTEM_NAME.toUpperCase()}
           </span>
-          <span style={{ fontSize: 10, color: '#64748b', marginLeft: 2 }}>— {SYSTEM_TAG}</span>
+          <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 2 }}>— {SYSTEM_TAG}</span>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ export default function AccountLoginScreen({ onLogin }) {
           </h1>
           <p style={{
             alignSelf: 'flex-start',
-            color: '#64748b', fontSize: 13, marginBottom: 28,
+            color: '#94a3b8', fontSize: 13, marginBottom: 28,
           }}>
             {BUSINESS}
           </p>
@@ -104,7 +104,7 @@ export default function AccountLoginScreen({ onLogin }) {
             {/* Email */}
             <div>
               <label style={{
-                display: 'block', color: '#64748b',
+                display: 'block', color: '#94a3b8',
                 fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5,
               }}>
                 EMAIL / USERNAME
@@ -125,7 +125,7 @@ export default function AccountLoginScreen({ onLogin }) {
             {/* Password */}
             <div>
               <label style={{
-                display: 'block', color: '#64748b',
+                display: 'block', color: '#94a3b8',
                 fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5,
               }}>
                 PASSWORD
@@ -148,7 +148,7 @@ export default function AccountLoginScreen({ onLogin }) {
                   style={{
                     position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#64748b', fontSize: 14, padding: 2,
+                    color: '#94a3b8', fontSize: 14, padding: 2,
                   }}
                 >
                   {pwVisible ? '🙈' : '👁'}
@@ -218,7 +218,7 @@ export default function AccountLoginScreen({ onLogin }) {
             }}>
               {SYSTEM_NAME}
             </h2>
-            <p style={{ fontSize: 12, color: '#64748b', letterSpacing: 2, marginBottom: 6, textTransform: 'uppercase' }}>
+            <p style={{ fontSize: 12, color: '#94a3b8', letterSpacing: 2, marginBottom: 6, textTransform: 'uppercase' }}>
               {SYSTEM_TAG}
             </p>
             <p style={{

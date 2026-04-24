@@ -10,15 +10,15 @@ const PANEL  = '#0d1526'
 const CARD   = '#111d30'
 const BORDER = '#253349'
 const TEXT   = '#f1f5f9'
-const SUB    = '#a8b8cc'
-const MUTED  = '#64748b'
+const SUB    = '#cbd0e0'
+const MUTED  = '#94a3b8'
 const DIM    = '#415569'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 
-const STAR_COLORS = ['', '#a8b8cc', '#f59e0b', '#f59e0b', '#f59e0b', '#22c55e']
+const STAR_COLORS = ['', '#cbd0e0', '#f59e0b', '#f59e0b', '#f59e0b', '#22c55e']
 
 export default function CRMSettings() {
   const [settings, setSettings] = useState(loadCRMSettings)

@@ -14,7 +14,7 @@ const AVATAR_COLORS = [
 const BG     = 'radial-gradient(ellipse at center, #1a2a4a 0%, #0a0a1a 100%)'
 const PANEL  = 'rgba(15,23,42,0.7)'
 const BORDER = '#253349'
-const MUTED  = '#64748b'
+const MUTED  = '#94a3b8'
 const DIM    = '#415569'
 const GOLD   = COLORS.accent   // amber/gold
 
@@ -311,18 +311,18 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
       <button onClick={onClose} style={{
         position: 'absolute', top: 20, right: 20,
         background: 'transparent', border: `1px solid ${BORDER}`,
-        borderRadius: 6, color: '#64748b', padding: '8px 16px',
+        borderRadius: 6, color: '#94a3b8', padding: '8px 16px',
         cursor: 'pointer', fontSize: 14, transition: 'all 0.15s',
       }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#64748b' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#94a3b8' }}
       >✕ Close</button>
 
       {/* Date + clock */}
       <div style={{
         position: 'absolute', top: 20, left: 20,
         background: 'rgba(15,23,42,0.8)', border: `1px solid ${BORDER}`,
-        borderRadius: 8, padding: '6px 14px', color: '#64748b', fontSize: 12,
+        borderRadius: 8, padding: '6px 14px', color: '#94a3b8', fontSize: 12,
       }}>
         {dateLabel} · {clock}
       </div>
@@ -522,7 +522,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                     fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
                   }}>{person.initials}</div>
                   <div>
-                    <p style={{ color: '#a8b8cc', fontSize: 13, marginBottom: 2 }}>{person.name}</p>
+                    <p style={{ color: '#cbd0e0', fontSize: 13, marginBottom: 2 }}>{person.name}</p>
                     <p style={{ color: person.color, fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
                       {fmt(person.value)}
                     </p>
@@ -578,7 +578,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                     <p style={{
-                      color: isFirst ? '#fff' : '#a8b8cc',
+                      color: isFirst ? '#fff' : '#cbd0e0',
                       fontSize: isFirst ? 16 : 14,
                       fontWeight: isFirst ? 700 : 500,
                     }}>{person.name}</p>

@@ -33,8 +33,8 @@ export const C = {
 
   // Text
   text:      '#f1f5f9',
-  textSub:   '#a8b8cc',
-  textMuted: '#64748b',
+  textSub:   '#cbd0e0',
+  textMuted: '#94a3b8',
   textDim:   '#415569',
 
   // Brand
