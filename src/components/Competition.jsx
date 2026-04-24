@@ -88,33 +88,20 @@ const MEDALS = {
   2: { label: '3rd', bg: 'linear-gradient(135deg, #b45309, #92400e)',  height: 130, medal: '🥉' },
 }
 
-// ── Secondary metrics row (reused in both views) ──────────────────────────────
-function MetaRow({ person, isFirst = false }) {
-  const items = []
-  if (person.count > 0)      items.push({ label: `${person.count} sale${person.count !== 1 ? 's' : ''}`, color: '#64748b' })
-  if (person.spare  > 0.01)  items.push({ label: `${fmt$(person.spare)} spare`,      color: '#f59e0b' })
-  if (person.commission > 0.01) items.push({ label: `${fmt$(person.commission)} comm`, color: '#a78bfa' })
-
+// ── Secondary metrics row ─────────────────────────────────────────────────────
+// showSpare is controlled by locCfg.competitionEnableSpare (Location Settings).
+// location, count, and commission are hidden by default.
+function MetaRow({ person, isFirst = false, showSpare = false }) {
+  if (!showSpare || !(person.spare > 0.01)) return null
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
-      {person.location && (
-        <span style={{
-          background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.2)',
-          borderRadius: 10, padding: '2px 7px', fontSize: isFirst ? 10 : 9,
-          color: '#60a5fa', fontWeight: 600, letterSpacing: 0.3,
-        }}>
-          📍 {person.location}
-        </span>
-      )}
-      {items.map(it => (
-        <span key={it.label} style={{
-          background: 'rgba(15,23,42,0.7)', border: `1px solid ${DIM}`,
-          borderRadius: 10, padding: '2px 7px', fontSize: isFirst ? 10 : 9,
-          color: it.color, fontWeight: 600,
-        }}>
-          {it.label}
-        </span>
-      ))}
+      <span style={{
+        background: 'rgba(15,23,42,0.7)', border: `1px solid ${DIM}`,
+        borderRadius: 10, padding: '2px 7px', fontSize: isFirst ? 10 : 9,
+        color: '#f59e0b', fontWeight: 600,
+      }}>
+        {fmt$(person.spare)} spare
+      </span>
     </div>
   )
 }
@@ -379,11 +366,6 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
           }}>
             Leader: <strong style={{ color: GOLD }}>{first.name}</strong>
             {' '}— <strong style={{ color: GOLD }}>{fmt(first.value)}</strong>
-            {first.location && (
-              <span style={{ color: '#60a5fa', fontSize: 12, marginLeft: 8 }}>
-                📍 {first.location}
-              </span>
-            )}
           </div>
         )}
       </div>
@@ -503,8 +485,8 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                     </p>
                   )}
 
-                  {/* Secondary metrics + location */}
-                  <MetaRow person={person} isFirst={isCenter} />
+                  {/* Spare — only if enabled in Location Settings */}
+                  <MetaRow person={person} isFirst={isCenter} showSpare={enableSpare} />
 
                   {/* Podium block */}
                   <div style={{
@@ -544,7 +526,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                     <p style={{ color: person.color, fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
                       {fmt(person.value)}
                     </p>
-                    <MetaRow person={person} />
+                    <MetaRow person={person} showSpare={enableSpare} />
                   </div>
                 </div>
               ))}
@@ -608,7 +590,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                       }}>TOP SELLER</span>
                     )}
                   </div>
-                  <MetaRow person={person} isFirst={false} />
+                  <MetaRow person={person} isFirst={false} showSpare={enableSpare} />
                 </div>
 
                 {/* Value */}
