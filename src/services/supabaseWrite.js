@@ -183,6 +183,7 @@ export function toSupabaseSaleRow(invoice, orgId) {
 
   return {
     organization_id:    orgId,
+    number:             invoice.number              ?? null,
     status:             STATUS_MAP[invoice.status] ?? 'completed',
     sold_at:            soldAt,
     location_id:        getLocationUUID(invoice.locationId),  // null if cache miss (safe — nullable FK)
