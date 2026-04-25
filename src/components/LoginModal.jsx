@@ -79,13 +79,13 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
           }}>🔒</div>
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{title}</h2>
-            <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 1 }}>{subtitle}</p>
+            <p style={{ color: '#b8c8da', fontSize: 11, marginTop: 1 }}>{subtitle}</p>
           </div>
         </div>
 
         {/* Employee select */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+          <label style={{ color: '#c0cfe0', fontSize: 11, fontWeight: 700, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
             SELECT EMPLOYEE
           </label>
           <select
@@ -93,7 +93,7 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             onChange={e => { setSelectedEmployee(e.target.value); setPin(''); setError('') }}
             style={{
               width: '100%', padding: '9px 12px', background: '#111d30',
-              border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9',
+              border: '1px solid #3a4f6a', borderRadius: 6, color: '#f1f5f9',
               fontSize: 13, outline: 'none', cursor: 'pointer',
             }}
           >
@@ -105,7 +105,7 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
 
         {/* PIN display */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+          <label style={{ color: '#c0cfe0', fontSize: 11, fontWeight: 700, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
             PIN
           </label>
           <input
@@ -114,7 +114,7 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             readOnly
             style={{
               width: '100%', padding: '9px 12px', background: '#111d30',
-              border: `1px solid ${error ? '#ef4444' : verifying ? '#3b82f6' : '#253349'}`,
+              border: `1px solid ${error ? '#ef4444' : verifying ? '#3b82f6' : '#3a4f6a'}`,
               borderRadius: 6, color: verifying ? '#3b82f6' : '#f1f5f9',
               fontSize: 20, letterSpacing: 8, outline: 'none', boxSizing: 'border-box',
               opacity: verifying ? 0.7 : 1, transition: 'all 0.15s',
@@ -132,14 +132,14 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
               disabled={!k || verifying}
               style={{
                 padding: '13px', background: !k ? 'transparent' : '#111d30',
-                border: !k ? 'none' : '1px solid #253349', borderRadius: 7,
-                color: k === '⌫' ? '#94a3b8' : '#f1f5f9',
+                border: !k ? 'none' : '1px solid #3a4f6a', borderRadius: 7,
+                color: k === '⌫' ? '#c0cfe0' : '#f1f5f9',
                 fontSize: k === '⌫' ? 16 : 18,
-                fontWeight: 600, cursor: (!k || verifying) ? 'default' : 'pointer',
+                fontWeight: 700, cursor: (!k || verifying) ? 'default' : 'pointer',
                 opacity: !k ? 0 : verifying ? 0.5 : 1, transition: 'all 0.1s',
               }}
-              onMouseEnter={e => { if (k && !verifying) { e.currentTarget.style.background = '#131d35'; e.currentTarget.style.borderColor = '#263354' } }}
-              onMouseLeave={e => { if (k && !verifying) { e.currentTarget.style.background = '#111d30'; e.currentTarget.style.borderColor = '#253349' } }}
+              onMouseEnter={e => { if (k && !verifying) { e.currentTarget.style.background = '#1a3050'; e.currentTarget.style.borderColor = '#4a6080' } }}
+              onMouseLeave={e => { if (k && !verifying) { e.currentTarget.style.background = '#111d30'; e.currentTarget.style.borderColor = '#3a4f6a' } }}
             >
               {k}
             </button>
@@ -170,12 +170,12 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             disabled={verifying}
             style={{
               flex: 1, padding: '12px',
-              background: 'transparent', border: '1px solid #253349',
-              borderRadius: 6, color: '#94a3b8', fontSize: 14, cursor: verifying ? 'not-allowed' : 'pointer',
+              background: 'transparent', border: '1px solid #3a4f6a',
+              borderRadius: 6, color: '#cbd0e0', fontSize: 14, cursor: verifying ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { if (!verifying) { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#cbd0e0' } }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
+            onMouseEnter={e => { if (!verifying) { e.currentTarget.style.borderColor = '#4a6080'; e.currentTarget.style.color = '#f1f5f9' } }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#3a4f6a'; e.currentTarget.style.color = '#cbd0e0' }}
           >
             Cancel
           </button>

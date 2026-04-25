@@ -16,12 +16,12 @@ import { verifyEmployeePin } from '../services/supabaseAuth'
 const BG     = '#030e1e'
 const PANEL  = '#0d1526'
 const CARD   = '#111d30'
-const BORDER = '#253349'
+const BORDER = '#3a4f6a'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
-const MUTED  = '#94a3b8'
+const MUTED  = '#b8c8da'
 const DIM    = '#cbd0e0'
 const TEXT   = '#f1f5f9'
 
@@ -180,7 +180,7 @@ function PinGate({ onUnlock, onClose }) {
                 fontWeight: 600, cursor: !k ? 'default' : 'pointer', opacity: !k ? 0 : 1,
                 transition: 'all 0.1s',
               }}
-              onMouseEnter={e => { if (k) { e.currentTarget.style.background = '#131d35'; e.currentTarget.style.borderColor = '#263354' } }}
+              onMouseEnter={e => { if (k) { e.currentTarget.style.background = '#1a3050'; e.currentTarget.style.borderColor = '#4a6080' } }}
               onMouseLeave={e => { if (k) { e.currentTarget.style.background = CARD; e.currentTarget.style.borderColor = BORDER } }}
             >{k}</button>
           ))}
