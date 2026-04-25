@@ -98,7 +98,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
                   <p style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>⚠ Damaged</p>
                 )}
                 {!isExchange && item.discount > 0 && (
-                  <p style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, marginTop: 2 }}>
+                  <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, marginTop: 2, opacity: 0.75 }}>
                     −${item.discount.toFixed(2)} disc
                   </p>
                 )}
@@ -132,9 +132,9 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       <div style={{ padding: '14px 16px', borderTop: '1px solid #253349', background: '#111d30' }}>
         {[
           { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#e2e8f0' },
-          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#f59e0b' }] : []),
+          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#94a3b8' }] : []),
         ].map(row => (
-          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, opacity: row.label === 'Discount' ? 0.75 : 1 }}>
             <span style={{ color: '#94a3b8', fontSize: 13 }}>{row.label}</span>
             <span style={{ color: row.color, fontSize: 13 }}>{row.value}</span>
           </div>
