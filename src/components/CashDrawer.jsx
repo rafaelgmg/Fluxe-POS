@@ -131,7 +131,7 @@ function PinGate({ onUnlock, onClose }) {
           <label style={{ color: MUTED, fontSize: 10, fontWeight: 700, display: 'block', marginBottom: 6, letterSpacing: 0.6 }}>EMPLOYEE</label>
           <select
             value={selectedId ?? ''}
-            onChange={e => { setSelectedId(Number(e.target.value)); setPin('') }}
+            onChange={e => { const v = e.target.value; const n = Number(v); setSelectedId(Number.isNaN(n) ? v : n); setPin('') }}
             style={{
               width: '100%', padding: '9px 12px', background: CARD,
               border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT,
