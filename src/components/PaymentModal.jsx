@@ -180,7 +180,8 @@ export default function PaymentModal({
     return true
   })()
 
-  const canConfirm = remaining === 0 && payments.length > 0
+  const isZeroTotal = Math.round(total * 100) === 0
+  const canConfirm  = isZeroTotal ? items.length > 0 : (remaining === 0 && payments.length > 0)
 
   // ── Customer search ─────────────────────────────────────────────────────────
   const custResults = useMemo(() => {
@@ -236,14 +237,22 @@ export default function PaymentModal({
 
   // ── Build onConfirm payload ──────────────────────────────────────────────────
   const buildPayload = (receiptAction) => {
+    if (isZeroTotal && payments.length === 0) {
+      return {
+        payments: [],
+        method:   'exchange',
+        total, subtotal, tax,
+        notes,
+        linkedCustomerId: linkedCustomer?.id || null,
+        receiptAction,
+      }
+    }
     const isSingle = payments.length === 1
     const p0       = payments[0] || {}
     const m        = isSingle ? p0.method : 'split'
 
     return {
-      // New field — array of payments
       payments,
-      // Legacy fields (backward compat — only for single-payment invoices)
       method:   m,
       total, subtotal, tax,
       notes,
@@ -303,22 +312,27 @@ export default function PaymentModal({
 
           {/* Remaining Balance */}
           <div style={{
-            background: remaining > 0 ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
-            border: `1px solid ${remaining > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
+            background: isZeroTotal ? 'rgba(59,130,246,0.06)' : remaining > 0 ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
+            border: `1px solid ${isZeroTotal ? 'rgba(59,130,246,0.3)' : remaining > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
             borderRadius: 12, padding: '14px 18px', textAlign: 'center',
             transition: 'all 0.3s',
           }}>
             <p style={{ color: '#b8c8da', fontSize: 10, letterSpacing: 0.8, fontWeight: 700, marginBottom: 5 }}>
-              {remaining > 0 ? 'REMAINING' : '✓ PAID IN FULL'}
+              {isZeroTotal ? '↩ EXCHANGE' : remaining > 0 ? 'REMAINING' : '✓ PAID IN FULL'}
             </p>
             <p style={{
-              color: remaining > 0 ? '#ef4444' : '#22c55e',
+              color: isZeroTotal ? '#3b82f6' : remaining > 0 ? '#ef4444' : '#22c55e',
               fontSize: 32, fontWeight: 800, letterSpacing: -1, lineHeight: 1, margin: 0,
               transition: 'color 0.3s',
             }}>
               ${remaining.toFixed(2)}
             </p>
-            {payments.length > 0 && (
+            {isZeroTotal && (
+              <p style={{ color: '#60a5fa', fontSize: 11, marginTop: 4 }}>
+                No payment required
+              </p>
+            )}
+            {!isZeroTotal && payments.length > 0 && (
               <p style={{ color: '#b8c8da', fontSize: 11, marginTop: 4 }}>
                 ${totalPaid.toFixed(2)} collected
               </p>
@@ -710,7 +724,7 @@ export default function PaymentModal({
               color: '#b8c8da', fontSize: 12, cursor: 'pointer',
             }}>Cancel</button>
           </div>
-          {!canConfirm && payments.length === 0 && (
+          {!canConfirm && payments.length === 0 && !isZeroTotal && (
             <p style={{ color: '#415569', fontSize: 11, textAlign: 'center', marginTop: 2 }}>
               Add at least one payment to complete this sale
             </p>
