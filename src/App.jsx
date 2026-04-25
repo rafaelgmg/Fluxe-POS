@@ -485,7 +485,7 @@ export default function App() {
           }}>{posSession?.location || DEFAULT_LOCATION}</span>
         </div>
 
-        {/* Nav icons */}
+        {/* Nav icons — main modules */}
         {[
           ...(isAdmin ? [{ icon: '📊', label: 'Dashboard', action: () => setShowDashboard(true) }] : []),
           { icon: '⏰', label: 'Clock',       action: () => setShowClockInOut(true)  },
@@ -496,32 +496,62 @@ export default function App() {
           { icon: '🧾', label: 'Receipts',    action: () => setShowReceipts(true)    },
           { icon: '👥', label: 'CRM',         action: () => setShowCRMAuth(true)     },
           { icon: '➕', label: 'Capture',     action: () => setShowCaptureAuth(true) },
-          { icon: '⚙️', label: 'Admin',       action: () => setShowAdminAuth(true)   },
         ].map(item => (
           <button key={item.label} onClick={item.action} style={{
             background: 'transparent',
             border: '1px solid transparent',
-            color: '#94a3b8',
+            color: '#b8c8da',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 2, fontSize: 10, fontWeight: 500,
-            padding: '5px 9px', borderRadius: 8,
-            transition: 'all 0.2s ease',
+            gap: 4, fontSize: 11, fontWeight: 600,
+            padding: '6px 10px', borderRadius: 8,
+            transition: 'all 0.2s ease', cursor: 'pointer',
           }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(37,99,235,0.10)'
-              e.currentTarget.style.borderColor = 'rgba(37,99,235,0.25)'
+              e.currentTarget.style.background = 'rgba(37,99,235,0.12)'
+              e.currentTarget.style.borderColor = 'rgba(37,99,235,0.28)'
               e.currentTarget.style.color = '#93c5fd'
             }}
             onMouseLeave={e => {
               e.currentTarget.style.background = 'transparent'
               e.currentTarget.style.borderColor = 'transparent'
-              e.currentTarget.style.color = '#94a3b8'
+              e.currentTarget.style.color = '#b8c8da'
             }}
           >
-            <span style={{ fontSize: 15 }}>{item.icon}</span>
+            <span style={{ fontSize: 20 }}>{item.icon}</span>
             {item.label}
           </button>
         ))}
+
+        {/* Admin divider */}
+        <div style={{
+          width: 1, height: 28, background: '#3a4f6a',
+          marginLeft: 4, marginRight: 4, flexShrink: 0,
+        }} />
+
+        {/* Admin — purple hover to signal restricted module */}
+        <button onClick={() => setShowAdminAuth(true)} style={{
+          background: 'transparent',
+          border: '1px solid transparent',
+          color: '#b8c8da',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: 4, fontSize: 11, fontWeight: 600,
+          padding: '6px 10px', borderRadius: 8,
+          transition: 'all 0.2s ease', cursor: 'pointer',
+        }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(139,92,246,0.12)'
+            e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'
+            e.currentTarget.style.color = '#c4b5fd'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.borderColor = 'transparent'
+            e.currentTarget.style.color = '#b8c8da'
+          }}
+        >
+          <span style={{ fontSize: 20 }}>⚙️</span>
+          Admin
+        </button>
 
         {/* Lock Station */}
         <button
