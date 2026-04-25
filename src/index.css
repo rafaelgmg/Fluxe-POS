@@ -55,6 +55,10 @@ input, textarea, select {
   font-family: inherit;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+::placeholder {
+  color: #5a7190;
+  opacity: 1;
+}
 
 /* ── Selection ────────────────────────────────────────────────────────────── */
 ::selection {

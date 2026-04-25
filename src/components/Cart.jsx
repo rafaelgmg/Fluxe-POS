@@ -43,7 +43,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
         display: 'grid', gridTemplateColumns: '1fr 48px 68px 68px 28px',
         padding: '8px 12px', background: '#111d30',
         borderBottom: '1px solid #253349',
-        fontSize: 11, color: '#94a3b8', fontWeight: 600, letterSpacing: 0.4,
+        fontSize: 11, color: '#b8c8da', fontWeight: 700, letterSpacing: 0.4,
       }}>
         <span>PRODUCT</span>
         <span style={{ textAlign: 'center' }}>QTY</span>
@@ -98,7 +98,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
                   <p style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>⚠ Damaged</p>
                 )}
                 {!isExchange && item.discount > 0 && (
-                  <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                  <p style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, marginTop: 2 }}>
                     −${item.discount.toFixed(2)} disc
                   </p>
                 )}
@@ -131,8 +131,8 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       {/* Totals */}
       <div style={{ padding: '14px 16px', borderTop: '1px solid #253349', background: '#111d30' }}>
         {[
-          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#cbd0e0' },
-          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#94a3b8' }] : []),
+          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#e2e8f0' },
+          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#f59e0b' }] : []),
         ].map(row => (
           <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ color: '#94a3b8', fontSize: 13 }}>{row.label}</span>
@@ -181,7 +181,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
             background: 'rgba(255,255,255,0.03)',
             border: `1px solid ${empty ? '#253349' : '#263354'}`,
             borderRadius: 10,
-            color: empty ? '#415569' : '#94a3b8',
+            color: empty ? '#415569' : '#cbd0e0',
             fontSize: 12, fontWeight: 500,
             cursor: empty ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s ease',
