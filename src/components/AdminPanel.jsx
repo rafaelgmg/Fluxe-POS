@@ -16,7 +16,6 @@ import BarcodeModal, { BarcodeIconButton } from './BarcodeModal'
 import CustomersAdmin from './CustomersAdmin'
 import CRMSettings    from './CRMSettings'
 
-const ADMIN_PIN    = '1234'
 const PURPLE       = COLORS.admin
 const GOLD         = COLORS.accent
 
@@ -118,109 +117,6 @@ const MODULES = [
     ],
   },
 ]
-
-// ─── PIN Gate ────────────────────────────────────────────────────────────────
-
-function PinGate({ onUnlock, onCancel }) {
-  const [input, setInput] = useState('')
-  const [shake, setShake]  = useState(false)
-
-  const press = (digit) => {
-    if (input.length >= 4) return
-    const next = input + digit
-    setInput(next)
-    if (next.length === 4) {
-      if (next === ADMIN_PIN) {
-        onUnlock()
-      } else {
-        setShake(true)
-        setTimeout(() => { setInput(''); setShake(false) }, 700)
-      }
-    }
-  }
-
-  // Physical keyboard / numpad support
-  useEffect(() => {
-    const onKey = (e) => {
-      if (/^[0-9]$/.test(e.key)) press(e.key)
-      else if (e.key === 'Backspace') setInput(p => p.slice(0, -1))
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-      backdropFilter: 'blur(2px)',
-    }}>
-      <div style={{
-        background: '#0d1526', border: `2px solid ${GOLD}`, borderRadius: 12,
-        padding: 36, width: 300, textAlign: 'center',
-        boxShadow: `0 0 40px rgba(245,158,11,0.15)`,
-      }}>
-        <div style={{ fontSize: 32, marginBottom: 10 }}>🔐</div>
-        <h2 style={{ color: GOLD, fontSize: 18, fontWeight: 800, marginBottom: 4, letterSpacing: 1 }}>
-          ADMIN ACCESS
-        </h2>
-        <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 24 }}>{BUSINESS_SHORT} — Managers only</p>
-
-        {/* PIN dots */}
-        <div style={{
-          display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 8,
-          transform: shake ? 'translateX(4px)' : 'none',
-          transition: shake ? 'transform 0.07s' : 'none'
-        }}>
-          {[0,1,2,3].map(i => (
-            <div key={i} style={{
-              width: 14, height: 14, borderRadius: '50%',
-              background: i < input.length ? (shake ? '#ef4444' : GOLD) : '#111d30',
-              border: `2px solid ${i < input.length ? (shake ? '#ef4444' : GOLD) : '#253349'}`,
-              transition: 'background 0.12s, border 0.12s'
-            }} />
-          ))}
-        </div>
-        {shake && (
-          <p style={{ color: '#ef4444', fontSize: 12, marginBottom: 8, height: 18 }}>Incorrect PIN</p>
-        )}
-        {!shake && <div style={{ height: 26 }} />}
-
-        {/* Numpad */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
-          {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, i) => (
-            <button key={i}
-              onClick={() => {
-                if (!k) return
-                if (k === '⌫') { setInput(p => p.slice(0, -1)) }
-                else press(k)
-              }}
-              disabled={!k}
-              style={{
-                padding: '14px 0', background: !k ? 'transparent' : '#111d30',
-                border: !k ? 'none' : '1px solid #253349', borderRadius: 8,
-                color: k === '⌫' ? '#94a3b8' : '#f1f5f9', fontSize: k === '⌫' ? 16 : 20,
-                fontWeight: 600, cursor: !k ? 'default' : 'pointer',
-                opacity: !k ? 0 : 1, transition: 'background 0.1s'
-              }}
-              onMouseEnter={e => { if (k) e.currentTarget.style.background = '#131d35' }}
-              onMouseLeave={e => { if (k) e.currentTarget.style.background = '#111d30' }}
-            >{k}</button>
-          ))}
-        </div>
-
-        <button onClick={onCancel} style={{
-          width: '100%', padding: '10px', background: 'transparent',
-          border: '1px solid #253349', borderRadius: 6,
-          color: '#94a3b8', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
-        >← Back to POS</button>
-      </div>
-    </div>
-  )
-}
 
 // ─── Product Editor (Slide Panel) ────────────────────────────────────────────
 
@@ -995,8 +891,6 @@ function AdminHeader({ goBack, onClose, backLabel = '← Back' }) {
 // ─── Main AdminPanel ──────────────────────────────────────────────────────────
 
 export default function AdminPanel({ onClose, sales = [], updateSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, products: liveProducts = null, setProducts: setAppProducts = null }) {
-  const [unlocked, setUnlocked] = useState(false)
-
   const [localProducts, setLocalProducts] = useState(loadAllProducts)
 
   useEffect(() => {
@@ -1016,10 +910,6 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
   const [activeModule, setActiveModule] = useState(null)   // id of selected module tile
   const [activeScreen, setActiveScreen] = useState(null)   // id of selected submenu item + optional screen key
 
-  // Show PIN gate first
-  if (!unlocked) {
-    return <PinGate onUnlock={() => setUnlocked(true)} onCancel={onClose} />
-  }
 
   const currentModule = MODULES.find(m => m.id === activeModule)
   const currentItem   = currentModule?.submenu.find(s => s.id === activeScreen?.id)

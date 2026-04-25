@@ -77,6 +77,7 @@ export default function App() {
   const [accountSession, setAccountSession] = useState(null) // null = show account login
   const [posSession, setPosSession]         = useState(null) // null = show location login
   const [showAdmin, setShowAdmin]           = useState(false)
+  const [showAdminAuth, setShowAdminAuth]   = useState(false)
   const [showCRM, setShowCRM]               = useState(false)
   const [showReceipts, setShowReceipts]     = useState(false)
   const [showCashDrawer, setShowCashDrawer] = useState(false)
@@ -495,7 +496,7 @@ export default function App() {
           { icon: '🧾', label: 'Receipts',    action: () => setShowReceipts(true)    },
           { icon: '👥', label: 'CRM',         action: () => setShowCRMAuth(true)     },
           { icon: '➕', label: 'Capture',     action: () => setShowCaptureAuth(true) },
-          { icon: '⚙️', label: 'Admin',       action: () => setShowAdmin(true)       },
+          { icon: '⚙️', label: 'Admin',       action: () => setShowAdminAuth(true)   },
         ].map(item => (
           <button key={item.label} onClick={item.action} style={{
             background: 'transparent',
@@ -960,6 +961,20 @@ export default function App() {
             setShowCRM(true)
           }}
           onCancel={() => setShowCRMAuth(false)}
+        />
+      )}
+
+      {showAdminAuth && (
+        <LoginModal
+          title="Admin Access"
+          subtitle="Admin or Manager PIN required"
+          requiredRole="manager"
+          filterRoles={['admin', 'manager']}
+          onLogin={() => {
+            setShowAdminAuth(false)
+            setShowAdmin(true)
+          }}
+          onCancel={() => setShowAdminAuth(false)}
         />
       )}
 

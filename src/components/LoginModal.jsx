@@ -2,8 +2,10 @@
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin } from '../services/supabaseAuth'
 
-export default function LoginModal({ onLogin, onCancel, requiredRole = null, title = 'Employee Sign In', subtitle = 'Enter your PIN to continue' }) {
-  const employees = loadActiveEmployees()
+export default function LoginModal({ onLogin, onCancel, requiredRole = null, title = 'Employee Sign In', subtitle = 'Enter your PIN to continue', filterRoles = null }) {
+  const employees = filterRoles
+    ? loadActiveEmployees().filter(e => filterRoles.includes(e.role))
+    : loadActiveEmployees()
   const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.name ?? '')
   const [pin,       setPin]       = useState('')
   const [error,     setError]     = useState('')
