@@ -5,7 +5,7 @@ import { loadCRM } from '../utils/crmStorage'
 import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
 import { upsertEODNotes } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
-import EODPrintReceipt from './EODPrintReceipt'
+import { printEODReceipt } from '../utils/printEODReceipt'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG     = '#030e1e'
@@ -341,7 +341,24 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
           </div>
 
           <button
-            onClick={() => window.print()}
+            onClick={() => printEODReceipt({
+              location,
+              dateLabel,
+              printedAt,
+              printedBy: posSession?.currentUser?.name || '',
+              netRevenue,
+              taxRevenue,
+              grossRevenue,
+              transactionCount: activeSales.length,
+              taxRatePct,
+              payMethods: payMethods.map(m => ({ label: m.label, total: m.value })),
+              employeeSummary: byEmployeeData,
+              productsSummary: topProducts.map(([name, qty]) => ({ name, qty })),
+              voidedCount: voidedSales.length,
+              refundAmount,
+              notes,
+              locCfg,
+            })}
             style={{
               background: 'rgba(59,130,246,0.1)', border: `1px solid rgba(59,130,246,0.3)`, borderRadius: 6,
               color: BLUE, fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -659,22 +676,5 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
         </div>
       </div>
     </div>
-
-    <EODPrintReceipt
-      location={location}
-      dateLabel={dateLabel}
-      printedAt={printedAt}
-      printedBy={posSession?.currentUser?.name || posSession?.employee?.name || ''}
-      netRevenue={netRevenue}
-      taxRevenue={taxRevenue}
-      grossRevenue={grossRevenue}
-      transactionCount={activeSales.length}
-      payMethods={payMethods.map(m => ({ label: m.label, total: m.value }))}
-      employeeSummary={byEmployeeData}
-      productsSummary={topProducts.map(([name, qty]) => ({ name, qty }))}
-      voidedCount={voidedSales.length}
-      refundAmount={refundAmount}
-      notes={notes}
-    />
   )
 }

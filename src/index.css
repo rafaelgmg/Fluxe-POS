@@ -111,19 +111,3 @@ input, textarea, select {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
-
-/* ── Print: EOD Receipt ───────────────────────────────────────────────────── */
-@media print {
-  body * { visibility: hidden !important; }
-  #eod-print-area,
-  #eod-print-area * { visibility: visible !important; }
-  #eod-print-area {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    background: white !important;
-    padding: 0 !important;
-  }
-  @page { margin: 8mm; size: 80mm auto; }
-}

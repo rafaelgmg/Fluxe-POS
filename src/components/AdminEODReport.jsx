@@ -3,7 +3,8 @@ import { LOCATIONS_CFG } from '../config/branding'
 import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
 import { upsertEODNotes } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
-import EODPrintReceipt from './EODPrintReceipt'
+import { printEODReceipt } from '../utils/printEODReceipt'
+import { loadLocationConfig } from '../utils/locationConfig'
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
 const BG     = '#030e1e'
@@ -267,7 +268,26 @@ export default function AdminEODReport({ onClose }) {
           style={sel}
         />
         <button
-          onClick={() => window.print()}
+          onClick={() => {
+            const locCfg = loadLocationConfig(selectedLoc) || {}
+            printEODReceipt({
+              location: selectedLoc,
+              dateLabel,
+              printedAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              netRevenue,
+              taxRevenue,
+              grossRevenue,
+              transactionCount: activeSales.length,
+              taxRatePct: locCfg.taxRate ?? 8.5,
+              payMethods: payMethods.map(m => ({ label: m.label, total: m.total })),
+              employeeSummary,
+              productsSummary: productRows.map(p => ({ name: p.name, qty: p.qty })),
+              voidedCount: voidedSales.length,
+              refundAmount: voidedTotal,
+              notes,
+              locCfg,
+            })
+          }}
           style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, color: BLUE, fontSize: 13, fontWeight: 600, padding: '7px 16px', cursor: 'pointer' }}
         >🖨 Print</button>
         <button onClick={load} disabled={loading} style={{ background: BLUE, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, padding: '7px 16px', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
@@ -458,22 +478,6 @@ export default function AdminEODReport({ onClose }) {
         </div>
 
       </div>
-
-      <EODPrintReceipt
-        location={selectedLoc}
-        dateLabel={dateLabel}
-        printedAt={new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-        netRevenue={netRevenue}
-        taxRevenue={taxRevenue}
-        grossRevenue={grossRevenue}
-        transactionCount={activeSales.length}
-        payMethods={payMethods.map(m => ({ label: m.label, total: m.total }))}
-        employeeSummary={employeeSummary}
-        productsSummary={productRows.map(p => ({ name: p.name, qty: p.qty }))}
-        voidedCount={voidedSales.length}
-        refundAmount={voidedTotal}
-        notes={notes}
-      />
     </div>
   )
 }
