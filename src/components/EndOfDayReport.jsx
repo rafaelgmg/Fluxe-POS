@@ -5,6 +5,7 @@ import { loadCRM } from '../utils/crmStorage'
 import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
 import { upsertEODNotes } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
+import EODPrintReceipt from './EODPrintReceipt'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG     = '#030e1e'
@@ -339,6 +340,18 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
             ))}
           </div>
 
+          <button
+            onClick={() => window.print()}
+            style={{
+              background: 'rgba(59,130,246,0.1)', border: `1px solid rgba(59,130,246,0.3)`, borderRadius: 6,
+              color: BLUE, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              padding: '5px 14px', display: 'flex', alignItems: 'center', gap: 5,
+              transition: 'all 0.15s', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+          >🖨 Print</button>
+
           <button onClick={onClose} style={{
             background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6,
             color: MUTED, fontSize: 20, cursor: 'pointer',
@@ -646,5 +659,22 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
         </div>
       </div>
     </div>
+
+    <EODPrintReceipt
+      location={location}
+      dateLabel={dateLabel}
+      printedAt={printedAt}
+      printedBy={posSession?.currentUser?.name || posSession?.employee?.name || ''}
+      netRevenue={netRevenue}
+      taxRevenue={taxRevenue}
+      grossRevenue={grossRevenue}
+      transactionCount={activeSales.length}
+      payMethods={payMethods.map(m => ({ label: m.label, total: m.value }))}
+      employeeSummary={byEmployeeData}
+      productsSummary={topProducts.map(([name, qty]) => ({ name, qty }))}
+      voidedCount={voidedSales.length}
+      refundAmount={refundAmount}
+      notes={notes}
+    />
   )
 }

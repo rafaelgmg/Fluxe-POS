@@ -3,6 +3,7 @@ import { LOCATIONS_CFG } from '../config/branding'
 import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
 import { upsertEODNotes } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
+import EODPrintReceipt from './EODPrintReceipt'
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
 const BG     = '#030e1e'
@@ -149,6 +150,18 @@ export default function AdminEODReport({ onClose }) {
     ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
   , [activeSales])
 
+  // Aggregated per-employee summary (for print)
+  const employeeSummary = useMemo(() => {
+    const map = {}
+    activeSales.forEach(s => {
+      const name = s.employee || 'Unknown'
+      if (!map[name]) map[name] = { name, subtotal: 0, count: 0 }
+      map[name].subtotal += s.subtotal || 0
+      map[name].count += 1
+    })
+    return Object.values(map).sort((a, b) => b.subtotal - a.subtotal)
+  }, [activeSales])
+
   // Hours
   const isToday = selectedDate === dateToInput(new Date())
   const clockHoursMap = useMemo(() => {
@@ -253,6 +266,10 @@ export default function AdminEODReport({ onClose }) {
           onChange={e => e.target.value && setSelectedDate(e.target.value)}
           style={sel}
         />
+        <button
+          onClick={() => window.print()}
+          style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, color: BLUE, fontSize: 13, fontWeight: 600, padding: '7px 16px', cursor: 'pointer' }}
+        >🖨 Print</button>
         <button onClick={load} disabled={loading} style={{ background: BLUE, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, padding: '7px 16px', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
           {loading ? 'Loading…' : '↻ Refresh'}
         </button>
@@ -441,6 +458,22 @@ export default function AdminEODReport({ onClose }) {
         </div>
 
       </div>
+
+      <EODPrintReceipt
+        location={selectedLoc}
+        dateLabel={dateLabel}
+        printedAt={new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+        netRevenue={netRevenue}
+        taxRevenue={taxRevenue}
+        grossRevenue={grossRevenue}
+        transactionCount={activeSales.length}
+        payMethods={payMethods.map(m => ({ label: m.label, total: m.total }))}
+        employeeSummary={employeeSummary}
+        productsSummary={productRows.map(p => ({ name: p.name, qty: p.qty }))}
+        voidedCount={voidedSales.length}
+        refundAmount={voidedTotal}
+        notes={notes}
+      />
     </div>
   )
 }
