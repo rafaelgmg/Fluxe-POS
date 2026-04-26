@@ -527,15 +527,15 @@ export default function App() {
           onClick={handleLock}
           title="Lock Station"
           style={{
-            background: 'none', border: 'none', color: '#cbd0e0',
+            background: 'transparent', border: '1px solid transparent', color: '#b8c8da',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 2, fontSize: 10, cursor: 'pointer',
-            padding: '4px 8px', borderRadius: 4, transition: 'all 0.2s ease',
+            gap: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+            padding: '6px 10px', borderRadius: 8, transition: 'all 0.2s ease',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#fca5a5'; e.currentTarget.style.boxShadow = '0 0 12px rgba(239,68,68,0.15)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#cbd0e0'; e.currentTarget.style.boxShadow = 'none' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; e.currentTarget.style.color = '#fca5a5' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#b8c8da' }}
         >
-          <svg width="18" height="20" viewBox="0 0 18 20" fill="none">
+          <svg width="20" height="22" viewBox="0 0 18 20" fill="none">
             <path d="M4 9V6a5 5 0 0 1 10 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
             <rect x="1" y="9" width="16" height="10" rx="3" fill="currentColor" opacity="0.85"/>
             <circle cx="9" cy="14" r="2" fill="#0d1526"/>
@@ -548,16 +548,16 @@ export default function App() {
         <button
           onClick={() => setShowCashDrawer(true)}
           style={{
-            background: 'none', border: 'none', color: '#cbd0e0',
+            background: 'transparent', border: '1px solid transparent', color: '#b8c8da',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 2, fontSize: 10, cursor: 'pointer',
-            padding: '4px 8px', borderRadius: 4, transition: 'all 0.2s ease',
+            gap: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+            padding: '6px 10px', borderRadius: 8, transition: 'all 0.2s ease',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.12)'; e.currentTarget.style.color = '#93c5fd'; e.currentTarget.style.boxShadow = '0 0 12px rgba(37,99,235,0.15)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#cbd0e0'; e.currentTarget.style.boxShadow = 'none' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.12)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.28)'; e.currentTarget.style.color = '#93c5fd' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#b8c8da' }}
         >
           {/* Cash drawer SVG — top body + sliding drawer + handle */}
-          <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="22" height="20" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Shadow/depth */}
             <rect x="1" y="2" width="20" height="15" rx="2" fill="#111d30" />
             {/* Main body — top unit */}
@@ -585,12 +585,12 @@ export default function App() {
           onClick={() => setShowAssist(v => !v)}
           title="Fluxe Assist — quick commands"
           style={{
-            background: showAssist ? 'rgba(37,99,235,0.15)' : 'none',
+            background: showAssist ? 'rgba(37,99,235,0.15)' : 'transparent',
             border: showAssist ? '1px solid rgba(37,99,235,0.35)' : '1px solid transparent',
-            color: showAssist ? '#93c5fd' : '#94a3b8',
+            color: showAssist ? '#93c5fd' : '#b8c8da',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 2, fontSize: 10, cursor: 'pointer',
-            padding: '4px 9px', borderRadius: 8, transition: 'all 0.2s ease',
+            gap: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+            padding: '6px 10px', borderRadius: 8, transition: 'all 0.2s ease',
             boxShadow: showAssist ? '0 0 12px rgba(37,99,235,0.2)' : 'none',
           }}
           onMouseEnter={e => {
@@ -608,7 +608,7 @@ export default function App() {
             }
           }}
         >
-          <span style={{ fontSize: 15 }}>✨</span>
+          <span style={{ fontSize: 20 }}>✨</span>
           Assist
         </button>
 
