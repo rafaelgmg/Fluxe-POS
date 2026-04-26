@@ -40,23 +40,44 @@ function appendLog(entry) {
 }
 
 // ── Hardware trigger ───────────────────────────────────────────────────────────
-// Sends ESC/POS cash drawer kick (ESC p 0 25 250) via a silent print job.
-// The Star TSP143IIIU driver processes the escape bytes and pulses the RJ11 pin.
-function triggerDrawerHardware() {
+// Opens the Star TSP143IIIU cash drawer via Web Serial API (raw USB bytes).
+// Does NOT use window.print() — that approach printed blank paper because:
+//   - HTML rendered through the GDI driver is never raw ESC/POS
+//   - With --kiosk-printing the blank page goes straight to the printer
+// Returns: 'ok' | 'unsupported' | 'no-port' | 'error'
+async function triggerDrawerHardware() {
+  // ESC p pin2 on=25ms off=250ms
+  const KICK = new Uint8Array([0x1B, 0x70, 0x00, 0x19, 0xFA])
+
+  if (!navigator?.serial) return 'unsupported'
+
   try {
-    const win = window.open('', '_blank', 'width=1,height=1,left=-200,top=-200')
-    if (!win) return
-    // \x1B\x70\x00\x19\xFA = ESC p pin2 on=25ms off=250ms
-    win.document.write(`<!DOCTYPE html><html><head>
-      <style>
-        @page { size: 58mm 1mm; margin: 0; }
-        body  { margin: 0; font-size: 0; line-height: 0; color: white; }
-      </style>
-    </head><body><pre>\x1B\x70\x00\x19\xFA</pre>
-    <script>window.onload=function(){window.print();setTimeout(()=>window.close(),500)}<\/script>
-    </body></html>`)
-    win.document.close()
-  } catch { /* silent — hardware not critical */ }
+    const ports = await navigator.serial.getPorts()
+    if (ports.length === 0) return 'no-port'
+
+    const port = ports[0]
+    await port.open({ baudRate: 9600 })
+    const writer = port.writable.getWriter()
+    await writer.write(KICK)
+    writer.releaseLock()
+    await port.close()
+    return 'ok'
+  } catch {
+    return 'error'
+  }
+}
+
+// One-time port authorization — must be called from a user gesture.
+// Shows browser UI to select the Star printer's serial/USB interface.
+async function authorizeDrawerPort() {
+  if (!navigator?.serial) return false
+  try {
+    // Star Micronics USB vendor ID 0x0519 — filters to Star devices only
+    await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x0519 }] })
+    return true
+  } catch {
+    return false
+  }
 }
 
 // ── Denomination list for Cash Count ──────────────────────────────────────────
@@ -446,9 +467,10 @@ function CashCountModal({ employee, onDone, onClose }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function CashDrawer({ onClose }) {
-  const [employee, setEmployee] = useState(null)
-  const [mode,     setMode]     = useState(null) // 'add' | 'remove' | 'count'
-  const [openFeedback, setOpenFeedback] = useState(false) // after Open Register
+  const [employee,     setEmployee]     = useState(null)
+  const [mode,         setMode]         = useState(null)  // 'add' | 'remove' | 'count'
+  // null | 'sending' | 'ok' | 'no-port' | 'unsupported' | 'error'
+  const [drawerStatus, setDrawerStatus] = useState(null)
 
   // ── Sub-modals ───────────────────────────────────────────────────────────────
   if (!employee) {
@@ -471,11 +493,18 @@ export default function CashDrawer({ onClose }) {
   }
 
   // ── Main options screen ──────────────────────────────────────────────────────
-  const handleOpenRegister = () => {
-    triggerDrawerHardware()
+  const handleOpenRegister = async () => {
     appendLog({ type: 'open', employee: employee.name, amount: 0, notes: '' })
-    setOpenFeedback(true)
-    setTimeout(() => setOpenFeedback(false), 2000)
+    setDrawerStatus('sending')
+    const result = await triggerDrawerHardware()
+    setDrawerStatus(result)
+    if (result === 'ok') setTimeout(() => setDrawerStatus(null), 3000)
+  }
+
+  const handleSetupPort = async () => {
+    const ok = await authorizeDrawerPort()
+    if (ok) handleOpenRegister()
+    else setDrawerStatus('error')
   }
 
   const actions = [
@@ -551,17 +580,41 @@ export default function CashDrawer({ onClose }) {
         </div>
 
         {/* Open Register feedback */}
-        {openFeedback && (
-          <div style={{
-            margin: '12px 22px 0',
-            padding: '10px 14px', borderRadius: 8,
-            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
-            color: GREEN, fontSize: 13, fontWeight: 600,
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            <span>✅</span> Drawer command sent
-          </div>
-        )}
+        {drawerStatus && (() => {
+          const isOk  = drawerStatus === 'ok'
+          const isBad = drawerStatus === 'unsupported' || drawerStatus === 'error'
+          const isWarn = drawerStatus === 'no-port'
+          const bgColor  = isOk ? 'rgba(34,197,94,0.08)' : isBad ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)'
+          const bdColor  = isOk ? 'rgba(34,197,94,0.25)' : isBad ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'
+          const txtColor = isOk ? GREEN : isBad ? RED : AMBER
+          return (
+            <div style={{
+              margin: '12px 22px 0', padding: '10px 14px', borderRadius: 8,
+              background: bgColor, border: `1px solid ${bdColor}`,
+              color: txtColor, fontSize: 12, fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+            }}>
+              {drawerStatus === 'sending'     && <><span>⏳</span><span>Sending drawer command…</span></>}
+              {drawerStatus === 'ok'          && <><span>✅</span><span>Drawer opened</span></>}
+              {drawerStatus === 'error'       && <><span>⚠️</span><span>Command failed — check printer connection and try again.</span></>}
+              {drawerStatus === 'unsupported' && <><span>⚠️</span><span>Direct drawer control requires Chrome or Edge. Open the drawer manually.</span></>}
+              {drawerStatus === 'no-port'     && (
+                <>
+                  <span>⚙️</span>
+                  <span>Printer port not configured yet.</span>
+                  <button
+                    onClick={handleSetupPort}
+                    style={{
+                      background: BLUE, border: 'none', borderRadius: 4,
+                      color: '#fff', fontSize: 11, fontWeight: 700,
+                      padding: '3px 10px', cursor: 'pointer',
+                    }}
+                  >Setup port</button>
+                </>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Action grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, padding: 22 }}>
