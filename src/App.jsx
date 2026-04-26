@@ -522,37 +522,6 @@ export default function App() {
           </button>
         ))}
 
-        {/* Admin divider */}
-        <div style={{
-          width: 1, height: 28, background: '#3a4f6a',
-          marginLeft: 4, marginRight: 4, flexShrink: 0,
-        }} />
-
-        {/* Admin — purple hover to signal restricted module */}
-        <button onClick={() => setShowAdminAuth(true)} style={{
-          background: 'transparent',
-          border: '1px solid transparent',
-          color: '#b8c8da',
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          gap: 4, fontSize: 11, fontWeight: 600,
-          padding: '6px 10px', borderRadius: 8,
-          transition: 'all 0.2s ease', cursor: 'pointer',
-        }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(139,92,246,0.12)'
-            e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'
-            e.currentTarget.style.color = '#c4b5fd'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.borderColor = 'transparent'
-            e.currentTarget.style.color = '#b8c8da'
-          }}
-        >
-          <span style={{ fontSize: 20 }}>⚙️</span>
-          Admin
-        </button>
-
         {/* Lock Station */}
         <button
           onClick={handleLock}
@@ -643,7 +612,22 @@ export default function App() {
           Assist
         </button>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Admin — isolated right side */}
+          <button onClick={() => setShowAdminAuth(true)} style={{
+            background: 'transparent', border: '1px solid transparent', color: '#b8c8da',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 4, fontSize: 11, fontWeight: 600,
+            padding: '6px 10px', borderRadius: 8,
+            transition: 'all 0.2s ease', cursor: 'pointer',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.color = '#c4b5fd' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#b8c8da' }}
+          >
+            <span style={{ fontSize: 20 }}>⚙️</span>
+            Admin
+          </button>
+          <div style={{ width: 1, height: 28, background: '#253349', marginLeft: 2, marginRight: 4, flexShrink: 0 }} />
           {currentUser && (
             <span style={{ color: '#22c55e', fontSize: 13 }}>
               👤 {currentUser.name}
