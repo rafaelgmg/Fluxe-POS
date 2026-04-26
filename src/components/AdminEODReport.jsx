@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
-import { fetchSalesByLocationAndDate, fetchClockRecordsByDate } from '../services/supabaseRead'
+import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
+import { upsertEODNotes } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
@@ -28,7 +29,6 @@ function inputToDate(s) {
   return new Date(y, m - 1, d)
 }
 
-const NOTES_KEY = (loc, date) => `fluxe-eod-notes-${loc}-${date}`
 
 // ── Section heading ────────────────────────────────────────────────────────────
 function SectionHead({ icon, title }) {
@@ -82,14 +82,16 @@ export default function AdminEODReport({ onClose }) {
   const [sales,        setSales]        = useState(null)
   const [clockRecs,    setClockRecs]    = useState(null)
   const [openInvoice,  setOpenInvoice]  = useState(null) // sale object
-  const [notes,        setNotes]        = useState('')
-  const [notesSaved,   setNotesSaved]   = useState(false)
+  const [notes,      setNotes]      = useState('')
+  const [notesSaved, setNotesSaved] = useState(false) // false | 'saving' | 'ok' | 'error'
 
-  // Load notes from localStorage on loc/date change
+  // Load notes from Supabase on loc/date change
   useEffect(() => {
-    setNotes(localStorage.getItem(NOTES_KEY(selectedLoc, selectedDate)) || '')
+    setNotes('')
     setNotesSaved(false)
-  }, [selectedLoc, selectedDate])
+    fetchEODNotes({ locationName: selectedLoc, date: inputToDate(selectedDate) })
+      .then(n => { if (n !== null) setNotes(n) })
+  }, [selectedLoc, selectedDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = async () => {
     setLoading(true)
@@ -165,9 +167,14 @@ export default function AdminEODReport({ onClose }) {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   })
 
-  const saveNotes = () => {
-    localStorage.setItem(NOTES_KEY(selectedLoc, selectedDate), notes)
-    setNotesSaved(true)
+  const saveNotes = async () => {
+    setNotesSaved('saving')
+    const ok = await upsertEODNotes({
+      locationName: selectedLoc,
+      date: inputToDate(selectedDate),
+      notes,
+    })
+    setNotesSaved(ok ? 'ok' : 'error')
   }
 
   // ── Styles ──────────────────────────────────────────────────────────────────
@@ -416,12 +423,19 @@ export default function AdminEODReport({ onClose }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <button
                 onClick={saveNotes}
-                style={{ background: BLUE, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, padding: '7px 18px', cursor: 'pointer' }}
+                disabled={notesSaved === 'saving'}
+                style={{
+                  background: notesSaved === 'ok' ? 'rgba(34,197,94,0.1)' : notesSaved === 'error' ? 'rgba(239,68,68,0.1)' : BLUE,
+                  border: notesSaved === 'ok' ? `1px solid rgba(34,197,94,0.3)` : notesSaved === 'error' ? `1px solid rgba(239,68,68,0.3)` : 'none',
+                  borderRadius: 6, color: notesSaved === 'ok' ? GREEN : notesSaved === 'error' ? RED : '#fff',
+                  fontSize: 13, fontWeight: 600, padding: '7px 18px',
+                  cursor: notesSaved === 'saving' ? 'wait' : 'pointer', transition: 'all 0.2s',
+                }}
               >
-                Save Notes
+                {notesSaved === 'saving' ? 'Saving…' : notesSaved === 'ok' ? '✓ Saved' : notesSaved === 'error' ? '⚠ Error' : 'Save Notes'}
               </button>
-              {notesSaved && <span style={{ color: GREEN, fontSize: 12 }}>✓ Saved</span>}
-              <span style={{ color: MUTED, fontSize: 11, marginLeft: 'auto' }}>Notes saved locally (device only)</span>
+              {notesSaved === 'ok'    && <span style={{ color: MUTED, fontSize: 11 }}>Synced to Supabase · visible on all devices</span>}
+              {notesSaved === 'error' && <span style={{ color: RED,   fontSize: 11 }}>Could not save — check connection</span>}
             </div>
           </div>
         </div>

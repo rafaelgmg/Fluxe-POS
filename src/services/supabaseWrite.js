@@ -112,6 +112,51 @@ async function sbPatch(path, body) {
   return null
 }
 
+// ── EOD Notes upsert ─────────────────────────────────────────────────────────
+
+/**
+ * Upsert EOD notes for a specific location and date.
+ * Uses PostgREST upsert (POST + Prefer: resolution=merge-duplicates) against
+ * the unique constraint (organization_id, location_name, report_date).
+ *
+ * @param {{ locationName: string, date: Date, notes: string, updatedBy?: string }}
+ * @returns {Promise<boolean>} true on success, false on failure
+ */
+export async function upsertEODNotes({ locationName, date, notes, updatedBy = null }) {
+  if (!isSupabaseConfigured()) return false
+  try {
+    await awaitOrgSession()
+    const orgId   = await getOrgId()
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/eod_notes`, {
+      method: 'POST',
+      headers: {
+        apikey:         SUPABASE_KEY,
+        Authorization:  `Bearer ${authBearer()}`,
+        'Content-Type': 'application/json',
+        Prefer:         'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        organization_id: orgId,
+        location_name:   locationName,
+        report_date:     dateStr,
+        notes,
+        updated_by:      updatedBy,
+        updated_at:      new Date().toISOString(),
+      }),
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      console.warn('[Fluxe] upsertEODNotes failed:', res.status, text)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.warn('[Fluxe] upsertEODNotes error:', err.message)
+    return false
+  }
+}
+
 // ── Status mapping ────────────────────────────────────────────────────────────
 
 const STATUS_MAP = {

@@ -2,7 +2,8 @@
 import { DEFAULT_LOCATION } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { loadCRM } from '../utils/crmStorage'
-import { fetchSalesByLocationAndDate, fetchClockRecordsByDate } from '../services/supabaseRead'
+import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
+import { upsertEODNotes } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -70,8 +71,9 @@ function DonutChart({ slices, size = 100 }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function EndOfDayReport({ onClose, sales = [], posSession, adminMode = false }) {
-  const [notes, setNotes]               = useState('')
-  const [saved, setSaved]               = useState(false)
+  const [notes,      setNotes]      = useState('')
+  const [saved,      setSaved]      = useState(false)  // 'idle' | 'saving' | 'ok' | 'error'
+  const [notesDirty, setNotesDirty] = useState(false)
   const [section, setSection]           = useState('overview')
   const [selectedDate, setSelectedDate] = useState(() => dateToInput(new Date()))
   const [rawSales, setRawSales]         = useState(null)    // null = not yet fetched
@@ -102,6 +104,15 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
       setDataSource(salesRows !== null ? 'supabase' : 'local')
     })
   }, [location, selectedDate])
+
+  // ── Load EOD notes from Supabase on location/date change ─────────────────────
+  useEffect(() => {
+    setNotes('')
+    setNotesDirty(false)
+    setSaved(false)
+    fetchEODNotes({ locationName: location, date: inputToDate(selectedDate) })
+      .then(n => { if (n !== null) setNotes(n) })
+  }, [location, selectedDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Data source resolution ────────────────────────────────────────────────────
   // While rawSales is null (Supabase not yet answered), use local prop as preview.
@@ -354,7 +365,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                 {statCard('Gross Revenue',   fmt$(grossRevenue), BLUE,   'Net + Tax')}
                 {statCard('Total Spare',     fmt$(totalSpare),   PURPLE, 'Above min price')}
                 {statCard('Commission',      fmt$(totalCommission), CYAN, totalCommission > 0 ? 'All employees' : 'No data yet')}
-                {statCard('Inventory Cost',  fmt$(inventoryCost), ORANGE, inventoryCost > 0 ? 'COGS at sale' : 'No cost data')}
+                {adminMode && statCard('Inventory Cost', fmt$(inventoryCost), ORANGE, inventoryCost > 0 ? 'COGS at sale' : 'No cost data')}
               </div>
 
               {/* Refunds banner */}
@@ -514,7 +525,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                     <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 12 }}>ADDITIONAL NOTES</p>
                     <textarea
                       value={notes}
-                      onChange={e => { setNotes(e.target.value); setSaved(false) }}
+                      onChange={e => { setNotes(e.target.value); setNotesDirty(true); setSaved(false) }}
                       placeholder="Enter end of day notes here..."
                       style={{
                         width: '100%', height: 72, background: PANEL,
@@ -526,16 +537,32 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                       onFocus={e => { e.target.style.borderColor = BLUE }}
                       onBlur={e => { e.target.style.borderColor = BORDER }}
                     />
-                    <button
-                      onClick={() => setSaved(true)}
-                      style={{
-                        marginTop: 8, padding: '7px 18px',
-                        background: saved ? 'rgba(34,197,94,0.1)' : BLUE,
-                        border: saved ? `1px solid rgba(34,197,94,0.3)` : 'none',
-                        borderRadius: 6, color: saved ? GREEN : '#fff',
-                        fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
-                      }}
-                    >{saved ? '✓ Saved' : 'Save Notes'}</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                      <button
+                        disabled={saved === 'saving'}
+                        onClick={async () => {
+                          setSaved('saving')
+                          const ok = await upsertEODNotes({
+                            locationName: location,
+                            date: inputToDate(selectedDate),
+                            notes,
+                          })
+                          setSaved(ok ? 'ok' : 'error')
+                          setNotesDirty(false)
+                        }}
+                        style={{
+                          padding: '7px 18px',
+                          background: saved === 'ok' ? 'rgba(34,197,94,0.1)' : saved === 'error' ? 'rgba(239,68,68,0.1)' : BLUE,
+                          border: saved === 'ok' ? `1px solid rgba(34,197,94,0.3)` : saved === 'error' ? `1px solid rgba(239,68,68,0.3)` : 'none',
+                          borderRadius: 6, color: saved === 'ok' ? GREEN : saved === 'error' ? RED : '#fff',
+                          fontSize: 12, fontWeight: 700, cursor: saved === 'saving' ? 'wait' : 'pointer', transition: 'all 0.2s',
+                        }}
+                      >
+                        {saved === 'saving' ? 'Saving…' : saved === 'ok' ? '✓ Saved' : saved === 'error' ? '⚠ Error' : 'Save Notes'}
+                      </button>
+                      {saved === 'ok' && <span style={{ color: MUTED, fontSize: 11 }}>Synced to Supabase</span>}
+                      {saved === 'error' && <span style={{ color: RED, fontSize: 11 }}>Could not save — check connection</span>}
+                    </div>
                   </div>
 
                   <p style={{ color: '#415569', fontSize: 11, textAlign: 'center' }}>

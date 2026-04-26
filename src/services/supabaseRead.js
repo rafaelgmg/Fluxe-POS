@@ -543,3 +543,28 @@ export async function fetchClockRecordsByDate({ locationName, date = new Date() 
     return null
   }
 }
+
+/**
+ * Fetch EOD notes for a specific location and date.
+ * Returns the notes string, or null if none saved yet.
+ *
+ * @param {{ locationName: string, date: Date }}
+ * @returns {Promise<string | null>}
+ */
+export async function fetchEODNotes({ locationName, date }) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId     = await getOrgId()
+    const dateStr   = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    const rows = await sbFetch(
+      `/eod_notes?organization_id=eq.${orgId}` +
+      `&location_name=eq.${encodeURIComponent(locationName)}` +
+      `&report_date=eq.${dateStr}` +
+      `&select=notes&limit=1`
+    )
+    return rows?.[0]?.notes ?? null
+  } catch (err) {
+    console.warn('[Fluxe] fetchEODNotes failed:', err.message)
+    return null
+  }
+}
