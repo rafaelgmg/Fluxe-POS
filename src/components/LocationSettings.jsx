@@ -44,6 +44,9 @@ function defaultExt(loc) {
     refundPolicy: 'Exchanges within 14 days.',
     showDiscounts: true, showPrices: true, showRep: true,
     allowTip: false, defaultTipPct: 18,
+    // 'browser' = window.open (always shows dialog)
+    // 'iframe'  = hidden iframe, no popup — works silently when Chrome uses --kiosk-printing
+    printMode: 'browser',
     // ── preferences (legacy POS behavior)
     requireLoginPerSale: false, autoPrintReceipt: false,
     autoOpenDrawer: true, requireCustomerCapture: false,
@@ -412,6 +415,23 @@ function TabInformation({ form, set, isExisting }) {
             </Row>
           )}
         </div>
+        <Row>
+          <Field label="RECEIPT PRINT MODE">
+            <select
+              value={form.printMode || 'browser'}
+              onChange={e => set('printMode', e.target.value)}
+              style={{ ...inp(), cursor: 'pointer', colorScheme: 'dark' }}
+            >
+              <option value="browser">Browser — shows print dialog (default)</option>
+              <option value="iframe">Kiosk — hidden iframe, no popup window</option>
+            </select>
+            <p style={{ color: MUTED, fontSize: 10, marginTop: 5, lineHeight: 1.5 }}>
+              {(form.printMode || 'browser') === 'iframe'
+                ? '⚡ Kiosk mode: no popup appears. For fully silent print, launch Chrome with --kiosk-printing flag and set the Star printer as Windows default.'
+                : '🖥 Browser mode: opens a print window and shows the system print dialog.'}
+            </p>
+          </Field>
+        </Row>
       </Section>
     </div>
   )

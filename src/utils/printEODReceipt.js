@@ -38,6 +38,8 @@ function fmt$(n) {
  * @param {number}  [opts.refundAmount]
  * @param {string}  [opts.notes]
  * @param {object}  [opts.locCfg]         preloaded LocationConfig; falls back to loadLocationConfig
+ * @param {string}  [opts.printMode]      'browser' (window.open, default) | 'iframe' (hidden iframe, no popup)
+ * @param {Function}[opts.onStatus]       callback(status) — 'printing' | 'done' | 'error'
  */
 export function printEODReceipt({
   location,
@@ -56,6 +58,8 @@ export function printEODReceipt({
   refundAmount  = 0,
   notes         = '',
   locCfg        = null,
+  printMode     = 'browser',
+  onStatus      = null,
 }) {
   const cfg = locCfg || loadLocationConfig(location) || {}
 
@@ -255,17 +259,78 @@ export function printEODReceipt({
 </body>
 </html>`
 
-  // ── Open & print (same as printReceipt.js) ──────────────────────────────────
+  // ── Dispatch to the configured print mode ──────────────────────────────────
+  if (printMode === 'iframe') {
+    _printViaIframe(html, onStatus)
+  } else {
+    _printViaBrowserWindow(html, onStatus)
+  }
+}
+
+// ── iframe mode: no popup window, works silently with Chrome --kiosk-printing ─
+function _printViaIframe(html, onStatus) {
+  onStatus?.('printing')
+
+  const iframe = document.createElement('iframe')
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:302px;height:1px;border:0;overflow:hidden;'
+  document.body.appendChild(iframe)
+
+  let done = false
+  const cleanup = () => {
+    if (done) return
+    done = true
+    try { document.body.removeChild(iframe) } catch {}
+  }
+
+  try {
+    iframe.contentDocument.open()
+    iframe.contentDocument.write(html)
+    iframe.contentDocument.close()
+  } catch {
+    onStatus?.('error')
+    cleanup()
+    return
+  }
+
+  // onafterprint fires after the dialog is closed (printed or cancelled)
+  iframe.contentWindow.addEventListener('afterprint', () => {
+    onStatus?.('done')
+    setTimeout(cleanup, 500)
+  })
+
+  setTimeout(() => {
+    try {
+      iframe.contentWindow.focus()
+      iframe.contentWindow.print()
+    } catch {
+      onStatus?.('error')
+      cleanup()
+    }
+  }, 250)
+
+  // Failsafe: cleanup after 2 min if afterprint never fires (e.g. kiosk silent print)
+  setTimeout(() => { onStatus?.('done'); cleanup() }, 120_000)
+}
+
+// ── browser mode: window.open (original behavior, works everywhere) ──────────
+function _printViaBrowserWindow(html, onStatus) {
+  onStatus?.('printing')
+
   const win = window.open('', '_blank', 'width=420,height=700,toolbar=0,menubar=0,scrollbars=1')
   if (!win) {
+    // Popup blocked — blob fallback
     const blob = new Blob([html], { type: 'text/html' })
     const url  = URL.createObjectURL(blob)
     Object.assign(document.createElement('a'), { href: url, target: '_blank' }).click()
     setTimeout(() => URL.revokeObjectURL(url), 5000)
+    onStatus?.('done')
     return
   }
+
   win.document.write(html)
   win.document.close()
+  win.addEventListener('afterprint', () => { onStatus?.('done'); try { win.close() } catch {} })
   win.onload = () => { win.focus(); win.print() }
   setTimeout(() => { try { win.focus(); win.print() } catch {} }, 450)
 }

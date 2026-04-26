@@ -84,8 +84,9 @@ export default function AdminEODReport({ onClose }) {
   const [sales,        setSales]        = useState(null)
   const [clockRecs,    setClockRecs]    = useState(null)
   const [openInvoice,  setOpenInvoice]  = useState(null) // sale object
-  const [notes,      setNotes]      = useState('')
-  const [notesSaved, setNotesSaved] = useState(false) // false | 'saving' | 'ok' | 'error'
+  const [notes,       setNotes]       = useState('')
+  const [notesSaved,  setNotesSaved]  = useState(false) // false | 'saving' | 'ok' | 'error'
+  const [printStatus, setPrintStatus] = useState('idle') // 'idle' | 'printing' | 'done' | 'error'
 
   // Load notes from Supabase on loc/date change
   useEffect(() => {
@@ -94,6 +95,14 @@ export default function AdminEODReport({ onClose }) {
     fetchEODNotes({ locationName: selectedLoc, date: inputToDate(selectedDate) })
       .then(n => { if (n !== null) setNotes(n) })
   }, [selectedLoc, selectedDate]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset print status after 3s
+  useEffect(() => {
+    if (printStatus === 'done' || printStatus === 'error') {
+      const t = setTimeout(() => setPrintStatus('idle'), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [printStatus])
 
   const load = async () => {
     setLoading(true)
@@ -268,6 +277,7 @@ export default function AdminEODReport({ onClose }) {
           style={sel}
         />
         <button
+          disabled={printStatus === 'printing'}
           onClick={() => {
             const locCfg = loadLocationConfig(selectedLoc) || {}
             printEODReceipt({
@@ -286,10 +296,29 @@ export default function AdminEODReport({ onClose }) {
               refundAmount: voidedTotal,
               notes,
               locCfg,
+              printMode: locCfg.printMode || 'browser',
+              onStatus: setPrintStatus,
             })
           }}
-          style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, color: BLUE, fontSize: 13, fontWeight: 600, padding: '7px 16px', cursor: 'pointer' }}
-        >🖨 Print</button>
+          style={{
+            background: printStatus === 'done'  ? 'rgba(34,197,94,0.1)'
+                      : printStatus === 'error' ? 'rgba(239,68,68,0.1)'
+                      : 'rgba(59,130,246,0.1)',
+            border: printStatus === 'done'  ? '1px solid rgba(34,197,94,0.3)'
+                  : printStatus === 'error' ? '1px solid rgba(239,68,68,0.3)'
+                  : '1px solid rgba(59,130,246,0.3)',
+            borderRadius: 6,
+            color: printStatus === 'done' ? GREEN : printStatus === 'error' ? RED : BLUE,
+            fontSize: 13, fontWeight: 600, padding: '7px 16px',
+            cursor: printStatus === 'printing' ? 'wait' : 'pointer',
+            transition: 'all 0.2s',
+          }}
+        >
+          {printStatus === 'printing' ? '⏳ Printing…'
+         : printStatus === 'done'     ? '✓ Sent'
+         : printStatus === 'error'    ? '⚠ Error'
+         : '🖨 Print'}
+        </button>
         <button onClick={load} disabled={loading} style={{ background: BLUE, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, padding: '7px 16px', cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1 }}>
           {loading ? 'Loading…' : '↻ Refresh'}
         </button>

@@ -72,9 +72,10 @@ function DonutChart({ slices, size = 100 }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function EndOfDayReport({ onClose, sales = [], posSession, adminMode = false }) {
-  const [notes,      setNotes]      = useState('')
-  const [saved,      setSaved]      = useState(false)  // 'idle' | 'saving' | 'ok' | 'error'
-  const [notesDirty, setNotesDirty] = useState(false)
+  const [notes,       setNotes]       = useState('')
+  const [saved,       setSaved]       = useState(false)  // false | 'saving' | 'ok' | 'error'
+  const [notesDirty,  setNotesDirty]  = useState(false)
+  const [printStatus, setPrintStatus] = useState('idle') // 'idle' | 'printing' | 'done' | 'error'
   const [section, setSection]           = useState('overview')
   const [selectedDate, setSelectedDate] = useState(() => dateToInput(new Date()))
   const [rawSales, setRawSales]         = useState(null)    // null = not yet fetched
@@ -114,6 +115,14 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
     fetchEODNotes({ locationName: location, date: inputToDate(selectedDate) })
       .then(n => { if (n !== null) setNotes(n) })
   }, [location, selectedDate]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Reset print status after 3s ──────────────────────────────────────────────
+  useEffect(() => {
+    if (printStatus === 'done' || printStatus === 'error') {
+      const t = setTimeout(() => setPrintStatus('idle'), 3000)
+      return () => clearTimeout(t)
+    }
+  }, [printStatus])
 
   // ── Data source resolution ────────────────────────────────────────────────────
   // While rawSales is null (Supabase not yet answered), use local prop as preview.
@@ -341,6 +350,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
           </div>
 
           <button
+            disabled={printStatus === 'printing'}
             onClick={() => printEODReceipt({
               location,
               dateLabel,
@@ -358,16 +368,31 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
               refundAmount,
               notes,
               locCfg,
+              printMode: locCfg?.printMode || 'browser',
+              onStatus: setPrintStatus,
             })}
             style={{
-              background: 'rgba(59,130,246,0.1)', border: `1px solid rgba(59,130,246,0.3)`, borderRadius: 6,
-              color: BLUE, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              background: printStatus === 'done'  ? 'rgba(34,197,94,0.1)'
+                        : printStatus === 'error' ? 'rgba(239,68,68,0.1)'
+                        : 'rgba(59,130,246,0.1)',
+              border: printStatus === 'done'  ? '1px solid rgba(34,197,94,0.3)'
+                    : printStatus === 'error' ? '1px solid rgba(239,68,68,0.3)'
+                    : `1px solid rgba(59,130,246,0.3)`,
+              borderRadius: 6,
+              color: printStatus === 'done'  ? GREEN
+                   : printStatus === 'error' ? RED
+                   : BLUE,
+              fontSize: 12, fontWeight: 600,
+              cursor: printStatus === 'printing' ? 'wait' : 'pointer',
               padding: '5px 14px', display: 'flex', alignItems: 'center', gap: 5,
-              transition: 'all 0.15s', flexShrink: 0,
+              transition: 'all 0.2s', flexShrink: 0,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.2)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
-          >🖨 Print</button>
+          >
+            {printStatus === 'printing' ? '⏳ Printing…'
+           : printStatus === 'done'     ? '✓ Sent'
+           : printStatus === 'error'    ? '⚠ Error'
+           : '🖨 Print'}
+          </button>
 
           <button onClick={onClose} style={{
             background: 'none', border: `1px solid ${BORDER}`, borderRadius: 6,
