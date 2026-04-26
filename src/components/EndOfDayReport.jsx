@@ -69,7 +69,7 @@ function DonutChart({ slices, size = 100 }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function EndOfDayReport({ onClose, sales = [], posSession }) {
+export default function EndOfDayReport({ onClose, sales = [], posSession, adminMode = false }) {
   const [notes, setNotes]               = useState('')
   const [saved, setSaved]               = useState(false)
   const [section, setSection]           = useState('overview')
@@ -284,18 +284,24 @@ export default function EndOfDayReport({ onClose, sales = [], posSession }) {
             <p style={{ color: MUTED, fontSize: 11, marginTop: 1 }}>{location}</p>
           </div>
 
-          {/* Date picker */}
-          <input
-            type="date"
-            value={selectedDate}
-            max={dateToInput(new Date())}
-            onChange={e => { if (e.target.value) { setSelectedDate(e.target.value); setSaved(false) } }}
-            style={{
-              background: BG, border: `1px solid ${BORDER}`, borderRadius: 6,
-              color: TEXT, fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none',
-              colorScheme: 'dark',
-            }}
-          />
+          {/* Date picker — only visible in adminMode; employees locked to today */}
+          {adminMode ? (
+            <input
+              type="date"
+              value={selectedDate}
+              max={dateToInput(new Date())}
+              onChange={e => { if (e.target.value) { setSelectedDate(e.target.value); setSaved(false) } }}
+              style={{
+                background: BG, border: `1px solid ${BORDER}`, borderRadius: 6,
+                color: TEXT, fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none',
+                colorScheme: 'dark',
+              }}
+            />
+          ) : (
+            <span style={{ color: MUTED, fontSize: 12, padding: '5px 10px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 6 }}>
+              {inputToDate(selectedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </span>
+          )}
 
           {/* Data source badge */}
           <div style={{

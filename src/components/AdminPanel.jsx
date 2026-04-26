@@ -15,6 +15,7 @@ import BonusRulesScreen     from './BonusRulesScreen'
 import BarcodeModal, { BarcodeIconButton } from './BarcodeModal'
 import CustomersAdmin from './CustomersAdmin'
 import CRMSettings    from './CRMSettings'
+import AdminEODReport from './AdminEODReport'
 
 const PURPLE       = COLORS.admin
 const GOLD         = COLORS.accent
@@ -49,7 +50,7 @@ const MODULES = [
       { id: 'loc-settings',   label: 'Settings', screen: 'loc-settings' },
       { id: 'loc-reports',    label: 'Reports',  screen: 'loc-reports' },
       { id: 'loc-cashlog',    label: 'Cash Register Activity'  },
-      { id: 'loc-eod',        label: 'End-Of-Day Reports'      },
+      { id: 'loc-eod',        label: 'End-Of-Day Reports', screen: 'loc-eod' },
       { id: 'loc-regions',    label: 'Regions'                 },
     ],
   },
@@ -951,6 +952,10 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'loc-reports') {
     return <LocationReport onClose={goBack} sales={sales} />
+  }
+
+  if (activeScreen?.screen === 'loc-eod') {
+    return <AdminEODReport onClose={goBack} />
   }
 
   if (activeScreen?.screen === 'inv-management') {
