@@ -520,56 +520,56 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                     </div>
                   )}
 
-                  {/* Notes */}
-                  <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
-                    <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 12 }}>ADDITIONAL NOTES</p>
-                    <textarea
-                      value={notes}
-                      onChange={e => { setNotes(e.target.value); setNotesDirty(true); setSaved(false) }}
-                      placeholder="Enter end of day notes here..."
-                      style={{
-                        width: '100%', height: 72, background: PANEL,
-                        border: `1px solid ${BORDER}`, borderRadius: 6,
-                        color: TEXT, fontSize: 13, padding: '10px 12px',
-                        resize: 'vertical', fontFamily: 'inherit',
-                        boxSizing: 'border-box', outline: 'none',
-                      }}
-                      onFocus={e => { e.target.style.borderColor = BLUE }}
-                      onBlur={e => { e.target.style.borderColor = BORDER }}
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
-                      <button
-                        disabled={saved === 'saving'}
-                        onClick={async () => {
-                          setSaved('saving')
-                          const ok = await upsertEODNotes({
-                            locationName: location,
-                            date: inputToDate(selectedDate),
-                            notes,
-                          })
-                          setSaved(ok ? 'ok' : 'error')
-                          setNotesDirty(false)
-                        }}
-                        style={{
-                          padding: '7px 18px',
-                          background: saved === 'ok' ? 'rgba(34,197,94,0.1)' : saved === 'error' ? 'rgba(239,68,68,0.1)' : BLUE,
-                          border: saved === 'ok' ? `1px solid rgba(34,197,94,0.3)` : saved === 'error' ? `1px solid rgba(239,68,68,0.3)` : 'none',
-                          borderRadius: 6, color: saved === 'ok' ? GREEN : saved === 'error' ? RED : '#fff',
-                          fontSize: 12, fontWeight: 700, cursor: saved === 'saving' ? 'wait' : 'pointer', transition: 'all 0.2s',
-                        }}
-                      >
-                        {saved === 'saving' ? 'Saving…' : saved === 'ok' ? '✓ Saved' : saved === 'error' ? '⚠ Error' : 'Save Notes'}
-                      </button>
-                      {saved === 'ok' && <span style={{ color: MUTED, fontSize: 11 }}>Synced to Supabase</span>}
-                      {saved === 'error' && <span style={{ color: RED, fontSize: 11 }}>Could not save — check connection</span>}
-                    </div>
-                  </div>
-
                   <p style={{ color: '#415569', fontSize: 11, textAlign: 'center' }}>
                     No Refunds. Exchanges within 14 days.
                   </p>
                 </>
               )}
+
+              {/* Notes — always visible regardless of sales data */}
+              <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 18 }}>
+                <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 12 }}>ADDITIONAL NOTES</p>
+                <textarea
+                  value={notes}
+                  onChange={e => { setNotes(e.target.value); setNotesDirty(true); setSaved(false) }}
+                  placeholder="Enter end of day notes here..."
+                  style={{
+                    width: '100%', height: 72, background: PANEL,
+                    border: `1px solid ${BORDER}`, borderRadius: 6,
+                    color: TEXT, fontSize: 13, padding: '10px 12px',
+                    resize: 'vertical', fontFamily: 'inherit',
+                    boxSizing: 'border-box', outline: 'none',
+                  }}
+                  onFocus={e => { e.target.style.borderColor = BLUE }}
+                  onBlur={e => { e.target.style.borderColor = BORDER }}
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                  <button
+                    disabled={saved === 'saving'}
+                    onClick={async () => {
+                      setSaved('saving')
+                      const ok = await upsertEODNotes({
+                        locationName: location,
+                        date: inputToDate(selectedDate),
+                        notes,
+                      })
+                      setSaved(ok ? 'ok' : 'error')
+                      setNotesDirty(false)
+                    }}
+                    style={{
+                      padding: '7px 18px',
+                      background: saved === 'ok' ? 'rgba(34,197,94,0.1)' : saved === 'error' ? 'rgba(239,68,68,0.1)' : BLUE,
+                      border: saved === 'ok' ? `1px solid rgba(34,197,94,0.3)` : saved === 'error' ? `1px solid rgba(239,68,68,0.3)` : 'none',
+                      borderRadius: 6, color: saved === 'ok' ? GREEN : saved === 'error' ? RED : '#fff',
+                      fontSize: 12, fontWeight: 700, cursor: saved === 'saving' ? 'wait' : 'pointer', transition: 'all 0.2s',
+                    }}
+                  >
+                    {saved === 'saving' ? 'Saving…' : saved === 'ok' ? '✓ Saved' : saved === 'error' ? '⚠ Error' : 'Save Notes'}
+                  </button>
+                  {saved === 'ok' && <span style={{ color: MUTED, fontSize: 11 }}>Synced to Supabase</span>}
+                  {saved === 'error' && <span style={{ color: RED, fontSize: 11 }}>Could not save — check connection</span>}
+                </div>
+              </div>
             </>
           )}
 
