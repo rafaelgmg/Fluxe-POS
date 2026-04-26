@@ -207,16 +207,16 @@ export default function LoginScreen({ onLogin, onBack }) {
             onClick={() => setShowAdminAuth(true)}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              background: 'none', border: '1px solid transparent', cursor: 'pointer',
-              color: '#94a3b8', fontSize: 9, fontWeight: 600,
-              gap: 2, padding: '4px 8px', borderRadius: 4,
-              transition: 'all 0.15s', letterSpacing: 0.3,
+              background: 'transparent', border: '1px solid transparent', cursor: 'pointer',
+              color: '#b8c8da', fontSize: 11, fontWeight: 600,
+              gap: 4, padding: '6px 10px', borderRadius: 8,
+              transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#c4b5fd'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.background = 'rgba(139,92,246,0.1)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'none' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#c4b5fd'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#b8c8da'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent' }}
           >
-            <span style={{ fontSize: 15 }}>👤</span>
-            Managers
+            <span style={{ fontSize: 20 }}>⚙️</span>
+            Admin
           </button>
         </div>
       </div>
