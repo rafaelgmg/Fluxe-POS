@@ -128,7 +128,7 @@ export async function upsertEODNotes({ locationName, date, notes, updatedBy = nu
     await awaitOrgSession()
     const orgId   = await getOrgId()
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/eod_notes`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/eod_notes?on_conflict=organization_id,location_name,report_date`, {
       method: 'POST',
       headers: {
         apikey:         SUPABASE_KEY,
