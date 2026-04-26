@@ -6,6 +6,8 @@ import {
 } from '../config/branding'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin, resolveSessionContext } from '../services/supabaseAuth'
+import LoginModal from './LoginModal'
+import AdminPanel from './AdminPanel'
 
 const LOCATION_PASSWORD = LOGIN_PASSWORD
 const LOC_KEY = 'fluxe-locations-v1'
@@ -57,6 +59,8 @@ export default function LoginScreen({ onLogin, onBack }) {
   const [loading,   setLoading]   = useState(false)
   const [pwVisible, setPwVisible] = useState(false)
   const [version]                 = useState('1.0.0')
+  const [showAdminAuth, setShowAdminAuth] = useState(false)
+  const [adminUser,     setAdminUser]     = useState(null)
 
   // PIN step
   const [step,            setStep]            = useState('location') // 'location' | 'pin'
@@ -198,27 +202,22 @@ export default function LoginScreen({ onLogin, onBack }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <Clock />
-          {[
-            { label: 'Managers',     icon: '👤' },
-            { label: 'Settings',     icon: '⚙️' },
-            { label: 'Training',     icon: '🎓' },
-            { label: 'Live Support', icon: '💬' },
-          ].map(item => (
-            <button key={item.label} style={{
+          {/* Managers — Admin access shortcut */}
+          <button
+            onClick={() => setShowAdminAuth(true)}
+            style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              background: 'none', border: 'none', cursor: 'pointer',
+              background: 'none', border: '1px solid transparent', cursor: 'pointer',
               color: '#94a3b8', fontSize: 9, fontWeight: 600,
               gap: 2, padding: '4px 8px', borderRadius: 4,
-              transition: 'color 0.15s',
-              letterSpacing: 0.3,
+              transition: 'all 0.15s', letterSpacing: 0.3,
             }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#cbd0e0' }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8' }}
-            >
-              <span style={{ fontSize: 15 }}>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
+            onMouseEnter={e => { e.currentTarget.style.color = '#c4b5fd'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.background = 'rgba(139,92,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'none' }}
+          >
+            <span style={{ fontSize: 15 }}>👤</span>
+            Managers
+          </button>
         </div>
       </div>
 
@@ -588,6 +587,27 @@ export default function LoginScreen({ onLogin, onBack }) {
           </p>
         </div>
       </div>
+
+      {/* Admin auth — triggered from Managers button */}
+      {showAdminAuth && (
+        <LoginModal
+          title="Admin Access"
+          subtitle="Admin or Manager PIN required"
+          requiredRole="manager"
+          filterRoles={['admin', 'manager']}
+          onLogin={user => { setShowAdminAuth(false); setAdminUser(user) }}
+          onCancel={() => setShowAdminAuth(false)}
+        />
+      )}
+
+      {/* AdminPanel — opened after successful admin auth */}
+      {adminUser && (
+        <AdminPanel
+          posSession={null}
+          currentUser={adminUser}
+          onClose={() => setAdminUser(null)}
+        />
+      )}
     </div>
   )
 }
