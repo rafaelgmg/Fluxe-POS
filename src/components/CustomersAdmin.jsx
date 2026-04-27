@@ -1,8 +1,12 @@
-﻿import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect, useCallback } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { getLoyaltyStars, starsLabel, calcCRMScore } from '../utils/loyaltyEngine'
 import { getCustomerAppointments, upsertAppointment, deleteAppointment } from '../utils/appointmentsStorage'
+import { writeCustomerToSupabase } from '../services/supabaseCRM'
+import { isSupabaseConfigured } from '../services/supabaseRead'
+import CampaignSMS   from './CampaignSMS'
+import CampaignEmail from './CampaignEmail'
 
 const FRAGRANCE_OPTIONS = [
   'Floral', 'Fresh / Aquatic', 'Woody', 'Oriental / Oud',
@@ -842,7 +846,8 @@ function TH({ children, width, align = 'left' }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 const PAGE_SIZE = 30
 
-export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer }) {
+export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, posSession = null }) {
+  const [activeTab,    setActiveTab]   = useState('customers')
   const [search,       setSearch]      = useState('')
   const [filterType,   setFilterType]  = useState('all')
   const [filterValue,  setFilterValue] = useState('')
@@ -858,6 +863,10 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
   const [maxSpent,      setMaxSpent]      = useState('')
   const [minPurchases,  setMinPurchases]  = useState('')
 
+  // Supabase sync state
+  const [importing,     setImporting]    = useState(false)
+  const [importResult,  setImportResult] = useState(null) // { imported, failed, total }
+
   const employees = useMemo(() => loadActiveEmployees(), [])
   const locations = LOCATIONS_CFG.map(l => l.name)
 
@@ -867,6 +876,41 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
   , [customers])
 
   const hasAdvanced = dateFrom || dateTo || minSpent || maxSpent || minPurchases
+
+  // Sync counts
+  const activeCustomers  = useMemo(() => customers.filter(c => !c.archived), [customers])
+  const syncedCount      = useMemo(() => activeCustomers.filter(c => c.supabaseId).length, [activeCustomers])
+  const unsyncedCount    = useMemo(() => activeCustomers.filter(c => !c.supabaseId).length, [activeCustomers])
+  const supabaseReady    = isSupabaseConfigured() && !!posSession?.orgId
+
+  const handleImport = useCallback(async () => {
+    if (!supabaseReady || importing) return
+    const unsynced = activeCustomers.filter(c => !c.supabaseId)
+    if (!unsynced.length) return
+    setImporting(true)
+    setImportResult(null)
+    let imported = 0; let failed = 0
+    for (const c of unsynced) {
+      try {
+        const result = await writeCustomerToSupabase(
+          c,
+          posSession.orgId,
+          null,
+          posSession.locationUUID || null,
+        )
+        if (result?.supabaseId) {
+          onPatchCustomer?.(c.id, { supabaseId: result.supabaseId })
+          imported++
+        } else {
+          failed++
+        }
+      } catch {
+        failed++
+      }
+    }
+    setImporting(false)
+    setImportResult({ imported, failed, total: unsynced.length })
+  }, [supabaseReady, importing, activeCustomers, posSession, onPatchCustomer])
 
   // Filtered list
   const filtered = useMemo(() => {
@@ -949,8 +993,34 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
     num: 32, total: 86, dateAdded: 86, lastPurchase: 86, open: 50,
   }
 
+  const TABS = [
+    { id: 'customers', label: 'Customers' },
+    { id: 'sms',       label: 'SMS Campaign' },
+    { id: 'email',     label: 'Email Campaign' },
+  ]
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: BG, overflow: 'hidden' }}>
+
+      {/* ── Tab Bar ── */}
+      <div style={{ display: 'flex', background: PANEL, borderBottom: `1px solid ${BORDER}`, flexShrink: 0, padding: '0 20px', gap: 2 }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+            padding: '11px 16px', background: 'none', border: 'none', marginBottom: -1,
+            borderBottom: activeTab === t.id ? `2px solid ${BLUE}` : '2px solid transparent',
+            color: activeTab === t.id ? TEXT : MUTED,
+            fontSize: 13, fontWeight: activeTab === t.id ? 700 : 400,
+            cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {/* ── Campaign Tabs ── */}
+      {activeTab === 'sms'   && <CampaignSMS   customers={customers} posSession={posSession} />}
+      {activeTab === 'email' && <CampaignEmail />}
+
+      {/* ── Customers Tab ── */}
+      {activeTab === 'customers' && <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
 
       {/* ── Toolbar ── */}
       <div style={{ padding: '12px 20px', background: PANEL, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
@@ -966,6 +1036,57 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
             </p>
           </div>
           <div style={{ flex: 1 }} />
+
+          {/* Supabase sync status */}
+          {supabaseReady ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 10px', borderRadius: 7,
+                background: unsyncedCount > 0 ? 'rgba(245,158,11,0.1)' : 'rgba(34,197,94,0.1)',
+                border: `1px solid ${unsyncedCount > 0 ? 'rgba(245,158,11,0.3)' : 'rgba(34,197,94,0.3)'}`,
+              }}>
+                <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>
+                  {syncedCount} synced
+                </span>
+                {unsyncedCount > 0 && (
+                  <span style={{ fontSize: 11, color: AMBER, fontWeight: 600 }}>
+                    · {unsyncedCount} local only
+                  </span>
+                )}
+              </div>
+              {unsyncedCount > 0 && (
+                <button
+                  onClick={handleImport}
+                  disabled={importing}
+                  style={{
+                    padding: '5px 12px', borderRadius: 7, fontSize: 12, fontWeight: 700,
+                    cursor: importing ? 'not-allowed' : 'pointer',
+                    background: importing ? 'rgba(245,158,11,0.1)' : 'rgba(245,158,11,0.15)',
+                    border: `1px solid ${importing ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.4)'}`,
+                    color: AMBER, transition: 'all 0.15s',
+                  }}
+                >
+                  {importing ? 'Importing...' : 'Import to Supabase'}
+                </button>
+              )}
+              {importResult && (
+                <span style={{ fontSize: 11, color: importResult.failed > 0 ? AMBER : GREEN }}>
+                  {importResult.imported}/{importResult.total} imported
+                  {importResult.failed > 0 ? ` (${importResult.failed} failed)` : ''}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div style={{
+              padding: '5px 10px', borderRadius: 7, fontSize: 11,
+              background: 'rgba(148,163,184,0.07)', border: `1px solid ${BORDER}`,
+              color: DIM,
+            }}>
+              Supabase not configured
+            </div>
+          )}
+
           <button
             onClick={() => setShowAdd(true)}
             style={{
@@ -1202,6 +1323,7 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
           onClose={() => setShowAdd(false)}
         />
       )}
+      </div>}
     </div>
   )
 }

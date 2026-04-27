@@ -39,44 +39,92 @@ function appendLog(entry) {
   localStorage.setItem(DRAWER_KEY, JSON.stringify(log))
 }
 
-// ── Hardware trigger ───────────────────────────────────────────────────────────
-// Opens the Star TSP143IIIU cash drawer via Web Serial API (raw USB bytes).
-// Does NOT use window.print() — that approach printed blank paper because:
-//   - HTML rendered through the GDI driver is never raw ESC/POS
-//   - With --kiosk-printing the blank page goes straight to the printer
-// Returns: 'ok' | 'unsupported' | 'no-port' | 'error'
-async function triggerDrawerHardware() {
-  // ESC p pin2 on=25ms off=250ms
-  const KICK = new Uint8Array([0x1B, 0x70, 0x00, 0x19, 0xFA])
+// ── Drawer slip via hidden iframe ──────────────────────────────────────────────
+// Prints a minimal "CASH DRAWER" slip through the Star printer.
+// With Chrome --kiosk-printing this prints silently (no dialog).
+//
+// For the drawer to OPEN when this prints, configure the Star Windows driver once:
+//   Devices & Printers → Star TSP100 → Printer Properties
+//   → Device Settings → Cash Drawer → "Open before printing"
+//
+// This is the only reliable browser-native method for USB Printer Class devices
+// (TSP143IIIU USB is not CDC ACM — Web Serial cannot address it).
+function _kickViaDrawerSlip(employeeName) {
+  const now  = new Date()
+  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+  const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
-  if (!navigator?.serial) return 'unsupported'
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Courier New',monospace;font-size:12px;width:302px;margin:0 auto;padding:5px 4px;color:#000;background:#fff;}
+  .c{text-align:center;} .b{font-weight:bold;}
+  hr{border:none;border-top:1px dashed #000;margin:5px 0;}
+  @media print{body{width:302px;margin:0;padding:3px 2px;}@page{margin:2mm;size:80mm auto;}}
+</style></head><body>
+<p class="c b" style="font-size:14px;margin-bottom:2px;">CASH DRAWER</p>
+<hr/>
+<p class="c">By: ${employeeName}</p>
+<p class="c">${date} &middot; ${time}</p>
+<hr/>
+<div style="height:6px"></div>
+</body></html>`
 
-  try {
-    const ports = await navigator.serial.getPorts()
-    if (ports.length === 0) return 'no-port'
+  return new Promise((resolve) => {
+    const iframe = document.createElement('iframe')
+    iframe.setAttribute('aria-hidden', 'true')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:302px;height:1px;border:0;overflow:hidden;'
+    document.body.appendChild(iframe)
 
-    const port = ports[0]
-    await port.open({ baudRate: 9600 })
-    const writer = port.writable.getWriter()
-    await writer.write(KICK)
-    writer.releaseLock()
-    await port.close()
-    return 'ok'
-  } catch {
-    return 'error'
-  }
+    let done = false
+    const finish = () => {
+      if (done) return; done = true
+      try { document.body.removeChild(iframe) } catch {}
+      resolve()
+    }
+
+    try {
+      iframe.contentDocument.open()
+      iframe.contentDocument.write(html)
+      iframe.contentDocument.close()
+    } catch { finish(); return }
+
+    iframe.contentWindow.addEventListener('afterprint', finish)
+    setTimeout(() => {
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch { finish() }
+    }, 200)
+    setTimeout(finish, 30_000) // failsafe
+  })
 }
 
-// One-time port authorization — must be called from a user gesture.
-// Shows browser UI to select the Star printer's serial/USB interface.
-async function authorizeDrawerPort() {
-  if (!navigator?.serial) return false
+// ── Hardware trigger ───────────────────────────────────────────────────────────
+// 1. Try Web Serial first (works if a Star virtual COM port was authorized)
+// 2. Always fall back to drawer slip print — works with --kiosk-printing
+// Returns: 'ok' | 'ok-slip' | 'error'
+async function triggerDrawerHardware(employeeName) {
+  // Try Web Serial (only works if Star driver created a virtual COM port)
+  if (navigator?.serial) {
+    try {
+      const ports = await navigator.serial.getPorts()
+      if (ports.length > 0) {
+        const KICK = new Uint8Array([0x1B, 0x70, 0x00, 0x19, 0xFA])
+        const port = ports[0]
+        if (!port.readable) await port.open({ baudRate: 9600 })
+        const writer = port.writable.getWriter()
+        await writer.write(KICK)
+        await writer.close()
+        await port.close()
+        return 'ok'
+      }
+    } catch { /* fall through to slip */ }
+  }
+
+  // Fallback: print a drawer slip via hidden iframe
   try {
-    // Star Micronics USB vendor ID 0x0519 — filters to Star devices only
-    await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x0519 }] })
-    return true
+    await _kickViaDrawerSlip(employeeName)
+    return 'ok-slip'
   } catch {
-    return false
+    return 'error'
   }
 }
 
@@ -496,15 +544,10 @@ export default function CashDrawer({ onClose }) {
   const handleOpenRegister = async () => {
     appendLog({ type: 'open', employee: employee.name, amount: 0, notes: '' })
     setDrawerStatus('sending')
-    const result = await triggerDrawerHardware()
+    const result = await triggerDrawerHardware(employee.name)
     setDrawerStatus(result)
-    if (result === 'ok') setTimeout(() => setDrawerStatus(null), 3000)
-  }
-
-  const handleSetupPort = async () => {
-    const ok = await authorizeDrawerPort()
-    if (ok) handleOpenRegister()
-    else setDrawerStatus('error')
+    if (result === 'ok' || result === 'ok-slip') setTimeout(() => setDrawerStatus(null), 4000)
+    if (result === 'error')                      setTimeout(() => setDrawerStatus(null), 6000)
   }
 
   const actions = [
@@ -581,37 +624,31 @@ export default function CashDrawer({ onClose }) {
 
         {/* Open Register feedback */}
         {drawerStatus && (() => {
-          const isOk  = drawerStatus === 'ok'
-          const isBad = drawerStatus === 'unsupported' || drawerStatus === 'error'
-          const isWarn = drawerStatus === 'no-port'
-          const bgColor  = isOk ? 'rgba(34,197,94,0.08)' : isBad ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)'
-          const bdColor  = isOk ? 'rgba(34,197,94,0.25)' : isBad ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'
-          const txtColor = isOk ? GREEN : isBad ? RED : AMBER
+          const isOk   = drawerStatus === 'ok' || drawerStatus === 'ok-slip'
+          const isInfo = drawerStatus === 'ok-slip'
+          const isBad  = drawerStatus === 'error'
+          const bgColor  = isOk  ? 'rgba(34,197,94,0.08)'  : isBad ? 'rgba(239,68,68,0.08)'  : 'rgba(245,158,11,0.08)'
+          const bdColor  = isOk  ? 'rgba(34,197,94,0.25)'  : isBad ? 'rgba(239,68,68,0.25)'  : 'rgba(245,158,11,0.25)'
+          const txtColor = isOk  ? GREEN                   : isBad ? RED                      : AMBER
           return (
             <div style={{
               margin: '12px 22px 0', padding: '10px 14px', borderRadius: 8,
               background: bgColor, border: `1px solid ${bdColor}`,
               color: txtColor, fontSize: 12, fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
             }}>
-              {drawerStatus === 'sending'     && <><span>⏳</span><span>Sending drawer command…</span></>}
-              {drawerStatus === 'ok'          && <><span>✅</span><span>Drawer opened</span></>}
-              {drawerStatus === 'error'       && <><span>⚠️</span><span>Command failed — check printer connection and try again.</span></>}
-              {drawerStatus === 'unsupported' && <><span>⚠️</span><span>Direct drawer control requires Chrome or Edge. Open the drawer manually.</span></>}
-              {drawerStatus === 'no-port'     && (
-                <>
-                  <span>⚙️</span>
-                  <span>Printer port not configured yet.</span>
-                  <button
-                    onClick={handleSetupPort}
-                    style={{
-                      background: BLUE, border: 'none', borderRadius: 4,
-                      color: '#fff', fontSize: 11, fontWeight: 700,
-                      padding: '3px 10px', cursor: 'pointer',
-                    }}
-                  >Setup port</button>
-                </>
+              {drawerStatus === 'sending'  && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>⏳</span><span>Sending drawer command…</span></div>}
+              {drawerStatus === 'ok'       && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>✅</span><span>Drawer opened</span></div>}
+              {drawerStatus === 'ok-slip'  && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span>🖨</span><span>Drawer slip sent to printer</span>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 400, color: MUTED, lineHeight: 1.5 }}>
+                    If the drawer didn't open: in Windows go to <b style={{ color: DIM }}>Devices &amp; Printers → Star TSP100 → Printer Properties → Device Settings → Cash Drawer → Open before printing</b>.
+                  </div>
+                </div>
               )}
+              {drawerStatus === 'error'    && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>⚠️</span><span>Command failed — check printer connection.</span></div>}
             </div>
           )
         })()}

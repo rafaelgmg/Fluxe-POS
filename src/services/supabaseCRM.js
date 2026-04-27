@@ -90,6 +90,10 @@ function fromRow(row) {
     legacyLocalId:        row.legacy_local_id      || null,
     createdAt:            row.created_at           || null,
     updatedAt:            row.updated_at           || null,
+    // SMS consent (Phase 1)
+    smsConsentStatus:     row.sms_consent_status   || 'unknown',
+    smsConsentSource:     row.sms_consent_source   || null,
+    smsOptedOutAt:        row.sms_opted_out_at      || null,
   }
 }
 
@@ -239,4 +243,47 @@ export async function restoreCustomerInSupabase(supabaseId) {
     archived_at: null,
   })
   return Array.isArray(rows) ? rows[0] : rows
+}
+
+// ── SMS Phase 1 ───────────────────────────────────────────────────────────────
+
+/**
+ * Fetch message history for a customer (outbound + inbound).
+ * Returns newest-first array of message objects.
+ */
+export async function fetchMessageHistory(supabaseCustomerId) {
+  if (!SUPABASE_URL || !SUPABASE_KEY || !supabaseCustomerId) return []
+  try {
+    const rows = await restGet(
+      `/customer_messages?customer_id=eq.${supabaseCustomerId}&order=created_at.desc&limit=50`
+    )
+    return rows.map(r => ({
+      id:        r.id,
+      direction: r.direction,
+      channel:   r.channel,
+      body:      r.body,
+      status:    r.status,
+      twilioSid: r.twilio_message_sid,
+      createdAt: r.created_at,
+    }))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Manually update SMS consent from the CRM UI.
+ * source should be 'manual' when triggered by a staff action.
+ */
+export async function updateSmsConsentInSupabase(supabaseId, status, source = 'manual') {
+  if (!SUPABASE_URL || !SUPABASE_KEY || !supabaseId) return null
+  const patch = { sms_consent_status: status, sms_consent_source: source }
+  if (status === 'opted_out') patch.sms_opted_out_at = new Date().toISOString()
+  if (status === 'opted_in')  patch.sms_opted_out_at = null
+  try {
+    const rows = await restPatch(`/customers?id=eq.${supabaseId}`, patch)
+    return Array.isArray(rows) ? rows[0] : rows
+  } catch {
+    return null
+  }
 }

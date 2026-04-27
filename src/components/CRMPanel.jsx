@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react'
+﻿import { useState, useMemo, useEffect, useCallback } from 'react'
 import { BUSINESS_SHORT, COLORS } from '../config/branding'
 
 const TEAL = COLORS.crm
@@ -88,7 +88,7 @@ function getFragrancePrefs(customer) {
 
 // ─── Customer Detail ─────────────────────────────────────────────────────────
 
-function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onRestore, onDelete }) {
+function CustomerDetail({ customer, onClose, onSendSMS, onGetSMSHistory, onUpdateSmsConsent, onUpdate, onArchive, onRestore, onDelete }) {
   const spent    = totalSpent(customer)
   const last     = lastPurchase(customer)
   const products = allProducts(customer)
@@ -98,6 +98,38 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
   const [smsSending,   setSmsSending]  = useState(false)
   const [smsResult,    setSmsResult]   = useState(null)
   const [confirmArchive, setConfirmArchive] = useState(false)
+
+  // SMS history
+  const [msgHistory,    setMsgHistory]    = useState(null)  // null = not loaded
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [consentStatus,  setConsentStatus]  = useState(customer.smsConsentStatus || 'unknown')
+  const [consentUpdating, setConsentUpdating] = useState(false)
+
+  useEffect(() => {
+    setConsentStatus(customer.smsConsentStatus || 'unknown')
+  }, [customer.smsConsentStatus])
+
+  useEffect(() => {
+    if (activeTab !== 'sms') return
+    if (msgHistory !== null) return  // already loaded
+    if (!onGetSMSHistory) return
+    setHistoryLoading(true)
+    onGetSMSHistory(customer)
+      .then(rows => setMsgHistory(rows))
+      .catch(() => setMsgHistory([]))
+      .finally(() => setHistoryLoading(false))
+  }, [activeTab]) // eslint-disable-line
+
+  const handleConsentToggle = async (newStatus) => {
+    if (!onUpdateSmsConsent) return
+    setConsentUpdating(true)
+    try {
+      await onUpdateSmsConsent(customer, newStatus)
+      setConsentStatus(newStatus)
+    } finally {
+      setConsentUpdating(false)
+    }
+  }
 
   // Edit form state — pre-filled from customer
   const [editForm, setEditForm] = useState({
@@ -144,11 +176,28 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
     setSmsSending(true)
     setSmsResult(null)
     try {
-      const result = await onSendSMS(customer.id, smsText.trim(), smsChannel)
-      setSmsResult({ ok: true, text: result.sid === 'dry-run' ? 'Sent (dry-run — server has no Twilio credentials yet)' : `Sent ✓ SID: ${result.sid}` })
+      const result = await onSendSMS(customer, smsText.trim(), smsChannel)
+      const isDryRun = result.sid === 'dry-run'
+      setSmsResult({
+        ok:   true,
+        text: isDryRun
+          ? 'Sent (dry-run — add Twilio credentials to server/.env to send real SMS)'
+          : `Sent ✓  SID: ${result.sid}`,
+      })
       setSmsText('')
+      // Optimistically add to history
+      setMsgHistory(prev => prev ? [
+        { id: result.sid, direction: 'outbound', channel: smsChannel,
+          body: result.body || smsText.trim(), status: result.status || 'sent',
+          createdAt: new Date().toISOString() },
+        ...prev,
+      ] : null)
     } catch (err) {
-      setSmsResult({ ok: false, text: err.message })
+      setSmsResult({
+        ok:      false,
+        blocked: err.consentBlocked,
+        text:    err.message,
+      })
     } finally {
       setSmsSending(false)
     }
@@ -518,102 +567,225 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
         )}
 
         {/* ── Send SMS / WhatsApp ── */}
-        {activeTab === 'sms' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {activeTab === 'sms' && (() => {
+          const isOptedOut = consentStatus === 'opted_in' ? false
+            : consentStatus === 'opted_out' ? true : false
 
-            {/* Channel selector */}
-            <div style={{ display: 'flex', gap: 8 }}>
-              {[
-                { id: 'sms',       label: '💬 SMS',       color: '#2980b9' },
-                { id: 'whatsapp',  label: '📱 WhatsApp',  color: '#27ae60' },
-              ].map(ch => (
-                <button key={ch.id} onClick={() => setSmsChannel(ch.id)} style={{
-                  flex: 1, padding: '9px',
-                  background: smsChannel === ch.id ? ch.color + '22' : '#111d30',
-                  border: `1px solid ${smsChannel === ch.id ? ch.color : '#253349'}`,
-                  borderRadius: 6, color: smsChannel === ch.id ? ch.color : '#94a3b8',
-                  fontWeight: smsChannel === ch.id ? 700 : 400,
-                  fontSize: 13, cursor: 'pointer'
-                }}>{ch.label}</button>
-              ))}
-            </div>
+          const consentBadge = consentStatus === 'opted_in'
+            ? { label: 'SMS Opted In',  bg: 'rgba(34,197,94,0.1)',  bd: 'rgba(34,197,94,0.3)',  color: '#22c55e' }
+            : consentStatus === 'opted_out'
+            ? { label: 'OPTED OUT',     bg: 'rgba(239,68,68,0.1)',  bd: 'rgba(239,68,68,0.3)',  color: '#ef4444' }
+            : { label: 'Unknown',       bg: 'rgba(245,158,11,0.1)', bd: 'rgba(245,158,11,0.3)', color: '#f59e0b' }
 
-            {/* Recipient info */}
-            <div style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 6, padding: '10px 14px' }}>
-              <p style={{ color: '#94a3b8', fontSize: 11 }}>
-                To: <span style={{ color: '#cbd0e0' }}>{customer.firstName} {customer.lastName}</span>
-                {' · '}
-                <span style={{ color: TEAL }}>{fmtPhone(customer.phone)}</span>
-              </p>
-              {!customer.marketingConsent && (
-                <p style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>
-                  ⚠ Customer did not opt in to marketing — send with caution
-                </p>
-              )}
-            </div>
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-            {/* Message textarea */}
-            <div>
-              <label style={{ color: '#94a3b8', fontSize: 11, display: 'block', marginBottom: 4 }}>
-                Message
-              </label>
-              <textarea
-                value={smsText}
-                onChange={e => setSmsText(e.target.value)}
-                placeholder={`Hi ${customer.firstName}, ...`}
-                rows={4}
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  padding: '10px 12px', background: '#111d30',
-                  border: '1px solid #253349', borderRadius: 6,
-                  color: '#f1f5f9', fontSize: 13, resize: 'vertical',
-                  fontFamily: 'inherit', outline: 'none'
-                }}
-                onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
-                onBlur={e =>  { e.target.style.borderColor = '#253349' }}
-              />
-              <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 4 }}>
-                {smsText.length} characters
-                {' · '}Your name + "Reply STOP to unsubscribe" will be appended automatically.
-              </p>
-            </div>
-
-            {/* Send button */}
-            <button
-              onClick={handleSend}
-              disabled={!smsText.trim() || smsSending || !onSendSMS}
-              style={{
-                padding: '12px', background: !smsText.trim() || smsSending ? '#111d30' : TEAL,
-                border: !smsText.trim() || smsSending ? '1px solid #253349' : 'none',
-                borderRadius: 6,
-                color: !smsText.trim() || smsSending ? '#94a3b8' : '#fff',
-                fontSize: 14, fontWeight: 700,
-                cursor: !smsText.trim() || smsSending ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {smsSending ? '⟳ Sending...' : `Send ${smsChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'}`}
-            </button>
-
-            {/* Result */}
-            {smsResult && (
+              {/* Consent status row */}
               <div style={{
-                padding: '10px 14px', borderRadius: 6,
-                background: smsResult.ok ? '#22c55e22' : '#ef444422',
-                border: `1px solid ${smsResult.ok ? '#22c55e55' : '#ef444455'}`,
-                color: smsResult.ok ? '#22c55e' : '#ef4444',
-                fontSize: 12
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: consentBadge.bg, border: `1px solid ${consentBadge.bd}`,
+                borderRadius: 6, padding: '8px 12px',
               }}>
-                {smsResult.text}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                    background: consentBadge.bd, color: consentBadge.color, letterSpacing: 0.5,
+                  }}>{consentBadge.label}</span>
+                  {consentStatus === 'unknown' && !customer.marketingConsent && (
+                    <span style={{ color: '#f59e0b', fontSize: 11 }}>No marketing consent</span>
+                  )}
+                  {consentStatus === 'opted_out' && customer.smsOptedOutAt && (
+                    <span style={{ color: '#94a3b8', fontSize: 11 }}>
+                      {fmtDate(customer.smsOptedOutAt)}
+                    </span>
+                  )}
+                </div>
+                {/* Manual consent controls */}
+                {onUpdateSmsConsent && (
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    {consentStatus !== 'opted_in' && (
+                      <button
+                        onClick={() => handleConsentToggle('opted_in')}
+                        disabled={consentUpdating}
+                        style={{
+                          padding: '3px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                          background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)',
+                          borderRadius: 4, color: '#22c55e', opacity: consentUpdating ? 0.5 : 1,
+                        }}
+                      >+ Opt In</button>
+                    )}
+                    {consentStatus !== 'opted_out' && (
+                      <button
+                        onClick={() => handleConsentToggle('opted_out')}
+                        disabled={consentUpdating}
+                        style={{
+                          padding: '3px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+                          borderRadius: 4, color: '#ef4444', opacity: consentUpdating ? 0.5 : 1,
+                        }}
+                      >Opt Out</button>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
 
-            {!onSendSMS && (
-              <p style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', marginTop: 8 }}>
-                Server offline — start the backend to send messages
-              </p>
-            )}
-          </div>
-        )}
+              {/* OPTED OUT — blocked state */}
+              {consentStatus === 'opted_out' ? (
+                <div style={{
+                  padding: '20px 16px', background: '#111d30', border: '1px solid #253349',
+                  borderRadius: 8, textAlign: 'center',
+                }}>
+                  <p style={{ color: '#ef4444', fontSize: 24, marginBottom: 8 }}>🚫</p>
+                  <p style={{ color: '#ef4444', fontWeight: 700, fontSize: 14 }}>Cannot send SMS</p>
+                  <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 6, lineHeight: 1.5 }}>
+                    {customer.firstName} has opted out of SMS messages
+                    {customer.smsConsentSource === 'reply' ? ' by replying STOP' : ''}.
+                    To re-enable, click "+ Opt In" above.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Channel selector */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[
+                      { id: 'sms',      label: '💬 SMS',      color: '#2980b9' },
+                      { id: 'whatsapp', label: '📱 WhatsApp', color: '#27ae60' },
+                    ].map(ch => (
+                      <button key={ch.id} onClick={() => setSmsChannel(ch.id)} style={{
+                        flex: 1, padding: '9px',
+                        background: smsChannel === ch.id ? ch.color + '22' : '#111d30',
+                        border: `1px solid ${smsChannel === ch.id ? ch.color : '#253349'}`,
+                        borderRadius: 6, color: smsChannel === ch.id ? ch.color : '#94a3b8',
+                        fontWeight: smsChannel === ch.id ? 700 : 400,
+                        fontSize: 13, cursor: 'pointer',
+                      }}>{ch.label}</button>
+                    ))}
+                  </div>
+
+                  {/* Recipient */}
+                  <div style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 6, padding: '10px 14px' }}>
+                    <p style={{ color: '#94a3b8', fontSize: 11 }}>
+                      To: <span style={{ color: '#cbd0e0' }}>{customer.firstName} {customer.lastName}</span>
+                      {' · '}
+                      <span style={{ color: TEAL }}>{fmtPhone(customer.phone)}</span>
+                    </p>
+                    {consentStatus === 'unknown' && !customer.marketingConsent && (
+                      <p style={{ color: '#f59e0b', fontSize: 11, marginTop: 4 }}>
+                        ⚠ No marketing consent — send only with explicit permission
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Message textarea */}
+                  <div>
+                    <label style={{ color: '#94a3b8', fontSize: 11, display: 'block', marginBottom: 4 }}>Message</label>
+                    <textarea
+                      value={smsText}
+                      onChange={e => setSmsText(e.target.value)}
+                      placeholder={`Hi ${customer.firstName}, ...`}
+                      rows={4}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: '10px 12px', background: '#111d30',
+                        border: '1px solid #253349', borderRadius: 6,
+                        color: '#f1f5f9', fontSize: 13, resize: 'vertical',
+                        fontFamily: 'inherit', outline: 'none',
+                      }}
+                      onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
+                      onBlur={e =>  { e.target.style.borderColor = '#253349' }}
+                    />
+                    <p style={{ color: '#415569', fontSize: 11, marginTop: 4 }}>
+                      {smsText.length} chars · "Reply STOP to unsubscribe" appended automatically
+                    </p>
+                  </div>
+
+                  {/* Send button */}
+                  <button
+                    onClick={handleSend}
+                    disabled={!smsText.trim() || smsSending || !onSendSMS}
+                    style={{
+                      padding: '12px',
+                      background: !smsText.trim() || smsSending ? '#111d30' : TEAL,
+                      border: !smsText.trim() || smsSending ? '1px solid #253349' : 'none',
+                      borderRadius: 6,
+                      color: !smsText.trim() || smsSending ? '#94a3b8' : '#fff',
+                      fontSize: 14, fontWeight: 700,
+                      cursor: !smsText.trim() || smsSending ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {smsSending ? '⟳ Sending...' : `Send ${smsChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'}`}
+                  </button>
+
+                  {/* Result */}
+                  {smsResult && (
+                    <div style={{
+                      padding: '10px 14px', borderRadius: 6,
+                      background: smsResult.ok ? '#22c55e22' : '#ef444422',
+                      border: `1px solid ${smsResult.ok ? '#22c55e55' : '#ef444455'}`,
+                      color: smsResult.ok ? '#22c55e' : '#ef4444', fontSize: 12,
+                    }}>
+                      {smsResult.text}
+                    </div>
+                  )}
+
+                  {!onSendSMS && (
+                    <p style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center' }}>
+                      Backend offline — start the server to send messages
+                    </p>
+                  )}
+                </>
+              )}
+
+              {/* Message history */}
+              <div>
+                <p style={{ color: '#415569', fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>
+                  MESSAGE HISTORY
+                </p>
+                {historyLoading && (
+                  <p style={{ color: '#415569', fontSize: 12, textAlign: 'center' }}>Loading…</p>
+                )}
+                {!historyLoading && msgHistory !== null && msgHistory.length === 0 && (
+                  <p style={{ color: '#415569', fontSize: 12, textAlign: 'center' }}>No messages yet</p>
+                )}
+                {!historyLoading && msgHistory !== null && msgHistory.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {msgHistory.map((m, i) => (
+                      <div key={m.id || i} style={{
+                        padding: '8px 10px', borderRadius: 6, fontSize: 12,
+                        background: m.direction === 'inbound' ? '#111d30' : '#0f2133',
+                        border: `1px solid ${m.direction === 'inbound' ? '#253349' : '#1a3555'}`,
+                        alignSelf: m.direction === 'inbound' ? 'flex-start' : 'flex-end',
+                        maxWidth: '90%',
+                      }}>
+                        <p style={{ color: '#f1f5f9', lineHeight: 1.5 }}>{m.body}</p>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
+                          <span style={{ color: '#415569', fontSize: 10 }}>
+                            {m.direction === 'inbound' ? '← Customer' : '→ Sent'}
+                          </span>
+                          <span style={{ color: '#415569', fontSize: 10 }}>
+                            {m.createdAt ? new Date(m.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                          </span>
+                          {m.status && m.status !== 'sent' && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
+                              color: m.status === 'failed' ? '#ef4444' : '#415569',
+                            }}>{m.status.toUpperCase()}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!historyLoading && msgHistory === null && !onGetSMSHistory && (
+                  <p style={{ color: '#415569', fontSize: 12, textAlign: 'center' }}>
+                    Connect to Supabase to see history
+                  </p>
+                )}
+              </div>
+
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
@@ -621,7 +793,7 @@ function CustomerDetail({ customer, onClose, onSendSMS, onUpdate, onArchive, onR
 
 // ─── Main CRM Panel ───────────────────────────────────────────────────────────
 
-export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSLog, onGetScheduled, onUpdateCustomer, onArchiveCustomer, onRestoreCustomer, onDeleteCustomer, onClose }) {
+export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSHistory, onUpdateSmsConsent, onGetSMSLog, onGetScheduled, onUpdateCustomer, onArchiveCustomer, onRestoreCustomer, onDeleteCustomer, onClose }) {
   const [search,          setSearch]          = useState('')
   const [selected,        setSelected]        = useState(null)
   const [purchaseFilter,  setPurchaseFilter]  = useState('all') // 'all' | 'with' | 'none'
@@ -892,6 +1064,8 @@ export default function CRMPanel({ customers, serverOnline, onSendSMS, onGetSMSL
             customer={selected}
             onClose={() => setSelected(null)}
             onSendSMS={serverOnline ? onSendSMS : null}
+            onGetSMSHistory={onGetSMSHistory}
+            onUpdateSmsConsent={onUpdateSmsConsent}
             onUpdate={onUpdateCustomer}
             onArchive={(id) => { onArchiveCustomer(id); setSelected(null) }}
             onRestore={(id) => { onRestoreCustomer(id); setSelected(null) }}

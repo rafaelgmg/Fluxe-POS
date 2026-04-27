@@ -74,7 +74,13 @@ export default function App() {
   const [showCompetition, setShowCompetition] = useState(false)
   const [showClockInOut, setShowClockInOut] = useState(false)
   const [showInventory, setShowInventory]   = useState(false)
-  const [accountSession, setAccountSession] = useState(null) // null = show account login
+  const KIOSK_KEY = 'fluxe-kiosk-session-v1'
+  const [accountSession, setAccountSession] = useState(() => {
+    try {
+      const saved = localStorage.getItem('fluxe-kiosk-session-v1')
+      return saved ? JSON.parse(saved) : null
+    } catch { return null }
+  })
   const [posSession, setPosSession]         = useState(null) // null = show location login
   const [showAdmin, setShowAdmin]           = useState(false)
   const [showAdminAuth, setShowAdminAuth]   = useState(false)
@@ -91,7 +97,7 @@ export default function App() {
   const [showCRMAuth,       setShowCRMAuth]       = useState(false)
   const [showAssist,        setShowAssist]         = useState(false)
 
-  const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSLog, getScheduled } = useCRM(posSession, currentUser)
+  const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSHistory, updateSmsConsent, getSMSLog, getScheduled } = useCRM(posSession, currentUser)
   const { sales, saveSale, updateSale, voidSale } = useSales()
   const {
     cart,
@@ -433,7 +439,10 @@ export default function App() {
                : filtered
 
   if (!accountSession) {
-    return <AccountLoginScreen onLogin={(session) => setAccountSession(session)} />
+    return <AccountLoginScreen onLogin={(session) => {
+      try { localStorage.setItem(KIOSK_KEY, JSON.stringify(session)) } catch {}
+      setAccountSession(session)
+    }} />
   }
 
   if (!posSession) {
@@ -443,7 +452,10 @@ export default function App() {
           setPosSession(session)
           if (employee) setCurrentUser(employee)
         }}
-        onBack={() => setAccountSession(null)}
+        onBack={() => {
+          try { localStorage.removeItem(KIOSK_KEY) } catch {}
+          setAccountSession(null)
+        }}
       />
     )
   }
@@ -938,7 +950,7 @@ export default function App() {
       )}
       {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}  posSession={posSession} />}
       {showInventory   && <Inventory     onClose={() => setShowInventory(false)} products={products} />}
-      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} />}
+      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} posSession={posSession} />}
       {showReceipts    && <Receipts      onClose={() => setShowReceipts(false)}    posSession={posSession} />}
       {showCashDrawer  && <CashDrawer   onClose={() => setShowCashDrawer(false)} />}
       {showCRM && (
@@ -946,6 +958,8 @@ export default function App() {
           customers={customers}
           serverOnline={serverOnline}
           onSendSMS={sendManualSMS}
+          onGetSMSHistory={getSMSHistory}
+          onUpdateSmsConsent={updateSmsConsent}
           onGetSMSLog={getSMSLog}
           onGetScheduled={getScheduled}
           onUpdateCustomer={updateCustomer}

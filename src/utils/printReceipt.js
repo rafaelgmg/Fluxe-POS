@@ -274,6 +274,16 @@ export function printReceipt(invoice, locCfg) {
   }
   win.document.write(html)
   win.document.close()
-  win.onload = () => { win.focus(); win.print() }
-  setTimeout(() => { try { win.focus(); win.print() } catch {} }, 450)
+  let printed = false
+  win.onload = () => {
+    if (printed) return
+    printed = true
+    win.focus(); win.print()
+  }
+  // Fallback: onload sometimes doesn't fire if document.write was used
+  setTimeout(() => {
+    if (printed) return
+    printed = true
+    try { win.focus(); win.print() } catch {}
+  }, 450)
 }

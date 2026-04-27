@@ -8,6 +8,8 @@ import {
   patchCustomerInSupabase,
   archiveCustomerInSupabase,
   restoreCustomerInSupabase,
+  fetchMessageHistory,
+  updateSmsConsentInSupabase,
 } from '../services/supabaseCRM'
 
 const SERVER_URL = 'http://localhost:3001'
@@ -90,6 +92,9 @@ function mergeSupabaseIntoLocal(localList, serverList) {
       lastInteraction:      s.lastInteraction,
       archived:             s.archived,
       archivedAt:           s.archivedAt,
+      smsConsentStatus:     s.smsConsentStatus || 'unknown',
+      smsConsentSource:     s.smsConsentSource || null,
+      smsOptedOutAt:        s.smsOptedOutAt    || null,
     }))
 
   return [...merged, ...toAdd]
@@ -435,19 +440,61 @@ export function useCRM(posSession = null, currentUser = null) {
     })
   }, [])
 
-  // ── SMS (Twilio — unchanged) ──────────────────────────────────────────────
+  // ── SMS / Messaging ───────────────────────────────────────────────────────
 
-  const sendManualSMS = useCallback(async (customerId, message, channel = 'sms') => {
+  // customer — full customer object (needs .phone, .firstName, .supabaseId)
+  const sendManualSMS = useCallback(async (customer, message, channel = 'sms') => {
     const res = await fetch(`${SERVER_URL}/api/sms/send`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ customerId, message, channel }),
+      body:    JSON.stringify({
+        // Direct params so server doesn't need to look up from JSON db
+        phone:      customer.phone,
+        firstName:  customer.firstName,
+        supabaseId: customer.supabaseId || null,
+        orgId:      posSession?.orgId   || null,
+        locationId: posSession?.locationUUID || null,
+        // Legacy fallback — keep customerId for backward compat with JSON db
+        customerId: customer.id,
+        message,
+        channel,
+      }),
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || 'Failed to send SMS')
+      const err = await res.json().catch(() => ({}))
+      const msg = err.message || err.error || 'Failed to send SMS'
+      // Surface consent error distinctly
+      if (err.error === 'opted_out') {
+        const e = new Error(msg)
+        e.consentBlocked = true
+        throw e
+      }
+      throw new Error(msg)
     }
     return res.json()
+  }, [posSession])
+
+  // Fetch message history from Supabase (read-only, frontend direct)
+  const getSMSHistory = useCallback(async (customer) => {
+    if (!customer?.supabaseId) return []
+    return fetchMessageHistory(customer.supabaseId)
+  }, [])
+
+  // Manually update SMS consent from CRM UI
+  const updateSmsConsent = useCallback(async (customer, status) => {
+    if (!customer?.supabaseId) return
+    await updateSmsConsentInSupabase(customer.supabaseId, status, 'manual')
+    // Update local state
+    setCustomers(prev => {
+      const updated = prev.map(c =>
+        c.id === customer.id
+          ? { ...c, smsConsentStatus: status, smsConsentSource: 'manual',
+              smsOptedOutAt: status === 'opted_out' ? new Date().toISOString() : null }
+          : c
+      )
+      persist(updated)
+      return updated
+    })
   }, [])
 
   const getSMSLog = useCallback(async () => {
@@ -474,6 +521,8 @@ export function useCRM(posSession = null, currentUser = null) {
     addCustomer,
     patchCustomer,
     sendManualSMS,
+    getSMSHistory,
+    updateSmsConsent,
     getSMSLog,
     getScheduled,
   }
