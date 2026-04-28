@@ -454,10 +454,10 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
     </button>
   )
 
-  const summaryItem = (label, value, color) => (
+  const summaryItem = (label, value, color, size = 15) => (
     <div>
       <p style={{ color: MUTED, fontSize: 10, marginBottom: 2 }}>{label}</p>
-      <p style={{ color: color || TEXT, fontSize: 15, fontWeight: 700 }}>{value}</p>
+      <p style={{ color: color || TEXT, fontSize: size, fontWeight: size >= 18 ? 800 : 700 }}>{value}</p>
     </div>
   )
 
@@ -621,9 +621,9 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
               {fmtDateTime(invoice.timestamp)} · {invoice.employee}
             </p>
             <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
-              {summaryItem('Subtotal', fmt$(invoice.subtotal), TEXT)}
-              {summaryItem('Tax',      fmt$(invoice.tax),      MUTED)}
-              {summaryItem('Total',    fmt$(invoice.total),    GREEN)}
+              {summaryItem('Subtotal', fmt$(invoice.subtotal), '#f1f5f9', 20)}
+              {summaryItem('Tax',      fmt$(invoice.tax),      DIM,      12)}
+              {summaryItem('Total',    fmt$(invoice.total),    MUTED,    13)}
               {summaryItem(
                 'Spare',
                 totalSpareVal >= 0 ? fmt$(totalSpareVal) : `-${fmt$(Math.abs(totalSpareVal))}`,
@@ -742,9 +742,9 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
                   <td style={{ padding: '8px 12px', color: BLUE, fontWeight: 700, fontSize: 13 }}>{inv.number}</td>
                   <td style={{ padding: '8px 12px', color: DIM, fontSize: 12 }}>{fmtDateTime(inv.timestamp)}</td>
                   <td style={{ padding: '8px 12px', color: DIM, fontSize: 12 }}>{inv.location}</td>
-                  <td style={{ padding: '8px 12px', color: DIM, fontSize: 12, textAlign: 'right' }}>{fmt$(inv.subtotal)}</td>
-                  <td style={{ padding: '8px 12px', color: MUTED, fontSize: 12, textAlign: 'right' }}>{fmt$(inv.tax)}</td>
-                  <td style={{ padding: '8px 12px', color: GREEN, fontWeight: 700, fontSize: 13, textAlign: 'right' }}>{fmt$(inv.total)}</td>
+                  <td style={{ padding: '8px 12px', color: '#f1f5f9', fontWeight: 700, fontSize: 13, textAlign: 'right' }}>{fmt$(inv.subtotal)}</td>
+                  <td style={{ padding: '8px 12px', color: DIM,     fontWeight: 400, fontSize: 11, textAlign: 'right' }}>{fmt$(inv.tax)}</td>
+                  <td style={{ padding: '8px 12px', color: MUTED,   fontWeight: 400, fontSize: 12, textAlign: 'right' }}>{fmt$(inv.total)}</td>
                   <td style={{ padding: '8px 12px', color: MUTED, fontSize: 12, textAlign: 'right' }}>{fmt$(inv.tip)}</td>
                   <td style={{ padding: '8px 12px' }}>
                     {isRef && <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: AMBER, fontWeight: 700 }}>REFUNDED</span>}
