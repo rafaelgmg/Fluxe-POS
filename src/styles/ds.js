@@ -15,29 +15,29 @@ export const FS = {
   mono: { family: "'Courier New', Courier, monospace", size: 15 },
 }
 
-// ── Color tokens ──────────────────────────────────────────────────────────────
+// ── Color tokens — reference CSS variables so components using C.* auto-theme
 export const C = {
-  // Backgrounds
-  bg:        '#030e1e',
-  bgPanel:   '#0d1526',
-  bgCard:    '#111d30',
-  bgHover:   '#131d35',
-  bgActive:  '#1a2744',
-  bgGlass:   'rgba(255,255,255,0.035)',
+  // Backgrounds (theme-aware via CSS vars set by ThemeProvider)
+  bg:        'var(--c-bg)',
+  bgPanel:   'var(--c-bg-panel)',
+  bgCard:    'var(--c-bg-card)',
+  bgHover:   'var(--c-bg-hover)',
+  bgActive:  'var(--c-bg-active)',
+  bgGlass:   'var(--c-bg-glass)',
 
   // Borders
-  border:      '#253349',
-  borderMd:    '#263354',
+  border:      'var(--c-border)',
+  borderMd:    'var(--c-border-md)',
   borderFocus: '#3b82f6',
   borderGlass: 'rgba(255,255,255,0.07)',
 
   // Text
-  text:      '#f1f5f9',
-  textSub:   '#cbd0e0',
-  textMuted: '#94a3b8',
-  textDim:   '#415569',
+  text:      'var(--c-text)',
+  textSub:   'var(--c-text-sub)',
+  textMuted: 'var(--c-text-muted)',
+  textDim:   'var(--c-text-dim)',
 
-  // Brand
+  // Brand (fixed — work on both light and dark)
   blue:      '#3b82f6',
   blueHv:    '#1d4ed8',
   blueDim:   'rgba(37,99,235,0.12)',
@@ -46,7 +46,7 @@ export const C = {
   purpleSoft:'#8b5cf6',
   purpleDim: 'rgba(124,58,237,0.12)',
 
-  // Semantic
+  // Semantic (fixed)
   green:     '#22c55e',
   greenDim:  'rgba(34,197,94,0.12)',
   red:       '#ef4444',

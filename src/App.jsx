@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef } from 'react'
+import { useTheme } from './theme/ThemeContext'
 import { loadActiveCategoryNames, ensureCategoriesSeeded, buildCategoryMap } from './utils/categoriesStorage'
 import { getTaxRate, getTaxRateById, loadLocationConfig, loadLocationConfigById, resolveSpareRateForDay, resolveSpareRateForDayById } from './utils/locationConfig'
 import { localId } from './domain/utils/ids'
@@ -51,6 +52,7 @@ ensureCategoriesSeeded()
 awaitOrgSession()
 
 export default function App() {
+  const { mode, tokens, toggle } = useTheme()
   const [currentUser, setCurrentUser]   = useState(null)  // session user (LoginModal)
   const [saleEmployee, setSaleEmployee] = useState(null)  // seller confirmed for current sale
   const { products, setProducts, decrementStock } = useProducts()
@@ -475,13 +477,13 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'radial-gradient(ellipse at top, #0d1829 0%, #030e1e 60%)' }}>
+    <div style={{ ...tokens, display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--c-bg-grad)' }}>
 
       {/* TOP BAR */}
       <div style={{
         height: 50,
-        background: 'linear-gradient(90deg, #0d1526 0%, #0d1524 100%)',
-        borderBottom: '1px solid #253349',
+        background: 'var(--c-bg-panel)',
+        borderBottom: '1px solid var(--c-border)',
         display: 'flex', alignItems: 'center', padding: '0 16px', gap: 4, flexShrink: 0,
         boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
       }}>
@@ -625,6 +627,23 @@ export default function App() {
         </button>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Theme toggle */}
+          <button
+            onClick={toggle}
+            title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            style={{
+              background: 'transparent', border: '1px solid transparent',
+              color: 'var(--c-text-muted)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+              padding: '6px 10px', borderRadius: 8, transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.28)'; e.currentTarget.style.color = '#fcd34d' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'var(--c-text-muted)' }}
+          >
+            <span style={{ fontSize: 20 }}>{mode === 'dark' ? '☀️' : '🌙'}</span>
+            {mode === 'dark' ? 'Light' : 'Dark'}
+          </button>
           {/* Admin — isolated right side */}
           <button onClick={() => setShowAdminAuth(true)} style={{
             background: 'transparent', border: '1px solid transparent', color: '#b8c8da',
@@ -639,26 +658,26 @@ export default function App() {
             <span style={{ fontSize: 20 }}>⚙️</span>
             Admin
           </button>
-          <div style={{ width: 1, height: 28, background: '#253349', marginLeft: 2, marginRight: 4, flexShrink: 0 }} />
+          <div style={{ width: 1, height: 28, background: 'var(--c-border)', marginLeft: 2, marginRight: 4, flexShrink: 0 }} />
           {currentUser && (
             <span style={{ color: '#22c55e', fontSize: 13 }}>
               👤 {currentUser.name}
             </span>
           )}
-          <span style={{ color: '#94a3b8', fontSize: 12 }}>
+          <span style={{ color: 'var(--c-text-muted)', fontSize: 12 }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </span>
           <button
             onClick={() => setPosSession(null)}
             title="Switch location / Log out"
             style={{
-              background: 'none', border: '1px solid #253349', borderRadius: 4,
-              color: '#94a3b8', fontSize: 10, cursor: 'pointer',
+              background: 'none', border: '1px solid var(--c-border)', borderRadius: 4,
+              color: 'var(--c-text-muted)', fontSize: 10, cursor: 'pointer',
               padding: '4px 8px', display: 'flex', flexDirection: 'column',
               alignItems: 'center', gap: 2, transition: 'all 0.2s ease',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = '#94a3b8' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--c-border)'; e.currentTarget.style.color = 'var(--c-text-muted)' }}
           >
             <span style={{ fontSize: 14 }}>🔓</span>
             Switch
@@ -671,7 +690,7 @@ export default function App() {
 
         {/* CATEGORY SIDEBAR */}
         <div style={{
-          width: 110, background: '#0d1526', borderRight: '1px solid #253349',
+          width: 110, background: 'var(--c-bg-panel)', borderRight: '1px solid var(--c-border)',
           display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0
         }}>
           {['All', ...loadActiveCategoryNames()].map(cat => (
@@ -679,9 +698,9 @@ export default function App() {
               key={cat}
               onClick={() => setCategory(cat)}
               style={{
-                padding: '14px 8px', border: 'none', borderBottom: '1px solid rgba(30,41,59,0.5)',
+                padding: '14px 8px', border: 'none', borderBottom: '1px solid var(--c-border)',
                 background: selectedCategory === cat ? 'rgba(37,99,235,0.15)' : 'transparent',
-                color: selectedCategory === cat ? '#93c5fd' : '#94a3b8',
+                color: selectedCategory === cat ? '#93c5fd' : 'var(--c-text-muted)',
                 fontSize: 13, fontWeight: selectedCategory === cat ? 700 : 400,
                 cursor: 'pointer', textAlign: 'center', lineHeight: 1.3,
                 transition: 'all 0.2s ease',
@@ -699,7 +718,7 @@ export default function App() {
 
           {/* Search + controls bar */}
           <div style={{
-            padding: '8px 12px', background: '#0d1526', borderBottom: '1px solid #253349',
+            padding: '8px 12px', background: 'var(--c-bg-panel)', borderBottom: '1px solid var(--c-border)',
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
             <input
@@ -707,12 +726,12 @@ export default function App() {
               onChange={e => setSearch(e.target.value)}
               placeholder="Search product or scan barcode..."
               style={{
-                flex: 1, padding: '9px 14px', background: '#111d30',
-                border: '1px solid #253349', borderRadius: 6, color: '#f1f5f9', fontSize: 14,
+                flex: 1, padding: '9px 14px', background: 'var(--c-bg-card)',
+                border: '1px solid var(--c-border)', borderRadius: 6, color: 'var(--c-text)', fontSize: 14,
                 outline: 'none', transition: 'border-color 0.15s',
               }}
               onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
-              onBlur={e => { e.target.style.borderColor = '#253349' }}
+              onBlur={e => { e.target.style.borderColor = 'var(--c-border)' }}
             />
             <BarcodeIconButton active={showBarcodeModal} onClick={() => setShowBarcodeModal(true)} />
 
@@ -722,9 +741,9 @@ export default function App() {
                 <button key={val} onClick={() => setSort(val)} style={{
                   padding: '5px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
                   borderRadius: 5, border: '1px solid',
-                  borderColor: sortOrder === val ? '#3b82f6' : '#253349',
+                  borderColor: sortOrder === val ? '#3b82f6' : 'var(--c-border)',
                   background:  sortOrder === val ? 'rgba(37,99,235,0.15)' : 'transparent',
-                  color:       sortOrder === val ? '#93c5fd' : '#94a3b8',
+                  color:       sortOrder === val ? '#93c5fd' : 'var(--c-text-muted)',
                   transition: 'all 0.15s',
                 }}>{label}</button>
               ))}
@@ -736,9 +755,9 @@ export default function App() {
                 <button key={val} onClick={() => setView(val)} style={{
                   padding: '5px 9px', fontSize: 14, cursor: 'pointer',
                   borderRadius: 5, border: '1px solid',
-                  borderColor: viewMode === val ? '#3b82f6' : '#253349',
+                  borderColor: viewMode === val ? '#3b82f6' : 'var(--c-border)',
                   background:  viewMode === val ? 'rgba(37,99,235,0.15)' : 'transparent',
-                  color:       viewMode === val ? '#93c5fd' : '#94a3b8',
+                  color:       viewMode === val ? '#93c5fd' : 'var(--c-text-muted)',
                   transition: 'all 0.15s',
                 }}>{icon}</button>
               ))}

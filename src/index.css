@@ -1,4 +1,19 @@
-﻿/* ── Reset ────────────────────────────────────────────────────────────────── */
+﻿/* ── Theme tokens (dark defaults — overridden by ThemeProvider via root div) */
+:root {
+  --c-bg:          #030e1e;
+  --c-bg-panel:    #0d1526;
+  --c-bg-card:     #111d30;
+  --c-border:      #253349;
+  --c-text:        #f1f5f9;
+  --c-text-sub:    #cbd0e0;
+  --c-text-muted:  #94a3b8;
+  --c-text-dim:    #415569;
+  --c-scrollbar:   #253349;
+  --c-scrollbar-hover: #415569;
+  --c-bg-grad:     radial-gradient(ellipse at top, #0d1829 0%, #030e1e 60%);
+}
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -14,22 +29,23 @@ html {
 
 body {
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: #030e1e;
-  color: #f1f5f9;
+  background: var(--c-bg);
+  color: var(--c-text);
   height: 100vh;
   overflow: hidden;
   line-height: 1.5;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 /* ── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  {
-  background: #253349;
+  background: var(--c-scrollbar);
   border-radius: 99px;
   transition: background 0.2s;
 }
-::-webkit-scrollbar-thumb:hover { background: #415569; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-scrollbar-hover); }
 ::-webkit-scrollbar-corner { background: transparent; }
 
 /* ── Focus ────────────────────────────────────────────────────────────────── */
