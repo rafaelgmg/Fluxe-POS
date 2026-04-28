@@ -514,7 +514,7 @@ export default function App() {
           <button key={item.label} onClick={item.action} style={{
             background: 'transparent',
             border: '1px solid transparent',
-            color: '#b8c8da',
+            color: 'var(--c-text-sub)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             gap: 4, fontSize: 11, fontWeight: 600,
             padding: '6px 10px', borderRadius: 8,
@@ -528,7 +528,7 @@ export default function App() {
             onMouseLeave={e => {
               e.currentTarget.style.background = 'transparent'
               e.currentTarget.style.borderColor = 'transparent'
-              e.currentTarget.style.color = '#b8c8da'
+              e.currentTarget.style.color = 'var(--c-text-sub)'
             }}
           >
             <span style={{ fontSize: 20 }}>{item.icon}</span>
@@ -541,13 +541,13 @@ export default function App() {
           onClick={handleLock}
           title="Lock Station"
           style={{
-            background: 'transparent', border: '1px solid transparent', color: '#b8c8da',
+            background: 'transparent', border: '1px solid transparent', color: 'var(--c-text-sub)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             gap: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
             padding: '6px 10px', borderRadius: 8, transition: 'all 0.2s ease',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; e.currentTarget.style.color = '#fca5a5' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#b8c8da' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'var(--c-text-sub)' }}
         >
           <svg width="20" height="22" viewBox="0 0 18 20" fill="none">
             <path d="M4 9V6a5 5 0 0 1 10 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
@@ -562,13 +562,13 @@ export default function App() {
         <button
           onClick={() => setShowCashDrawer(true)}
           style={{
-            background: 'transparent', border: '1px solid transparent', color: '#b8c8da',
+            background: 'transparent', border: '1px solid transparent', color: 'var(--c-text-sub)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             gap: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
             padding: '6px 10px', borderRadius: 8, transition: 'all 0.2s ease',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.12)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.28)'; e.currentTarget.style.color = '#93c5fd' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#b8c8da' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'var(--c-text-sub)' }}
         >
           {/* Cash drawer SVG — top body + sliding drawer + handle */}
           <svg width="22" height="20" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -601,7 +601,7 @@ export default function App() {
           style={{
             background: showAssist ? 'rgba(37,99,235,0.15)' : 'transparent',
             border: showAssist ? '1px solid rgba(37,99,235,0.35)' : '1px solid transparent',
-            color: showAssist ? '#93c5fd' : '#b8c8da',
+            color: showAssist ? '#93c5fd' : 'var(--c-text-sub)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             gap: 4, fontSize: 11, fontWeight: 600, cursor: 'pointer',
             padding: '6px 10px', borderRadius: 8, transition: 'all 0.2s ease',
@@ -618,7 +618,7 @@ export default function App() {
             if (!showAssist) {
               e.currentTarget.style.background = 'none'
               e.currentTarget.style.borderColor = 'transparent'
-              e.currentTarget.style.color = '#94a3b8'
+              e.currentTarget.style.color = 'var(--c-text-muted)'
             }
           }}
         >
@@ -646,14 +646,14 @@ export default function App() {
           </button>
           {/* Admin — isolated right side */}
           <button onClick={() => setShowAdminAuth(true)} style={{
-            background: 'transparent', border: '1px solid transparent', color: '#b8c8da',
+            background: 'transparent', border: '1px solid transparent', color: 'var(--c-text-sub)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             gap: 4, fontSize: 11, fontWeight: 600,
             padding: '6px 10px', borderRadius: 8,
             transition: 'all 0.2s ease', cursor: 'pointer',
           }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(139,92,246,0.12)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; e.currentTarget.style.color = '#c4b5fd' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#b8c8da' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'var(--c-text-sub)' }}
           >
             <span style={{ fontSize: 20 }}>⚙️</span>
             Admin
@@ -763,7 +763,7 @@ export default function App() {
               ))}
             </div>
 
-            <span style={{ color: '#415569', fontSize: 12, whiteSpace: 'nowrap' }}>
+            <span style={{ color: 'var(--c-text-dim)', fontSize: 12, whiteSpace: 'nowrap' }}>
               {sorted.length} items
             </span>
           </div>
@@ -773,8 +773,8 @@ export default function App() {
             <div style={{
               display: 'grid',
               gridTemplateColumns: '52px 1fr 180px 70px 60px 50px 60px',
-              padding: '9px 12px', background: '#111d30',
-              borderBottom: '1px solid #253349', fontSize: 12, color: '#94a3b8',
+              padding: '9px 12px', background: 'var(--c-bg-card)',
+              borderBottom: '1px solid var(--c-border)', fontSize: 12, color: 'var(--c-text-muted)',
               fontWeight: 600, letterSpacing: 0.4, flexShrink: 0,
             }}>
               <span>Photo</span><span>Product</span><span>Barcode</span>
@@ -785,25 +785,25 @@ export default function App() {
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {sorted.map(product => {
                 const locQty = product.qtyByLoc?.[posSession?.locationId] ?? product.qty
-                const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#cbd0e0'
+                const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : 'var(--c-text-sub)'
                 const dColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#22c55e'
                 return (
                   <div key={product.id} style={{
                     display: 'grid',
                     gridTemplateColumns: '52px 1fr 180px 70px 60px 50px 60px',
-                    padding: '11px 12px', borderBottom: '1px solid rgba(30,41,59,0.6)',
+                    padding: '11px 12px', borderBottom: '1px solid var(--c-border)',
                     alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s ease',
                   }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.05)'; e.currentTarget.style.borderBottomColor = 'rgba(37,99,235,0.15)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderBottomColor = 'rgba(30,41,59,0.6)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-bg-hover)'; e.currentTarget.style.borderBottomColor = 'var(--c-border-md)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderBottomColor = 'var(--c-border)' }}
                   >
-                    <div style={{ width: 36, height: 36, background: '#111d30', borderRadius: 6, border: '1px solid #253349', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🧴</div>
+                    <div style={{ width: 36, height: 36, background: 'var(--c-bg-hover)', borderRadius: 6, border: '1px solid var(--c-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🧴</div>
                     <div>
-                      <p style={{ fontSize: 15, color: '#f1f5f9', fontWeight: 600 }}>{product.name}</p>
-                      {product.description && <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{product.description}</p>}
+                      <p style={{ fontSize: 15, color: 'var(--c-text)', fontWeight: 600 }}>{product.name}</p>
+                      {product.description && <p style={{ fontSize: 12, color: 'var(--c-text-muted)', marginTop: 2 }}>{product.description}</p>}
                     </div>
-                    <span style={{ fontSize: 15, color: '#94a3b8', fontFamily: "'Courier New', Courier, monospace", letterSpacing: 0.5 }}>{product.barcode}</span>
-                    <span style={{ fontSize: 13, color: '#94a3b8' }}>{product.size}</span>
+                    <span style={{ fontSize: 15, color: 'var(--c-text-muted)', fontFamily: "'Courier New', Courier, monospace", letterSpacing: 0.5 }}>{product.barcode}</span>
+                    <span style={{ fontSize: 13, color: 'var(--c-text-muted)' }}>{product.size}</span>
                     <span style={{ textAlign: 'right', fontSize: 15, fontWeight: 700, color: qColor }}>{locQty}</span>
                     <div style={{ width: 7, height: 7, borderRadius: '50%', margin: '0 auto', background: dColor, boxShadow: `0 0 6px ${dColor}` }} />
                     <button onClick={() => openEditModal(product)} style={{
@@ -827,20 +827,20 @@ export default function App() {
                 {sorted.map(product => {
                   const locQty = product.qtyByLoc?.[posSession?.locationId] ?? product.qty
                   const dColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#22c55e'
-                  const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : '#cbd0e0'
+                  const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : 'var(--c-text-sub)'
                   return (
                     <button key={product.id} onClick={() => openEditModal(product)} style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                      padding: '14px 12px', background: '#111d30',
-                      border: '1px solid #253349', borderRadius: 8,
+                      padding: '14px 12px', background: 'var(--c-bg-card)',
+                      border: '1px solid var(--c-border)', borderRadius: 8,
                       cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
                       gap: 6,
                     }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.08)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.35)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#111d30'; e.currentTarget.style.borderColor = '#253349' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-bg-hover)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.35)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--c-bg-card)'; e.currentTarget.style.borderColor = 'var(--c-border)' }}
                     >
-                      <p style={{ fontSize: 13, color: '#f1f5f9', fontWeight: 700, lineHeight: 1.3 }}>{product.name}</p>
-                      {product.size && <p style={{ fontSize: 11, color: '#94a3b8' }}>{product.size}</p>}
+                      <p style={{ fontSize: 13, color: 'var(--c-text)', fontWeight: 700, lineHeight: 1.3 }}>{product.name}</p>
+                      {product.size && <p style={{ fontSize: 11, color: 'var(--c-text-muted)' }}>{product.size}</p>}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: dColor, boxShadow: `0 0 5px ${dColor}`, flexShrink: 0 }} />
                         <span style={{ fontSize: 11, color: qColor, fontWeight: 700 }}>{locQty} in stock</span>
@@ -868,9 +868,9 @@ export default function App() {
 
       {/* BOTTOM STATUS BAR */}
       <div style={{
-        height: 32, background: '#0d1526', borderTop: '1px solid #253349',
+        height: 32, background: 'var(--c-bg-panel)', borderTop: '1px solid var(--c-border)',
         display: 'flex', alignItems: 'center', padding: '0 16px', gap: 20,
-        fontSize: 11, color: '#415569', flexShrink: 0
+        fontSize: 11, color: 'var(--c-text-dim)', flexShrink: 0
       }}>
         <span>{SYSTEM_NAME} v1.0</span>
         <span>•</span>

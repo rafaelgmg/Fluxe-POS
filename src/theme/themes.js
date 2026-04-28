@@ -31,28 +31,28 @@ export const DARK = {
 }
 
 export const LIGHT = {
-  // Backgrounds
-  '--c-bg':        '#f0f4f8',
-  '--c-bg-panel':  '#ffffff',
-  '--c-bg-card':   '#f8fafc',
-  '--c-bg-hover':  '#e8edf2',
-  '--c-bg-active': '#dde4eb',
-  '--c-bg-glass':  'rgba(0,0,0,0.03)',
-  // Borders
-  '--c-border':    '#e2e8f0',
-  '--c-border-md': '#cbd5e1',
-  // Text
-  '--c-text':       '#0f172a',
-  '--c-text-sub':   '#1e293b',
-  '--c-text-muted': '#475569',
-  '--c-text-dim':   '#94a3b8',
+  // Backgrounds — Stripe/Square inspired
+  '--c-bg':        '#F9FAFB',      // page background (Tailwind gray-50)
+  '--c-bg-panel':  '#FFFFFF',      // nav, sidebars, panels
+  '--c-bg-card':   '#FFFFFF',      // cards, tables
+  '--c-bg-hover':  '#F3F4F6',      // row hover
+  '--c-bg-active': '#E5E7EB',      // pressed / active
+  '--c-bg-glass':  'rgba(0,0,0,0.025)',
+  // Borders — hair-thin, not heavy
+  '--c-border':    '#E5E7EB',      // Tailwind gray-200
+  '--c-border-md': '#D1D5DB',      // Tailwind gray-300
+  // Text — near-black hierarchy
+  '--c-text':       '#111827',     // Tailwind gray-900
+  '--c-text-sub':   '#374151',     // Tailwind gray-700
+  '--c-text-muted': '#6B7280',     // Tailwind gray-500 (Stripe secondary)
+  '--c-text-dim':   '#9CA3AF',     // Tailwind gray-400
   // Scrollbar
-  '--c-scrollbar':  '#cbd5e1',
-  '--c-scrollbar-hover': '#94a3b8',
+  '--c-scrollbar':  '#D1D5DB',
+  '--c-scrollbar-hover': '#9CA3AF',
   // Overlay
-  '--c-overlay':   'rgba(0,0,0,0.60)',
-  // Gradient background
-  '--c-bg-grad':   '#f0f4f8',
+  '--c-overlay':   'rgba(17,24,39,0.55)',
+  // Gradient background (flat in light — no gradient noise)
+  '--c-bg-grad':   '#F9FAFB',
 }
 
 /** The two named themes available in the app */
