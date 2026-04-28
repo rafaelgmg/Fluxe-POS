@@ -150,8 +150,8 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
         </div>
         {/* Tax */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 0 }}>
-          <span style={{ color: '#64748b', fontSize: 23, fontWeight: 500 }}>Tax</span>
-          <span style={{ color: '#94a3b8', fontSize: 23, fontWeight: 600 }}>${tax.toFixed(2)}</span>
+          <span style={{ color: '#64748b', fontSize: 16, fontWeight: 500 }}>Tax</span>
+          <span style={{ color: '#94a3b8', fontSize: 16, fontWeight: 600 }}>${tax.toFixed(2)}</span>
         </div>
         {/* Total */}
         <div style={{
