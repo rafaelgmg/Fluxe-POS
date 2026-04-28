@@ -961,6 +961,11 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
     const result = onAddCustomer?.(formData)
     if (result?.error) return result
     setShowAdd(false)
+    // Reset to page 1, clear search, and switch to All filter so new customer is visible
+    setPage(1)
+    setSearch('')
+    setFilterType('all')
+    setFilterValue('')
     return { success: true }
   }
 

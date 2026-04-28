@@ -248,7 +248,9 @@ function StepSelect({ customers, selected, setSelected, onNext }) {
 
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: DIM, fontSize: 14 }}>
-            No customers match the current filters.
+            {eligible.length === 0
+              ? 'No customers with a mobile number yet. Add customers with a phone number first.'
+              : 'No customers match the current filters.'}
           </div>
         )}
 

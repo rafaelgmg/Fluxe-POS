@@ -19,6 +19,7 @@ const express   = require('express')
 const cors      = require('cors')
 const db        = require('./db')
 const scheduler = require('./scheduler')
+const sbClient  = require('./supabaseClient')
 const { buildScheduledMessages, buildManualMessage } = require('./messages')
 
 const app  = express()
@@ -168,41 +169,102 @@ app.post('/api/customers/upsert', async (req, res) => {
 // ─── SMS / WhatsApp ───────────────────────────────────────────────────────────
 
 // POST /api/sms/send
-// Body: { customerId, message, channel: 'sms'|'whatsapp' }
+// Body: {
+//   phone, firstName, message, channel,
+//   supabaseId,   — Supabase customer UUID (for consent check + log)
+//   orgId,        — organization UUID
+//   locationId,   — optional
+//   // legacy fallback: customerId (looks up from JSON db)
+// }
 app.post('/api/sms/send', async (req, res) => {
-  const { customerId, message, channel = 'sms' } = req.body
+  const {
+    phone, firstName, message, channel = 'sms',
+    supabaseId, orgId, locationId,
+    customerId,  // legacy
+    dryRun,      // if true: skip Twilio, log as 'dry_run'
+    raw,         // if true: send message body as-is (no buildManualMessage wrapping)
+  } = req.body
 
-  if (!customerId || !message) {
-    return res.status(400).json({ error: 'customerId and message are required' })
+  // Resolve phone + firstName — prefer direct params, fall back to JSON db
+  let resolvedPhone     = phone
+  let resolvedFirstName = firstName
+  let resolvedLocalId   = customerId || supabaseId
+
+  if ((!resolvedPhone || !resolvedFirstName) && customerId) {
+    const legacy = db.findCustomerById(customerId)
+    if (!legacy) return res.status(404).json({ error: 'Customer not found' })
+    resolvedPhone     = resolvedPhone     || legacy.phone
+    resolvedFirstName = resolvedFirstName || legacy.firstName
   }
 
-  const customer = db.findCustomerById(customerId)
-  if (!customer) return res.status(404).json({ error: 'Customer not found' })
+  if (!resolvedPhone || !message) {
+    return res.status(400).json({ error: 'phone and message are required' })
+  }
 
-  const body = buildManualMessage(customer.firstName, message)
+  // Consent check — only when Supabase is configured and supabaseId known
+  if (supabaseId) {
+    const consent = await sbClient.getConsentStatus(supabaseId)
+    if (consent?.sms_consent_status === 'opted_out') {
+      return res.status(403).json({
+        error:         'opted_out',
+        message:       `${resolvedFirstName} has opted out of SMS (replied STOP). Cannot send.`,
+        consentStatus: 'opted_out',
+      })
+    }
+  }
+
+  const body = raw ? message : buildManualMessage(resolvedFirstName, message)
+
+  // Dry-run: log but skip Twilio
+  if (dryRun) {
+    db.logSMS({ type: 'campaign_dry_run', customerId: resolvedLocalId, phone: resolvedPhone, body, status: 'dry_run', channel })
+    if (supabaseId && orgId) {
+      sbClient.logMessage({
+        organizationId: orgId, locationId: locationId || null,
+        customerId: supabaseId, direction: 'outbound', channel, body,
+        status: 'dry_run', twilioSid: null,
+      }).catch(() => {})
+    }
+    return res.json({ success: true, sid: 'dry-run', status: 'dry_run', dryRun: true, body })
+  }
 
   try {
-    const result = await scheduler.sendMessage(customer.phone, body, channel)
+    const result = await scheduler.sendMessage(resolvedPhone, body, channel)
+
+    // Log to JSON (legacy, always)
     db.logSMS({
-      type:       'manual',
-      customerId: customer.id,
-      phone:      customer.phone,
-      body,
-      twilioSid:  result.sid,
-      status:     result.status,
-      channel,
+      type: 'manual', customerId: resolvedLocalId,
+      phone: resolvedPhone, body,
+      twilioSid: result.sid, status: result.status, channel,
     })
+
+    // Log to Supabase (when credentials available)
+    if (supabaseId && orgId) {
+      sbClient.logMessage({
+        organizationId: orgId,
+        locationId:     locationId || null,
+        customerId:     supabaseId,
+        direction:      'outbound',
+        channel,
+        body,
+        status:         result.sid === 'dry-run' ? 'sent' : result.status || 'sent',
+        twilioSid:      result.sid === 'dry-run' ? null : result.sid,
+      }).catch(() => {}) // fire-and-forget
+    }
+
     res.json({ success: true, sid: result.sid, status: result.status, body })
   } catch (err) {
     db.logSMS({
-      type:       'manual',
-      customerId: customer.id,
-      phone:      customer.phone,
-      body,
-      status:     'error',
-      error:      err.message,
-      channel,
+      type: 'manual', customerId: resolvedLocalId,
+      phone: resolvedPhone, body, status: 'error', error: err.message, channel,
     })
+    if (supabaseId && orgId) {
+      sbClient.logMessage({
+        organizationId: orgId, locationId: locationId || null,
+        customerId: supabaseId, direction: 'outbound', channel, body,
+        status: 'failed', errorMessage: err.message,
+      }).catch(() => {})
+    }
     res.status(500).json({ error: err.message })
   }
 })
@@ -235,6 +297,65 @@ app.post('/api/sales', (req, res) => {
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// ─── Twilio Webhook — inbound SMS ────────────────────────────────────────────
+//
+// Configure in Twilio console:
+//   Phone Numbers → your number → Messaging → "A message comes in"
+//   → Webhook → POST → https://your-server.com/api/webhooks/twilio/sms
+//
+// For local dev with ngrok:
+//   npx ngrok http 3001
+//   Then set the ngrok URL in Twilio console as webhook
+
+app.post('/api/webhooks/twilio/sms', express.urlencoded({ extended: false }), async (req, res) => {
+  // Respond with empty TwiML immediately — Twilio requires fast response
+  res.set('Content-Type', 'text/xml')
+  res.send('<Response></Response>')
+
+  const from = req.body?.From || ''
+  const body = (req.body?.Body || '').trim().toUpperCase()
+
+  if (!from) return
+
+  const STOP_KEYWORDS   = ['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT']
+  const OPTIN_KEYWORDS  = ['START', 'UNSTOP', 'YES']
+
+  const phoneNorm = from.replace(/\D/g, '').slice(-10)
+  const orgId     = process.env.ORG_ID
+
+  if (!orgId) {
+    console.warn('[Webhook] ORG_ID not set — cannot update consent status')
+    return
+  }
+
+  // Log inbound message to Supabase regardless of keyword
+  const customer = await sbClient.findCustomerByPhone(orgId, phoneNorm)
+
+  if (customer) {
+    // Log the inbound message
+    sbClient.logMessage({
+      organizationId: orgId,
+      customerId:     customer.id,
+      direction:      'inbound',
+      channel:        'sms',
+      body:           req.body?.Body || '',
+      status:         'delivered',
+    }).catch(() => {})
+
+    if (STOP_KEYWORDS.includes(body)) {
+      await sbClient.updateSmsConsent(customer.id, 'opted_out', 'reply')
+      console.log(`[Webhook] STOP from ${from} — marked opted_out for customer ${customer.id} (${customer.first_name})`)
+    } else if (OPTIN_KEYWORDS.includes(body)) {
+      await sbClient.updateSmsConsent(customer.id, 'opted_in', 'reply')
+      console.log(`[Webhook] START from ${from} — marked opted_in for customer ${customer.id}`)
+    } else {
+      console.log(`[Webhook] Inbound from ${from}: "${req.body?.Body?.slice(0, 60)}"`)
+    }
+  } else {
+    console.log(`[Webhook] Inbound from ${from} — customer not found in org`)
   }
 })
 
