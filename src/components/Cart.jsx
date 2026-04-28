@@ -144,14 +144,14 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       {/* Totals */}
       <div style={{ padding: '14px 16px', borderTop: '1px solid #253349', background: '#111d30' }}>
         {/* Subtotal */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-          <span style={{ color: '#64748b', fontSize: 13 }}>Subtotal</span>
-          <span style={{ color: '#64748b', fontSize: 13 }}>${subtotal.toFixed(2)}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span style={{ color: '#64748b', fontSize: 23, fontWeight: 500 }}>Subtotal</span>
+          <span style={{ color: '#94a3b8', fontSize: 23, fontWeight: 600 }}>${subtotal.toFixed(2)}</span>
         </div>
         {/* Tax */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 0 }}>
-          <span style={{ color: '#64748b', fontSize: 13 }}>Tax</span>
-          <span style={{ color: '#64748b', fontSize: 13 }}>${tax.toFixed(2)}</span>
+          <span style={{ color: '#64748b', fontSize: 23, fontWeight: 500 }}>Tax</span>
+          <span style={{ color: '#94a3b8', fontSize: 23, fontWeight: 600 }}>${tax.toFixed(2)}</span>
         </div>
         {/* Total */}
         <div style={{
