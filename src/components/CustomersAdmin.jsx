@@ -843,6 +843,28 @@ function TH({ children, width, align = 'left' }) {
   )
 }
 
+// ── Quick Templates (used by Send from Segment buttons) ──────────────────────
+const QUICK_TEMPLATES = [
+  {
+    id:    'follow_up',
+    label: 'Follow-up',
+    icon:  '👋',
+    body:  `Hey {first_name}, this is {seller_name} from the kiosk 👋\nIt was nice meeting you earlier. Let me know if you want me to hold a deal for you.`,
+  },
+  {
+    id:    'promo',
+    label: 'Promo',
+    icon:  '🔥',
+    body:  `Hey {first_name}, we have a special deal today 🔥\nI can give you a better price if you stop by.`,
+  },
+  {
+    id:    'new_arrivals',
+    label: 'New Arrivals',
+    icon:  '👀',
+    body:  `Hey {first_name}, we just got new fragrances in 👀\nSome are very close to what you liked.`,
+  },
+]
+
 // ── Quick Segments ────────────────────────────────────────────────────────────
 const QUICK_SEGMENTS = [
   { id: 'customers_today',   label: 'Customers Today',   color: '#3b82f6' },
@@ -1015,12 +1037,14 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
     return { success: true }
   }
 
-  const handleSendFromSegment = () => {
+  const openCampaignWithSegment = (message = null) => {
     const ids = new Set(filtered.map(c => c.id))
-    setCampaignPreload({ selected: ids, step: 2 })
+    setCampaignPreload({ selected: ids, step: 2, message })
     setCampaignKey(k => k + 1)
     setActiveTab('sms')
   }
+
+  const handleSendFromSegment = () => openCampaignWithSegment(null)
 
   const resetAdvanced = () => {
     setDateFrom(''); setDateTo(''); setMinSpent(''); setMaxSpent(''); setMinPurchases('')
@@ -1085,6 +1109,7 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
           posSession={posSession}
           initialSelected={campaignPreload?.selected ?? null}
           initialStep={campaignPreload?.step ?? 1}
+          initialMessage={campaignPreload?.message ?? null}
         />
       )}
       {activeTab === 'email' && <CampaignEmail />}
@@ -1228,6 +1253,33 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
             </button>
           )}
         </div>
+
+        {/* Row 1.5b — Quick Templates (only when segment active with results) */}
+        {activeSegment && filtered.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+            <span style={{ color: DIM, fontSize: 11, fontWeight: 600, letterSpacing: 0.4, whiteSpace: 'nowrap' }}>SEND:</span>
+            {QUICK_TEMPLATES.map(qt => (
+              <button
+                key={qt.id}
+                onClick={() => openCampaignWithSegment(qt.body)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '4px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                  background: 'rgba(59,130,246,0.08)',
+                  border: `1px solid rgba(59,130,246,0.3)`,
+                  color: '#93c5fd', fontWeight: 600, transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.18)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.6)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.08)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.3)' }}
+              >
+                <span>{qt.icon}</span> {qt.label}
+              </button>
+            ))}
+            <span style={{ color: DIM, fontSize: 11, marginLeft: 4 }}>
+              → opens compose with message pre-filled, {filtered.length} recipients
+            </span>
+          </div>
+        )}
 
         {/* Row 2 — search + filters */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
