@@ -1,4 +1,5 @@
-﻿import { sumItemSpare } from '../utils/spareUtils'
+﻿import { useState, useEffect, useRef } from 'react'
+import { sumItemSpare } from '../utils/spareUtils'
 
 export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale, currentUser, onFreezeSale, onEditItem }) {
   const subtotal      = items.reduce((sum, i) => sum + i.subtotal, 0)
@@ -7,6 +8,18 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
   const tax   = subtotal * taxRate
   const total = subtotal + tax
   const empty = items.length === 0
+
+  // Flash animation when total changes
+  const [flash, setFlash] = useState(false)
+  const prevTotalRef = useRef(total)
+  useEffect(() => {
+    if (prevTotalRef.current !== total) {
+      prevTotalRef.current = total
+      setFlash(true)
+      const t = setTimeout(() => setFlash(false), 400)
+      return () => clearTimeout(t)
+    }
+  }, [total])
 
   return (
     <div style={{
@@ -131,20 +144,28 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
       {/* Totals */}
       <div style={{ padding: '14px 16px', borderTop: '1px solid #253349', background: '#111d30' }}>
         {[
-          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, color: '#e2e8f0' },
-          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, color: '#94a3b8' }] : []),
+          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, labelColor: '#64748b', valueColor: '#94a3b8', size: 14 },
+          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, labelColor: '#64748b', valueColor: '#94a3b8', size: 13 }] : []),
         ].map(row => (
-          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, opacity: row.label === 'Discount' ? 0.75 : 1 }}>
-            <span style={{ color: '#94a3b8', fontSize: 13 }}>{row.label}</span>
-            <span style={{ color: row.color, fontSize: 13 }}>{row.value}</span>
+          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ color: row.labelColor, fontSize: row.size }}>{row.label}</span>
+            <span style={{ color: row.valueColor, fontSize: row.size }}>{row.value}</span>
           </div>
         ))}
         <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          borderTop: '1px solid #253349', paddingTop: 10, marginTop: 6
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          borderTop: '1px solid #253349', paddingTop: 12, marginTop: 8,
         }}>
-          <span style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800 }}>Total</span>
-          <span style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800 }}>${total.toFixed(2)}</span>
+          <span style={{ color: '#e2e8f0', fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>Total</span>
+          <span style={{
+            color: flash ? '#93c5fd' : '#ffffff',
+            fontSize: 32, fontWeight: 900, letterSpacing: -1,
+            transform: flash ? 'scale(1.06)' : 'scale(1)',
+            transformOrigin: 'right center',
+            display: 'inline-block',
+            transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), color 0.25s ease',
+            textShadow: flash ? '0 0 18px rgba(147,197,253,0.5)' : 'none',
+          }}>${total.toFixed(2)}</span>
         </div>
       </div>
 
