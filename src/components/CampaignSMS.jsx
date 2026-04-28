@@ -697,9 +697,9 @@ function StepReview({ selected, customers, message, posSession, onBack, onReset 
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export default function CampaignSMS({ customers = [], posSession = null }) {
-  const [step,       setStep]       = useState(1)
-  const [selected,   setSelected]   = useState(new Set())
+export default function CampaignSMS({ customers = [], posSession = null, initialSelected = null, initialStep = 1 }) {
+  const [step,       setStep]       = useState(initialStep)
+  const [selected,   setSelected]   = useState(() => initialSelected ? new Set(initialSelected) : new Set())
   const [message,    setMessage]    = useState(TEMPLATES[0].body)
   const [templateId, setTemplateId] = useState(TEMPLATES[0].id)
 

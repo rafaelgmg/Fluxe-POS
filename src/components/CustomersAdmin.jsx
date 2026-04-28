@@ -874,7 +874,11 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
   const [minPurchases,  setMinPurchases]  = useState('')
 
   // Quick segment
-  const [activeSegment, setActiveSegment] = useState(null)
+  const [activeSegment,  setActiveSegment]  = useState(null)
+
+  // Campaign preload — set when "Send from Segment" is clicked
+  const [campaignKey,    setCampaignKey]    = useState(0)
+  const [campaignPreload, setCampaignPreload] = useState(null) // { selected: Set, step: number }
 
   // Supabase sync state
   const [importing,     setImporting]    = useState(false)
@@ -1011,6 +1015,13 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
     return { success: true }
   }
 
+  const handleSendFromSegment = () => {
+    const ids = new Set(filtered.map(c => c.id))
+    setCampaignPreload({ selected: ids, step: 2 })
+    setCampaignKey(k => k + 1)
+    setActiveTab('sms')
+  }
+
   const resetAdvanced = () => {
     setDateFrom(''); setDateTo(''); setMinSpent(''); setMaxSpent(''); setMinPurchases('')
     setActiveSegment(null)
@@ -1053,7 +1064,10 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
       {/* ── Tab Bar ── */}
       <div style={{ display: 'flex', background: PANEL, borderBottom: `1px solid ${BORDER}`, flexShrink: 0, padding: '0 20px', gap: 2 }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+          <button key={t.id} onClick={() => {
+            if (t.id === 'sms') { setCampaignPreload(null); setCampaignKey(k => k + 1) }
+            setActiveTab(t.id)
+          }} style={{
             padding: '11px 16px', background: 'none', border: 'none', marginBottom: -1,
             borderBottom: activeTab === t.id ? `2px solid ${BLUE}` : '2px solid transparent',
             color: activeTab === t.id ? TEXT : MUTED,
@@ -1064,7 +1078,15 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
       </div>
 
       {/* ── Campaign Tabs ── */}
-      {activeTab === 'sms'   && <CampaignSMS   customers={customers} posSession={posSession} />}
+      {activeTab === 'sms' && (
+        <CampaignSMS
+          key={campaignKey}
+          customers={customers}
+          posSession={posSession}
+          initialSelected={campaignPreload?.selected ?? null}
+          initialStep={campaignPreload?.step ?? 1}
+        />
+      )}
       {activeTab === 'email' && <CampaignEmail />}
 
       {/* ── Customers Tab ── */}
@@ -1186,7 +1208,24 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
                 background: 'transparent', border: `1px solid ${BORDER}`,
                 color: RED, transition: 'all 0.15s',
               }}
-            >✕ Clear segment</button>
+            >✕ Clear</button>
+          )}
+
+          {activeSegment && filtered.length > 0 && (
+            <button
+              onClick={handleSendFromSegment}
+              style={{
+                marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6,
+                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
+                border: 'none', color: '#fff',
+                boxShadow: '0 0 14px rgba(59,130,246,0.35)',
+                transition: 'all 0.15s',
+              }}
+            >
+              Send to {filtered.length} Customer{filtered.length !== 1 ? 's' : ''} →
+            </button>
           )}
         </div>
 
