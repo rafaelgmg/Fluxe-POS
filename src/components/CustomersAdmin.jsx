@@ -843,6 +843,16 @@ function TH({ children, width, align = 'left' }) {
   )
 }
 
+// ── Quick Segments ────────────────────────────────────────────────────────────
+const QUICK_SEGMENTS = [
+  { id: 'customers_today',   label: 'Customers Today',   color: '#3b82f6' },
+  { id: 'bought_today',      label: 'Bought Today',      color: '#22c55e' },
+  { id: 'no_purchase_today', label: 'No Purchase Today', color: '#f59e0b' },
+  { id: 'last_3_days',       label: 'Last 3 Days',       color: '#8b5cf6' },
+  { id: 'high_value',        label: 'High Value ($150+)', color: '#f59e0b' },
+  { id: 'inactive',          label: 'Inactive (7d+)',    color: '#ef4444' },
+]
+
 // ── Main Component ────────────────────────────────────────────────────────────
 const PAGE_SIZE = 30
 
@@ -863,6 +873,9 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
   const [maxSpent,      setMaxSpent]      = useState('')
   const [minPurchases,  setMinPurchases]  = useState('')
 
+  // Quick segment
+  const [activeSegment, setActiveSegment] = useState(null)
+
   // Supabase sync state
   const [importing,     setImporting]    = useState(false)
   const [importResult,  setImportResult] = useState(null) // { imported, failed, total }
@@ -882,6 +895,30 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
   const syncedCount      = useMemo(() => activeCustomers.filter(c => c.supabaseId).length, [activeCustomers])
   const unsyncedCount    = useMemo(() => activeCustomers.filter(c => !c.supabaseId).length, [activeCustomers])
   const supabaseReady    = isSupabaseConfigured() && !!posSession?.orgId
+
+  // Segment predicate functions — computed once per mount (dates don't change mid-session)
+  const segmentFns = useMemo(() => {
+    const today  = new Date().toISOString().slice(0, 10)
+    const minus3 = new Date(Date.now() - 3 * 86400_000).toISOString()
+    const minus7 = new Date(Date.now() - 7 * 86400_000).toISOString()
+    return {
+      customers_today:   c => (c.capturedAt || c.createdAt || '').slice(0, 10) === today,
+      bought_today:      c => (c.purchases || []).some(p => (p.date || '').slice(0, 10) === today),
+      no_purchase_today: c => (c.capturedAt || c.createdAt || '').slice(0, 10) === today
+                              && !(c.purchases || []).some(p => (p.date || '').slice(0, 10) === today),
+      last_3_days:       c => (c.capturedAt || c.createdAt || '') >= minus3,
+      high_value:        c => (c.purchases || []).reduce((s, p) => s + (p.total || 0), 0) >= 150,
+      inactive:          c => { const ps = c.purchases || []; return ps.length > 0 && ps[ps.length - 1].date < minus7 },
+    }
+  }, [])
+
+  // Live counts per segment (shown as badges on the buttons)
+  const segmentCounts = useMemo(() => {
+    const base = customers.filter(c => !c.archived)
+    const out = {}
+    for (const seg of QUICK_SEGMENTS) out[seg.id] = base.filter(segmentFns[seg.id]).length
+    return out
+  }, [customers, segmentFns])
 
   const handleImport = useCallback(async () => {
     if (!supabaseReady || importing) return
@@ -915,6 +952,10 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
   // Filtered list
   const filtered = useMemo(() => {
     let list = customers.filter(c => !c.archived)
+
+    // Quick segment (first layer — combines with all other filters)
+    if (activeSegment && segmentFns[activeSegment]) list = list.filter(segmentFns[activeSegment])
+
     if (filterType === 'buyer')           list = list.filter(c => (c.purchases || []).length > 0)
     else if (filterType === 'no-purchase') list = list.filter(c => (c.purchases || []).length === 0)
     else if (filterType === 'location' && filterValue) list = list.filter(c => c.capturedLocation === filterValue)
@@ -945,7 +986,7 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
       )
     }
     return list
-  }, [customers, filterType, filterValue, search, dateFrom, dateTo, minSpent, maxSpent, minPurchases])
+  }, [customers, activeSegment, segmentFns, filterType, filterValue, search, dateFrom, dateTo, minSpent, maxSpent, minPurchases])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -966,11 +1007,13 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
     setSearch('')
     setFilterType('all')
     setFilterValue('')
+    setActiveSegment(null)
     return { success: true }
   }
 
   const resetAdvanced = () => {
     setDateFrom(''); setDateTo(''); setMinSpent(''); setMaxSpent(''); setMinPurchases('')
+    setActiveSegment(null)
     setPage(1)
   }
 
@@ -1104,6 +1147,47 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
           >
             + Add Customer
           </button>
+        </div>
+
+        {/* Row 1.5 — Quick Segments */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+          <span style={{ color: DIM, fontSize: 11, fontWeight: 600, letterSpacing: 0.4, whiteSpace: 'nowrap' }}>QUICK:</span>
+          {QUICK_SEGMENTS.map(seg => {
+            const isActive = activeSegment === seg.id
+            const count    = segmentCounts[seg.id] ?? 0
+            return (
+              <button
+                key={seg.id}
+                onClick={() => { setActiveSegment(isActive ? null : seg.id); setPage(1) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '4px 10px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                  background: isActive ? `${seg.color}22` : 'transparent',
+                  border: `1px solid ${isActive ? seg.color : BORDER}`,
+                  color: isActive ? seg.color : MUTED,
+                  fontWeight: isActive ? 700 : 400,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {seg.label}
+                <span style={{
+                  minWidth: 18, padding: '1px 5px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                  background: isActive ? `${seg.color}33` : 'rgba(148,163,184,0.1)',
+                  color: isActive ? seg.color : DIM,
+                }}>{count}</span>
+              </button>
+            )
+          })}
+          {activeSegment && (
+            <button
+              onClick={() => { setActiveSegment(null); setPage(1) }}
+              style={{
+                padding: '4px 10px', borderRadius: 20, fontSize: 11, cursor: 'pointer',
+                background: 'transparent', border: `1px solid ${BORDER}`,
+                color: RED, transition: 'all 0.15s',
+              }}
+            >✕ Clear segment</button>
+          )}
         </div>
 
         {/* Row 2 — search + filters */}
