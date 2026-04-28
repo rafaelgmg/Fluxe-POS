@@ -143,28 +143,31 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
 
       {/* Totals */}
       <div style={{ padding: '14px 16px', borderTop: '1px solid #253349', background: '#111d30' }}>
-        {[
-          { label: 'Subtotal', value: `$${subtotal.toFixed(2)}`, labelColor: '#64748b', valueColor: '#94a3b8', size: 14 },
-          ...(totalDiscount > 0 ? [{ label: 'Discount', value: `-$${totalDiscount.toFixed(2)}`, labelColor: '#64748b', valueColor: '#94a3b8', size: 13 }] : []),
-        ].map(row => (
-          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ color: row.labelColor, fontSize: row.size }}>{row.label}</span>
-            <span style={{ color: row.valueColor, fontSize: row.size }}>{row.value}</span>
-          </div>
-        ))}
+        {/* Subtotal */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+          <span style={{ color: '#64748b', fontSize: 13 }}>Subtotal</span>
+          <span style={{ color: '#64748b', fontSize: 13 }}>${subtotal.toFixed(2)}</span>
+        </div>
+        {/* Tax */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 0 }}>
+          <span style={{ color: '#64748b', fontSize: 13 }}>Tax</span>
+          <span style={{ color: '#64748b', fontSize: 13 }}>${tax.toFixed(2)}</span>
+        </div>
+        {/* Total */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          borderTop: '1px solid #253349', paddingTop: 12, marginTop: 8,
+          borderTop: '1px solid #253349', paddingTop: 14, marginTop: 12,
         }}>
-          <span style={{ color: '#e2e8f0', fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>Total</span>
+          <span style={{ color: '#f1f5f9', fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>Total</span>
           <span style={{
             color: flash ? '#93c5fd' : '#ffffff',
-            fontSize: 32, fontWeight: 900, letterSpacing: -1,
+            fontSize: 38, fontWeight: 900, letterSpacing: -1.5,
             transform: flash ? 'scale(1.06)' : 'scale(1)',
             transformOrigin: 'right center',
             display: 'inline-block',
             transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), color 0.25s ease',
             textShadow: flash ? '0 0 18px rgba(147,197,253,0.5)' : 'none',
+            lineHeight: 1,
           }}>${total.toFixed(2)}</span>
         </div>
       </div>
