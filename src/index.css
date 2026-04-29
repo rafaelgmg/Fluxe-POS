@@ -13,8 +13,11 @@
   --c-scrollbar:   #253349;
   --c-scrollbar-hover: #415569;
   --c-bg-grad:     radial-gradient(ellipse at top, #0d1829 0%, #030e1e 60%);
-  --c-shadow-card: 0 8px 32px rgba(0,0,0,0.40);
-  --c-shadow-bar:  none;
+  --c-shadow-card:      0 8px 32px rgba(0,0,0,0.40);
+  --c-shadow-bar:       none;
+  --c-btn-cta-bg:       linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%);
+  --c-btn-cta-shadow:   0 0 24px rgba(37,99,235,0.35);
+  --c-btn-cta-shadow-hv:0 0 36px rgba(37,99,235,0.5);
 }
 
 /* ── Reset ────────────────────────────────────────────────────────────────── */

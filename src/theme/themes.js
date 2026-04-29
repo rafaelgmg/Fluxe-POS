@@ -19,8 +19,12 @@ export const DARK = {
   '--c-border-md': '#263354',
   '--c-border-row':'rgba(30,41,59,0.55)',   // row dividers (lighter than section borders)
   // Shadows
-  '--c-shadow-card': '0 8px 32px rgba(0,0,0,0.40)',  // GLOW.card equivalent
-  '--c-shadow-bar':  'none',
+  '--c-shadow-card':     '0 8px 32px rgba(0,0,0,0.40)',
+  '--c-shadow-bar':      'none',
+  // CTA button (Complete Sale)
+  '--c-btn-cta-bg':      'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
+  '--c-btn-cta-shadow':  '0 0 24px rgba(37,99,235,0.35)',
+  '--c-btn-cta-shadow-hv':'0 0 36px rgba(37,99,235,0.5)',
   // Text
   '--c-text':       '#f1f5f9',
   '--c-text-sub':   '#cbd0e0',
@@ -40,7 +44,7 @@ export const LIGHT = {
   '--c-bg':        '#F3F4F6',      // page bg — clearly separated from white cards
   '--c-bg-panel':  '#FFFFFF',      // nav, sidebar — white panels pop against bg
   '--c-bg-card':   '#FFFFFF',      // cards, modals
-  '--c-bg-hover':  '#EDF1F7',      // row/button hover
+  '--c-bg-hover':  '#F1F5F9',      // row/button hover (Tailwind slate-100)
   '--c-bg-active': '#DCE4EF',      // pressed state
   '--c-bg-glass':  'rgba(0,0,0,0.025)',
   '--c-bg-stripe': '#F8FAFC',      // alternating table rows
@@ -49,10 +53,14 @@ export const LIGHT = {
   '--c-border-md': '#C9D3DF',      // inputs, prominent edges
   '--c-border-row':'#F1F5F9',      // row dividers (ultra-light, just a hint)
   // Shadows — subtle depth, no heavy drop shadows
-  '--c-shadow-card': '0 1px 3px rgba(0,0,0,0.06)',
-  '--c-shadow-bar':  '0 1px 3px rgba(0,0,0,0.06)',
+  '--c-shadow-card':      '0 4px 12px rgba(0,0,0,0.08)',
+  '--c-shadow-bar':       '0 1px 3px rgba(0,0,0,0.06)',
+  // CTA button (Complete Sale)
+  '--c-btn-cta-bg':       '#4F46E5',
+  '--c-btn-cta-shadow':   '0 4px 12px rgba(79,70,229,0.30)',
+  '--c-btn-cta-shadow-hv':'0 6px 18px rgba(79,70,229,0.45)',
   // Text — high contrast hierarchy
-  '--c-text':       '#111827',     // near-black (Tailwind gray-900)
+  '--c-text':       '#0F172A',     // Tailwind slate-900 — deep, high-contrast
   '--c-text-sub':   '#374151',     // Tailwind gray-700
   '--c-text-muted': '#6B7280',     // Tailwind gray-500
   '--c-text-dim':   '#9CA3AF',     // Tailwind gray-400

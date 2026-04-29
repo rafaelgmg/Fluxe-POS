@@ -158,12 +158,12 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
         {/* Total — flash animation preserved */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          borderTop: '1px solid var(--c-border)', paddingTop: 14, marginTop: 12,
+          borderTop: '1px solid var(--c-border-md)', paddingTop: 14, marginTop: 12,
         }}>
-          <span style={{ color: 'var(--c-text)', fontSize: 26, fontWeight: 800, letterSpacing: -0.5 }}>Total</span>
+          <span style={{ color: 'var(--c-text)', fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Total</span>
           <span style={{
             color: flash ? '#3b82f6' : 'var(--c-text)',
-            fontSize: 38, fontWeight: 900, letterSpacing: -1.5,
+            fontSize: 42, fontWeight: 900, letterSpacing: -1.5,
             transform: flash ? 'scale(1.06)' : 'scale(1)',
             transformOrigin: 'right center',
             display: 'inline-block',
@@ -181,9 +181,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
           disabled={empty}
           style={{
             width: '100%', padding: '14px', marginBottom: 8,
-            background: empty
-              ? 'var(--c-bg-card)'
-              : 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
+            background: empty ? 'var(--c-bg-card)' : 'var(--c-btn-cta-bg)',
             border: empty ? '1px solid var(--c-border)' : 'none',
             borderRadius: 10,
             color: empty ? 'var(--c-text-dim)' : '#fff',
@@ -191,11 +189,11 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             cursor: empty ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s ease',
-            boxShadow: empty ? 'none' : '0 0 24px rgba(37,99,235,0.35)',
+            boxShadow: empty ? 'none' : 'var(--c-btn-cta-shadow)',
             letterSpacing: 0.3,
           }}
-          onMouseEnter={e => { if (!empty) { e.currentTarget.style.boxShadow = '0 0 36px rgba(37,99,235,0.5)'; e.currentTarget.style.transform = 'scale(1.01)' } }}
-          onMouseLeave={e => { if (!empty) { e.currentTarget.style.boxShadow = '0 0 24px rgba(37,99,235,0.35)'; e.currentTarget.style.transform = 'scale(1)' } }}
+          onMouseEnter={e => { if (!empty) { e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow-hv)'; e.currentTarget.style.transform = 'scale(1.01)' } }}
+          onMouseLeave={e => { if (!empty) { e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow)'; e.currentTarget.style.transform = 'scale(1)' } }}
         >
           🛒 Complete Sale
         </button>
