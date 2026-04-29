@@ -902,9 +902,16 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
   const products    = liveProducts && liveProducts.length > 0 ? liveProducts : localProducts
   const setProducts = setAppProducts
     ? (updater) => {
-        const next = typeof updater === 'function' ? updater(products) : updater
-        setLocalProducts(next)
-        setAppProducts(next)
+        if (typeof updater === 'function') {
+          setLocalProducts(prev => {
+            const next = updater(prev)
+            setAppProducts(next)
+            return next
+          })
+        } else {
+          setLocalProducts(updater)
+          setAppProducts(updater)
+        }
       }
     : setLocalProducts
 
