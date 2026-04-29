@@ -138,7 +138,7 @@ export const tableHeader = {
 
 export const tableRow = (idx = 0, extra = {}) => ({
   borderBottom: `1px solid ${C.border}`,
-  background: idx % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.5)',
+  background: idx % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)',
   transition: T.fast,
   ...extra,
 })
