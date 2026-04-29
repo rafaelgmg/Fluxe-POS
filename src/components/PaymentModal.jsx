@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PaymentModal.jsx
  * ──────────────────────────────────────────────────────────────────────────────
  * Supports both single-method and split-payment (cash + card, etc.).
@@ -108,18 +108,19 @@ const BRAND_ICON = {
 const BILLS = [1000, 500, 100, 50, 20, 10, 5, 1]
 const COINS = [1, 0.25, 0.10, 0.05, 0.01]
 
-// ── Shared styles ──────────────────────────────────────────────────────────────
+// ── Shared styles — theme-aware via CSS vars ───────────────────────────────────
 const LABEL = {
-  color: '#c0cfe0', fontSize: 11, fontWeight: 700,
+  color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 700,
   letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, display: 'block',
 }
 const INPUT = {
   width: '100%', padding: '11px 14px',
-  background: '#0b1426', border: '1px solid #3a4f6a', borderRadius: 8,
-  color: '#f1f5f9', fontSize: 14, outline: 'none', fontFamily: 'inherit',
+  background: 'var(--c-bg-card)', border: '1px solid var(--c-border-md)', borderRadius: 8,
+  color: 'var(--c-text)', fontSize: 14, outline: 'none', fontFamily: 'inherit',
+  transition: 'border-color 0.15s',
 }
-const CARD_DARK = {
-  background: '#080f1e', border: '1px solid #253349',
+const SECTION = {
+  background: 'var(--c-bg)', border: '1px solid var(--c-border)',
   borderRadius: 12, padding: 16, marginBottom: 12,
 }
 
@@ -147,7 +148,7 @@ export default function PaymentModal({
 
   // ── Current entry form ──────────────────────────────────────────────────────
   const [method,      setMethod]      = useState(() => METHODS[0]?.id || 'cash')
-  const [entryAmount, setEntryAmount] = useState('')   // '' = use remaining
+  const [entryAmount, setEntryAmount] = useState('')
   const [cashReceived, setCashReceived] = useState('')
   const [cardBrand,   setCardBrand]   = useState('visa')
   const [cardLast4,   setCardLast4]   = useState('')
@@ -205,7 +206,7 @@ export default function PaymentModal({
   const addPayment = () => {
     if (!canAdd) return
 
-    const amount = entryAmt  // already capped at remaining
+    const amount = entryAmt
     const entry  = { method, amount }
 
     if (method === 'cash') {
@@ -222,7 +223,6 @@ export default function PaymentModal({
     }
 
     setPayments(prev => [...prev, entry])
-    // Reset entry form
     setEntryAmount('')
     setCashReceived('')
     setCardLast4('')
@@ -271,23 +271,25 @@ export default function PaymentModal({
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(0,2,15,0.92)',
+      background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000, backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
-        border: '1px solid #253349', borderRadius: 20,
+        background: 'var(--c-bg-panel)',
+        border: '1px solid var(--c-border)',
+        borderRadius: 20,
         width: 540, maxHeight: '93vh', overflowY: 'auto',
         padding: 28,
-        boxShadow: '0 24px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(37,99,235,0.07) inset',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(37,99,235,0.05) inset',
       }}>
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Complete Sale</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--c-text)', margin: 0 }}>Complete Sale</h2>
           <button onClick={onCancel} style={{
-            background: 'none', border: 'none', color: '#b8c8da',
+            background: 'none', border: 'none', color: 'var(--c-text-muted)',
             fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 4,
           }}>✕</button>
         </div>
@@ -296,16 +298,18 @@ export default function PaymentModal({
         <div style={{
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16,
         }}>
-          {/* Total Due */}
+          {/* Total Due — primary focus element */}
           <div style={{
-            background: '#070e1c', border: '1px solid #253349',
-            borderRadius: 12, padding: '14px 18px', textAlign: 'center',
+            background: 'var(--c-bg-card)',
+            border: '1px solid var(--c-border)',
+            borderRadius: 12, padding: '16px 18px', textAlign: 'center',
+            boxShadow: 'var(--c-shadow-card)',
           }}>
-            <p style={{ color: '#b8c8da', fontSize: 10, letterSpacing: 0.8, fontWeight: 700, marginBottom: 5 }}>TOTAL DUE</p>
-            <p style={{ color: '#f1f5f9', fontSize: 32, fontWeight: 800, letterSpacing: -1, lineHeight: 1, margin: 0 }}>
+            <p style={{ color: 'var(--c-text-muted)', fontSize: 10, letterSpacing: 0.8, fontWeight: 700, marginBottom: 6 }}>TOTAL DUE</p>
+            <p style={{ color: 'var(--c-text)', fontSize: 34, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, margin: 0 }}>
               ${total.toFixed(2)}
             </p>
-            <p style={{ color: '#6a7f98', fontSize: 11, marginTop: 4 }}>
+            <p style={{ color: 'var(--c-text-dim)', fontSize: 11, marginTop: 5 }}>
               ${subtotal.toFixed(2)} + tax ${tax.toFixed(2)}
             </p>
           </div>
@@ -314,26 +318,26 @@ export default function PaymentModal({
           <div style={{
             background: isZeroTotal ? 'rgba(59,130,246,0.06)' : remaining > 0 ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
             border: `1px solid ${isZeroTotal ? 'rgba(59,130,246,0.3)' : remaining > 0 ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
-            borderRadius: 12, padding: '14px 18px', textAlign: 'center',
+            borderRadius: 12, padding: '16px 18px', textAlign: 'center',
             transition: 'all 0.3s',
           }}>
-            <p style={{ color: '#b8c8da', fontSize: 10, letterSpacing: 0.8, fontWeight: 700, marginBottom: 5 }}>
+            <p style={{ color: 'var(--c-text-muted)', fontSize: 10, letterSpacing: 0.8, fontWeight: 700, marginBottom: 6 }}>
               {isZeroTotal ? '↩ EXCHANGE' : remaining > 0 ? 'REMAINING' : '✓ PAID IN FULL'}
             </p>
             <p style={{
               color: isZeroTotal ? '#3b82f6' : remaining > 0 ? '#ef4444' : '#22c55e',
-              fontSize: 32, fontWeight: 800, letterSpacing: -1, lineHeight: 1, margin: 0,
+              fontSize: 34, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1, margin: 0,
               transition: 'color 0.3s',
             }}>
               ${remaining.toFixed(2)}
             </p>
             {isZeroTotal && (
-              <p style={{ color: '#60a5fa', fontSize: 11, marginTop: 4 }}>
+              <p style={{ color: '#60a5fa', fontSize: 11, marginTop: 5 }}>
                 No payment required
               </p>
             )}
             {!isZeroTotal && payments.length > 0 && (
-              <p style={{ color: '#b8c8da', fontSize: 11, marginTop: 4 }}>
+              <p style={{ color: 'var(--c-text-muted)', fontSize: 11, marginTop: 5 }}>
                 ${totalPaid.toFixed(2)} collected
               </p>
             )}
@@ -342,32 +346,29 @@ export default function PaymentModal({
 
         {/* ── Payments already added ── */}
         {payments.length > 0 && (
-          <div style={{
-            background: '#080f1e', border: '1px solid #253349',
-            borderRadius: 12, padding: '10px 14px', marginBottom: 14,
-          }}>
-            <p style={{ color: '#b8c8da', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>
+          <div style={{ ...SECTION }}>
+            <p style={{ color: 'var(--c-text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>
               PAYMENTS COLLECTED
             </p>
             {payments.map((p, idx) => (
               <div key={idx} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '7px 0',
-                borderBottom: idx < payments.length - 1 ? '1px solid #111d30' : 'none',
+                borderBottom: idx < payments.length - 1 ? '1px solid var(--c-border-row)' : 'none',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 15 }}>
                     {p.method === 'cash' ? '💵' : p.method === 'card' ? '💳' : p.method === 'external' ? '📱' : '✍️'}
                   </span>
                   <div>
-                    <span style={{ color: '#f1f5f9', fontSize: 13, fontWeight: 600 }}>{methodLabel(p)}</span>
+                    <span style={{ color: 'var(--c-text)', fontSize: 13, fontWeight: 600 }}>{methodLabel(p)}</span>
                     {p.method === 'cash' && p.changeDue > 0 && (
                       <span style={{ color: '#22c55e', fontSize: 11, marginLeft: 8 }}>
                         Change: ${p.changeDue.toFixed(2)}
                       </span>
                     )}
                     {p.method === 'card' && p.authorizationNumber && (
-                      <span style={{ color: '#b8c8da', fontSize: 11, marginLeft: 8 }}>
+                      <span style={{ color: 'var(--c-text-sub)', fontSize: 11, marginLeft: 8 }}>
                         Auth: {p.authorizationNumber}
                       </span>
                     )}
@@ -381,13 +382,13 @@ export default function PaymentModal({
                     onClick={() => removePayment(idx)}
                     title="Remove this payment"
                     style={{
-                      background: 'none', border: '1px solid #253349', borderRadius: 4,
-                      color: '#b8c8da', fontSize: 12, cursor: 'pointer',
+                      background: 'none', border: '1px solid var(--c-border)', borderRadius: 4,
+                      color: 'var(--c-text-muted)', fontSize: 12, cursor: 'pointer',
                       width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.color = '#ef4444' }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#3a4f6a'; e.currentTarget.style.color = '#b8c8da' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--c-border)'; e.currentTarget.style.color = 'var(--c-text-muted)' }}
                   >✕</button>
                 </div>
               </div>
@@ -399,11 +400,11 @@ export default function PaymentModal({
         {remaining > 0 && (
           <>
             <div style={{
-              background: '#080f1e', border: `1px solid ${activeColor}28`,
-              borderRadius: 12, padding: 16, marginBottom: 12,
+              ...SECTION,
+              border: `1px solid ${activeColor}30`,
               transition: 'border-color 0.2s',
             }}>
-              <p style={{ color: '#b8c8da', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 10 }}>
+              <p style={{ color: 'var(--c-text-muted)', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 10 }}>
                 ADD PAYMENT
               </p>
 
@@ -417,9 +418,9 @@ export default function PaymentModal({
                       onClick={() => { setMethod(m.id); setEntryAmount('') }}
                       style={{
                         flex: 1, padding: '10px 4px', borderRadius: 10,
-                        border: `1px solid ${active ? m.color : '#253349'}`,
-                        background: active ? `${m.color}1a` : '#0b1426',
-                        color: active ? '#f1f5f9' : '#b8c8da',
+                        border: `1px solid ${active ? m.color : 'var(--c-border)'}`,
+                        background: active ? `${m.color}1a` : 'var(--c-bg-card)',
+                        color: active ? 'var(--c-text)' : 'var(--c-text-sub)',
                         fontSize: 12, fontWeight: active ? 700 : 500,
                         cursor: 'pointer', transition: 'all 0.18s',
                         boxShadow: active ? `0 0 12px ${m.color}28` : 'none',
@@ -450,7 +451,7 @@ export default function PaymentModal({
                     fontSize: 22, fontWeight: 800,
                     color: activeColor, textAlign: 'right',
                     padding: '10px 16px',
-                    border: `1px solid ${activeColor}28`,
+                    border: `1px solid ${activeColor}30`,
                   }}
                 />
               </div>
@@ -495,8 +496,8 @@ export default function PaymentModal({
                     {COINS.map(d => (
                       <button key={d} onClick={() => addDenom(d)} style={{
                         padding: '5px 10px', borderRadius: 6,
-                        border: '1px solid #cbd0e028',
-                        background: '#cbd0e00a', color: '#cbd0e0',
+                        border: '1px solid var(--c-border)',
+                        background: 'var(--c-bg-card)', color: 'var(--c-text-sub)',
                         fontSize: 12, fontWeight: 600, cursor: 'pointer',
                       }}>${d.toFixed(2)}</button>
                     ))}
@@ -506,13 +507,13 @@ export default function PaymentModal({
                   <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '10px 16px', borderRadius: 10,
-                    background: changeDue > 0 ? '#22c55e12' : '#070e1c',
-                    border: `1px solid ${changeDue > 0 ? '#22c55e38' : '#111d30'}`,
+                    background: changeDue > 0 ? '#22c55e12' : 'var(--c-bg)',
+                    border: `1px solid ${changeDue > 0 ? '#22c55e38' : 'var(--c-border-row)'}`,
                     transition: 'all 0.2s',
                   }}>
-                    <span style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 700 }}>Change Due</span>
+                    <span style={{ color: 'var(--c-text)', fontSize: 13, fontWeight: 700 }}>Change Due</span>
                     <span style={{
-                      color: changeDue > 0 ? '#22c55e' : '#253349',
+                      color: changeDue > 0 ? '#22c55e' : 'var(--c-border)',
                       fontSize: 26, fontWeight: 800, transition: 'color 0.2s',
                     }}>${changeDue.toFixed(2)}</span>
                   </div>
@@ -536,8 +537,8 @@ export default function PaymentModal({
                         <button key={b.id} onClick={() => setCardBrand(b.id)} style={{
                           flex: 1, padding: '8px 4px 6px',
                           borderRadius: 10,
-                          border: `2px solid ${active ? b.color : '#253349'}`,
-                          background: active ? `${b.color}14` : '#080f1e',
+                          border: `2px solid ${active ? b.color : 'var(--c-border)'}`,
+                          background: active ? `${b.color}14` : 'var(--c-bg)',
                           cursor: 'pointer', transition: 'all 0.18s',
                           boxShadow: active ? `0 0 12px ${b.color}35` : 'none',
                           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, outline: 'none',
@@ -551,7 +552,7 @@ export default function PaymentModal({
                           </div>
                           <span style={{
                             fontSize: 9, fontWeight: active ? 700 : 500,
-                            color: active ? b.color : '#b8c8da', letterSpacing: 0.3,
+                            color: active ? b.color : 'var(--c-text-sub)', letterSpacing: 0.3,
                           }}>{b.label}</span>
                         </button>
                       )
@@ -600,8 +601,8 @@ export default function PaymentModal({
                     placeholder="e.g. 1042"
                     style={{ ...INPUT, letterSpacing: 2, fontWeight: 600 }}
                   />
-                  <p style={{ color: '#b8c8da', fontSize: 11, marginTop: 8 }}>
-                    Make check payable to: <b style={{ color: '#e2e8f0' }}>Perfume Passage</b>
+                  <p style={{ color: 'var(--c-text-sub)', fontSize: 11, marginTop: 8 }}>
+                    Make check payable to: <b style={{ color: 'var(--c-text)' }}>Perfume Passage</b>
                   </p>
                 </>
               )}
@@ -616,12 +617,12 @@ export default function PaymentModal({
                 borderRadius: 10, marginBottom: 14,
                 background: canAdd
                   ? `linear-gradient(135deg, ${activeColor} 0%, ${activeColor}cc 100%)`
-                  : '#0b1426',
-                border: canAdd ? 'none' : '1px solid #253349',
-                color: canAdd ? '#fff' : '#415569',
+                  : 'var(--c-bg-card)',
+                border: canAdd ? 'none' : '1px solid var(--c-border)',
+                color: canAdd ? '#fff' : 'var(--c-text-dim)',
                 fontSize: 14, fontWeight: 700,
                 cursor: canAdd ? 'pointer' : 'not-allowed',
-                boxShadow: canAdd ? `0 0 18px ${activeColor}35` : 'none',
+                boxShadow: canAdd ? `0 4px 14px ${activeColor}40` : 'none',
                 transition: 'all 0.2s',
               }}
             >
@@ -638,19 +639,19 @@ export default function PaymentModal({
           {linkedCustomer ? (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 14px', background: '#0b1426',
-              border: '1px solid #3b82f640', borderRadius: 8,
+              padding: '10px 14px', background: 'var(--c-bg-card)',
+              border: '1px solid rgba(59,130,246,0.35)', borderRadius: 8,
             }}>
               <div>
-                <span style={{ color: '#f1f5f9', fontSize: 14, fontWeight: 600 }}>
+                <span style={{ color: 'var(--c-text)', fontSize: 14, fontWeight: 600 }}>
                   {linkedCustomer.firstName} {linkedCustomer.lastName}
                 </span>
                 {linkedCustomer.phone && (
-                  <span style={{ color: '#b8c8da', fontSize: 12, marginLeft: 10 }}>{linkedCustomer.phone}</span>
+                  <span style={{ color: 'var(--c-text-muted)', fontSize: 12, marginLeft: 10 }}>{linkedCustomer.phone}</span>
                 )}
               </div>
               <button onClick={() => { setLinkedCustomer(null); setCustSearch('') }}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 16, padding: 4 }}>✕</button>
+                style={{ background: 'none', border: 'none', color: 'var(--c-text-muted)', cursor: 'pointer', fontSize: 16, padding: 4 }}>✕</button>
             </div>
           ) : (
             <>
@@ -664,8 +665,8 @@ export default function PaymentModal({
               {showCustDropdown && custResults.length > 0 && (
                 <div style={{
                   position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
-                  background: '#0d1829', border: '1px solid #253349',
-                  borderRadius: 8, boxShadow: '0 8px 28px rgba(0,0,0,0.6)', marginTop: 4,
+                  background: 'var(--c-bg-card)', border: '1px solid var(--c-border)',
+                  borderRadius: 8, boxShadow: 'var(--c-shadow-card)', marginTop: 4,
                 }}>
                   {custResults.map(c => (
                     <button key={c.id}
@@ -673,14 +674,14 @@ export default function PaymentModal({
                       style={{
                         display: 'block', width: '100%', padding: '10px 14px',
                         textAlign: 'left', background: 'transparent',
-                        border: 'none', borderBottom: '1px solid #253349',
-                        color: '#f1f5f9', fontSize: 13, cursor: 'pointer',
+                        border: 'none', borderBottom: '1px solid var(--c-border-row)',
+                        color: 'var(--c-text)', fontSize: 13, cursor: 'pointer',
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#111d30'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--c-bg-hover)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ fontWeight: 600 }}>{c.firstName} {c.lastName}</span>
-                      {c.phone && <span style={{ color: '#b8c8da', marginLeft: 10, fontSize: 12 }}>{c.phone}</span>}
+                      {c.phone && <span style={{ color: 'var(--c-text-muted)', marginLeft: 10, fontSize: 12 }}>{c.phone}</span>}
                     </button>
                   ))}
                 </div>
@@ -699,7 +700,7 @@ export default function PaymentModal({
           />
         </div>
 
-        {/* ── Action buttons (only active when paid in full) ── */}
+        {/* ── Action buttons ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <ActionButton label="🖨 Print Receipt"  disabled={!canConfirm} primary onClick={() => onConfirm(buildPayload('print'))} />
@@ -712,20 +713,20 @@ export default function PaymentModal({
               onClick={() => onConfirm(buildPayload('none'))}
               style={{
                 flex: 1, padding: '10px 8px', borderRadius: 8,
-                background: 'rgba(255,255,255,0.02)', border: '1px solid #253349',
-                color: canConfirm ? '#cbd0e0' : '#415569',
+                background: 'var(--c-bg-glass)', border: '1px solid var(--c-border)',
+                color: canConfirm ? 'var(--c-text-sub)' : 'var(--c-text-dim)',
                 fontSize: 12, fontWeight: 500,
                 cursor: canConfirm ? 'pointer' : 'not-allowed',
               }}
             >✓ Confirm (no receipt)</button>
             <button onClick={onCancel} style={{
               flex: 1, padding: '10px 8px', borderRadius: 8,
-              background: 'rgba(255,255,255,0.02)', border: '1px solid #253349',
-              color: '#b8c8da', fontSize: 12, cursor: 'pointer',
+              background: 'var(--c-bg-glass)', border: '1px solid var(--c-border)',
+              color: 'var(--c-text-sub)', fontSize: 12, cursor: 'pointer',
             }}>Cancel</button>
           </div>
           {!canConfirm && payments.length === 0 && !isZeroTotal && (
-            <p style={{ color: '#415569', fontSize: 11, textAlign: 'center', marginTop: 2 }}>
+            <p style={{ color: 'var(--c-text-dim)', fontSize: 11, textAlign: 'center', marginTop: 2 }}>
               Add at least one payment to complete this sale
             </p>
           )}
@@ -746,13 +747,13 @@ function ActionButton({ label, disabled, primary, onClick }) {
   return (
     <button disabled={disabled} onClick={onClick} style={{
       flex: 1, padding: '13px 6px', borderRadius: 10,
-      background: disabled ? '#0b1426' : primary
-        ? 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)' : '#0b1426',
-      border: disabled ? '1px solid #253349' : primary ? 'none' : '1px solid #253349',
-      color: disabled ? '#415569' : primary ? '#fff' : '#cbd0e0',
+      background: disabled ? 'var(--c-bg-card)' : primary
+        ? 'var(--c-btn-cta-bg)' : 'var(--c-bg-card)',
+      border: disabled ? '1px solid var(--c-border)' : primary ? 'none' : '1px solid var(--c-border)',
+      color: disabled ? 'var(--c-text-dim)' : primary ? '#fff' : 'var(--c-text-sub)',
       fontSize: 13, fontWeight: primary ? 700 : 600,
       cursor: disabled ? 'not-allowed' : 'pointer',
-      boxShadow: !disabled && primary ? '0 0 20px rgba(37,99,235,0.38)' : 'none',
+      boxShadow: !disabled && primary ? 'var(--c-btn-cta-shadow)' : 'none',
       transition: 'all 0.18s',
     }}>{label}</button>
   )
