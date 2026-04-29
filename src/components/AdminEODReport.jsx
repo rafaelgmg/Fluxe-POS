@@ -7,18 +7,18 @@ import { printEODReceipt } from '../utils/printEODReceipt'
 import { loadLocationConfig } from '../utils/locationConfig'
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 const PURPLE = '#8b5cf6'
-const MUTED  = '#94a3b8'
-const TEXT   = '#f1f5f9'
-const DIM    = '#cbd0e0'
+const MUTED  = 'var(--c-text-muted)'
+const TEXT   = 'var(--c-text)'
+const DIM    = 'var(--c-text-sub)'
 
 const fmt$  = (n) => `$${(n || 0).toFixed(2)}`
 const fmtDT = (ts) => ts ? new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
@@ -60,7 +60,7 @@ function KPICard({ label, value, color, sub }) {
 // ── Table helpers ──────────────────────────────────────────────────────────────
 const TH = ({ children, right }) => (
   <th style={{
-    padding: '8px 12px', background: '#0d1526', color: '#b8c8da',
+    padding: '8px 12px', background: 'var(--c-bg-stripe)', color: MUTED,
     fontSize: 11, fontWeight: 700, textAlign: right ? 'right' : 'left',
     borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap',
   }}>{children}</th>
@@ -201,13 +201,13 @@ export default function AdminEODReport({ onClose }) {
   }
 
   // ── Styles ──────────────────────────────────────────────────────────────────
-  const sel = { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT, fontSize: 13, padding: '7px 10px', outline: 'none', cursor: 'pointer', colorScheme: 'dark' }
+  const sel = { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT, fontSize: 13, padding: '7px 10px', outline: 'none', cursor: 'pointer',  }
 
   // ── Invoice detail modal ──────────────────────────────────────────────────────
   if (openInvoice) {
     const s = openInvoice
     return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2100 }}>
+      <div style={{ position: 'fixed', inset: 0, background: 'var(--c-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2100 }}>
         <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, width: 520, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}>
           <div style={{ padding: '14px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ color: TEXT, fontWeight: 700, fontSize: 14 }}>Invoice #{s.number}</span>
@@ -484,7 +484,7 @@ export default function AdminEODReport({ onClose }) {
               onChange={e => { setNotes(e.target.value); setNotesSaved(false) }}
               placeholder="Add notes for this day…"
               rows={4}
-              style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT, fontSize: 13, padding: '10px 14px', resize: 'vertical', outline: 'none', fontFamily: 'inherit', colorScheme: 'dark' }}
+              style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT, fontSize: 13, padding: '10px 14px', resize: 'vertical', outline: 'none', fontFamily: 'inherit',  }}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <button

@@ -5,14 +5,14 @@ import {
   loadSpareRate, saveSpareRate, DEFAULT_SPARE_RATE,
 } from '../utils/commissionTiersStorage'
 
-// ── Design tokens (match AdminPanel dark theme) ────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
-const TEXT   = '#f1f5f9'
-const MUTED  = '#94a3b8'
-const DIM    = '#cbd0e0'
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
+const TEXT   = 'var(--c-text)'
+const MUTED  = 'var(--c-text-muted)'
+const DIM    = 'var(--c-text-sub)'
 const GREEN  = '#22c55e'
 const BLUE   = '#3b82f6'
 const AMBER  = '#f59e0b'
@@ -220,7 +220,7 @@ export default function CommissionSettings({ onBack }) {
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ background: '#0d1829' }}>
+              <tr style={{ background: BG }}>
                 {['Daily Subtotal (min)', 'Commission Rate', 'Example: $800 day', ''].map(h => (
                   <th key={h} style={{
                     padding: '10px 16px', textAlign: 'left', color: MUTED,
@@ -408,7 +408,7 @@ export default function CommissionSettings({ onBack }) {
         {/* Spare Rate section */}
         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: 'hidden' }}>
           <div style={{
-            padding: '10px 16px', background: '#0d1829',
+            padding: '10px 16px', background: BG,
             borderBottom: `1px solid ${BORDER}`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>

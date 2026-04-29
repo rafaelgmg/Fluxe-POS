@@ -44,14 +44,14 @@ export const LIGHT = {
   '--c-bg':        '#F3F4F6',      // page bg — clearly separated from white cards
   '--c-bg-panel':  '#FFFFFF',      // nav, sidebar — white panels pop against bg
   '--c-bg-card':   '#FFFFFF',      // cards, modals
-  '--c-bg-hover':  '#F1F5F9',      // row/button hover (Tailwind slate-100)
+  '--c-bg-hover':  '#E5E7EB',      // row/button hover (Tailwind gray-200)
   '--c-bg-active': '#DCE4EF',      // pressed state
   '--c-bg-glass':  'rgba(0,0,0,0.025)',
-  '--c-bg-stripe': '#F8FAFC',      // alternating table rows
+  '--c-bg-stripe': '#F3F4F6',      // alternating table rows / keypad buttons
   // Borders — present but not heavy
-  '--c-border':    '#E2E8F0',      // section dividers
+  '--c-border':    '#D1D5DB',      // section dividers (Tailwind gray-300)
   '--c-border-md': '#C9D3DF',      // inputs, prominent edges
-  '--c-border-row':'#F1F5F9',      // row dividers (ultra-light, just a hint)
+  '--c-border-row':'#E5E7EB',      // row dividers (Tailwind gray-200)
   // Shadows — subtle depth, no heavy drop shadows
   '--c-shadow-card':      '0 4px 12px rgba(0,0,0,0.08)',
   '--c-shadow-bar':       '0 1px 3px rgba(0,0,0,0.06)',

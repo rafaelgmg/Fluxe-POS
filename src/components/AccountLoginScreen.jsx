@@ -1,8 +1,7 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { SYSTEM_NAME, SYSTEM_TAG, BUSINESS, CREATOR } from '../config/branding'
 
-const BLUE    = '#3b82f6'
-const BLUE_HV = '#1d4ed8'
+const BLUE = '#3b82f6'
 
 export default function AccountLoginScreen({ onLogin }) {
   const [email,    setEmail]    = useState('')
@@ -31,9 +30,9 @@ export default function AccountLoginScreen({ onLogin }) {
 
   const inputStyle = (hasError) => ({
     width: '100%', padding: '10px 12px',
-    background: '#111d30',
-    border: `1px solid ${hasError ? '#ef4444' : '#253349'}`,
-    borderRadius: 6, color: '#e2e8f0',
+    background: 'var(--c-bg-card)',
+    border: `1px solid ${hasError ? '#ef4444' : 'var(--c-border-md)'}`,
+    borderRadius: 6, color: 'var(--c-text)',
     fontSize: 13, outline: 'none',
     boxSizing: 'border-box',
     transition: 'border-color 0.15s',
@@ -42,23 +41,23 @@ export default function AccountLoginScreen({ onLogin }) {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: '#030e1e',
+      background: 'var(--c-bg)',
       display: 'flex', flexDirection: 'column',
       fontFamily: "'Segoe UI', system-ui, sans-serif",
     }}>
 
       {/* Top bar — same as LoginScreen */}
       <div style={{
-        height: 48, background: '#0d1526',
-        borderBottom: '1px solid #253349',
+        height: 48, background: 'var(--c-bg-panel)',
+        borderBottom: '1px solid var(--c-border)',
         display: 'flex', alignItems: 'center',
         padding: '0 24px', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontWeight: 800, fontSize: 15, color: '#f1f5f9', letterSpacing: 2 }}>
+          <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--c-text)', letterSpacing: 2 }}>
             {SYSTEM_NAME.toUpperCase()}
           </span>
-          <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 2 }}>— {SYSTEM_TAG}</span>
+          <span style={{ fontSize: 10, color: 'var(--c-text-muted)', marginLeft: 2 }}>— {SYSTEM_TAG}</span>
         </div>
       </div>
 
@@ -71,8 +70,8 @@ export default function AccountLoginScreen({ onLogin }) {
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           padding: '40px 48px',
-          background: '#0d1526',
-          borderRight: '1px solid #253349',
+          background: 'var(--c-bg-panel)',
+          borderRight: '1px solid var(--c-border)',
         }}>
 
           <div style={{ alignSelf: 'flex-start', marginBottom: 32 }}>
@@ -87,14 +86,14 @@ export default function AccountLoginScreen({ onLogin }) {
           <h1 style={{
             alignSelf: 'flex-start',
             fontSize: 26, fontWeight: 700,
-            color: '#f1f5f9', marginBottom: 8,
+            color: 'var(--c-text)', marginBottom: 8,
             letterSpacing: -0.3,
           }}>
             Sign in to your account
           </h1>
           <p style={{
             alignSelf: 'flex-start',
-            color: '#94a3b8', fontSize: 13, marginBottom: 28,
+            color: 'var(--c-text-muted)', fontSize: 13, marginBottom: 28,
           }}>
             {BUSINESS}
           </p>
@@ -104,7 +103,7 @@ export default function AccountLoginScreen({ onLogin }) {
             {/* Email */}
             <div>
               <label style={{
-                display: 'block', color: '#94a3b8',
+                display: 'block', color: 'var(--c-text-muted)',
                 fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5,
               }}>
                 EMAIL / USERNAME
@@ -118,14 +117,14 @@ export default function AccountLoginScreen({ onLogin }) {
                 autoComplete="username"
                 style={inputStyle(!!error)}
                 onFocus={e => { if (!error) e.target.style.borderColor = BLUE }}
-                onBlur={e => { if (!error) e.target.style.borderColor = '#253349' }}
+                onBlur={e => { if (!error) e.target.style.borderColor = 'var(--c-border-md)' }}
               />
             </div>
 
             {/* Password */}
             <div>
               <label style={{
-                display: 'block', color: '#94a3b8',
+                display: 'block', color: 'var(--c-text-muted)',
                 fontSize: 11, fontWeight: 600, marginBottom: 6, letterSpacing: 0.5,
               }}>
                 PASSWORD
@@ -140,7 +139,7 @@ export default function AccountLoginScreen({ onLogin }) {
                   autoComplete="current-password"
                   style={{ ...inputStyle(!!error), paddingRight: 40 }}
                   onFocus={e => { if (!error) e.target.style.borderColor = BLUE }}
-                  onBlur={e => { if (!error) e.target.style.borderColor = '#253349' }}
+                  onBlur={e => { if (!error) e.target.style.borderColor = 'var(--c-border-md)' }}
                 />
                 <button
                   type="button"
@@ -148,7 +147,7 @@ export default function AccountLoginScreen({ onLogin }) {
                   style={{
                     position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#94a3b8', fontSize: 14, padding: 2,
+                    color: 'var(--c-text-muted)', fontSize: 14, padding: 2,
                   }}
                 >
                   {pwVisible ? '🙈' : '👁'}
@@ -165,22 +164,23 @@ export default function AccountLoginScreen({ onLogin }) {
             onClick={handleLogin}
             style={{
               width: '100%', marginTop: 28, padding: '11px',
-              background: BLUE,
+              background: 'var(--c-btn-cta-bg)',
               border: 'none', borderRadius: 6,
               color: '#fff', fontSize: 14, fontWeight: 700,
               cursor: 'pointer',
-              transition: 'background 0.15s, transform 0.1s',
+              transition: 'box-shadow 0.2s, transform 0.1s',
+              boxShadow: 'var(--c-btn-cta-shadow)',
               letterSpacing: 0.3,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = BLUE_HV }}
-            onMouseLeave={e => { e.currentTarget.style.background = BLUE    }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow-hv)' }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow)' }}
             onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)' }}
             onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
           >
             Continue →
           </button>
 
-          <p style={{ color: '#415569', fontSize: 12, marginTop: 32, alignSelf: 'flex-start' }}>
+          <p style={{ color: 'var(--c-text-dim)', fontSize: 12, marginTop: 32, alignSelf: 'flex-start' }}>
             v1.0.0 · {CREATOR}
           </p>
         </div>

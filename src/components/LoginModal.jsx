@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin } from '../services/supabaseAuth'
 
@@ -62,14 +62,14 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
       backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)', border: '1px solid #253349', borderRadius: 10,
+        background: 'var(--c-bg-panel)', border: '1px solid var(--c-border)', borderRadius: 10,
         width: 380, padding: 28,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
       }}>
 
         {/* Header */}
@@ -80,22 +80,22 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16
           }}>🔒</div>
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>{title}</h2>
-            <p style={{ color: '#b8c8da', fontSize: 11, marginTop: 1 }}>{subtitle}</p>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text)' }}>{title}</h2>
+            <p style={{ color: 'var(--c-text-muted)', fontSize: 11, marginTop: 1 }}>{subtitle}</p>
           </div>
         </div>
 
         {/* Employee select */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ color: '#c0cfe0', fontSize: 11, fontWeight: 700, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+          <label style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 700, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
             SELECT EMPLOYEE
           </label>
           <select
             value={selectedEmployee}
             onChange={e => { setSelectedEmployee(e.target.value); setPin(''); setError('') }}
             style={{
-              width: '100%', padding: '9px 12px', background: '#111d30',
-              border: '1px solid #3a4f6a', borderRadius: 6, color: '#f1f5f9',
+              width: '100%', padding: '9px 12px', background: 'var(--c-bg-card)',
+              border: '1px solid var(--c-border-md)', borderRadius: 6, color: 'var(--c-text)',
               fontSize: 13, outline: 'none', cursor: 'pointer',
             }}
           >
@@ -107,7 +107,7 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
 
         {/* PIN display */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ color: '#c0cfe0', fontSize: 11, fontWeight: 700, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+          <label style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 700, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
             PIN
           </label>
           <input
@@ -115,9 +115,9 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             value={verifying ? '······' : pin}
             readOnly
             style={{
-              width: '100%', padding: '9px 12px', background: '#111d30',
-              border: `1px solid ${error ? '#ef4444' : verifying ? '#3b82f6' : '#3a4f6a'}`,
-              borderRadius: 6, color: verifying ? '#3b82f6' : '#f1f5f9',
+              width: '100%', padding: '9px 12px', background: 'var(--c-bg-card)',
+              border: `1px solid ${error ? '#ef4444' : verifying ? '#3b82f6' : 'var(--c-border-md)'}`,
+              borderRadius: 6, color: verifying ? '#3b82f6' : 'var(--c-text)',
               fontSize: 20, letterSpacing: 8, outline: 'none', boxSizing: 'border-box',
               opacity: verifying ? 0.7 : 1, transition: 'all 0.15s',
             }}
@@ -133,15 +133,15 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
               onClick={() => { if (k) handleKey(k) }}
               disabled={!k || verifying}
               style={{
-                padding: '13px', background: !k ? 'transparent' : '#111d30',
-                border: !k ? 'none' : '1px solid #3a4f6a', borderRadius: 7,
-                color: k === '⌫' ? '#c0cfe0' : '#f1f5f9',
+                padding: '13px', background: !k ? 'transparent' : 'var(--c-bg-card)',
+                border: !k ? 'none' : '1px solid var(--c-border-md)', borderRadius: 7,
+                color: k === '⌫' ? 'var(--c-text-muted)' : 'var(--c-text)',
                 fontSize: k === '⌫' ? 16 : 18,
                 fontWeight: 700, cursor: (!k || verifying) ? 'default' : 'pointer',
                 opacity: !k ? 0 : verifying ? 0.5 : 1, transition: 'all 0.1s',
               }}
-              onMouseEnter={e => { if (k && !verifying) { e.currentTarget.style.background = '#1a3050'; e.currentTarget.style.borderColor = '#4a6080' } }}
-              onMouseLeave={e => { if (k && !verifying) { e.currentTarget.style.background = '#111d30'; e.currentTarget.style.borderColor = '#3a4f6a' } }}
+              onMouseEnter={e => { if (k && !verifying) { e.currentTarget.style.background = 'var(--c-bg-hover)'; e.currentTarget.style.borderColor = 'var(--c-border-md)' } }}
+              onMouseLeave={e => { if (k && !verifying) { e.currentTarget.style.background = 'var(--c-bg-card)'; e.currentTarget.style.borderColor = 'var(--c-border-md)' } }}
             >
               {k}
             </button>
@@ -155,15 +155,15 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             disabled={verifying || !pin}
             style={{
               flex: 1, padding: '12px',
-              background: verifying ? '#1d4ed8' : '#3b82f6', border: 'none', borderRadius: 6,
+              background: 'var(--c-btn-cta-bg)', border: 'none', borderRadius: 6,
               color: '#fff', fontSize: 14, fontWeight: 700,
               cursor: (verifying || !pin) ? 'not-allowed' : 'pointer',
-              transition: 'background 0.15s',
-              boxShadow: '0 0 16px rgba(37,99,235,0.25)',
+              transition: 'box-shadow 0.2s, opacity 0.2s',
+              boxShadow: pin ? 'var(--c-btn-cta-shadow)' : 'none',
               opacity: !pin ? 0.6 : 1,
             }}
-            onMouseEnter={e => { if (!verifying && pin) e.currentTarget.style.background = '#1d4ed8' }}
-            onMouseLeave={e => { if (!verifying) e.currentTarget.style.background = verifying ? '#1d4ed8' : '#3b82f6' }}
+            onMouseEnter={e => { if (!verifying && pin) e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow-hv)' }}
+            onMouseLeave={e => { if (pin) e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow)' }}
           >
             {verifying ? 'Verifying…' : 'Sign In'}
           </button>
@@ -172,12 +172,12 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
             disabled={verifying}
             style={{
               flex: 1, padding: '12px',
-              background: 'transparent', border: '1px solid #3a4f6a',
-              borderRadius: 6, color: '#cbd0e0', fontSize: 14, cursor: verifying ? 'not-allowed' : 'pointer',
+              background: 'transparent', border: '1px solid var(--c-border-md)',
+              borderRadius: 6, color: 'var(--c-text-sub)', fontSize: 14, cursor: verifying ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
             }}
-            onMouseEnter={e => { if (!verifying) { e.currentTarget.style.borderColor = '#4a6080'; e.currentTarget.style.color = '#f1f5f9' } }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#3a4f6a'; e.currentTarget.style.color = '#cbd0e0' }}
+            onMouseEnter={e => { if (!verifying) { e.currentTarget.style.borderColor = 'var(--c-border)'; e.currentTarget.style.color = 'var(--c-text)'; e.currentTarget.style.background = 'var(--c-bg-hover)' } }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--c-border-md)'; e.currentTarget.style.color = 'var(--c-text-sub)'; e.currentTarget.style.background = 'transparent' }}
           >
             Cancel
           </button>

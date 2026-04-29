@@ -4,17 +4,17 @@ import { loadAllProducts } from '../utils/productsStorage'
 import { fetchProducts } from '../services/supabaseRead'
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
-const MUTED  = '#94a3b8'
-const TEXT   = '#f1f5f9'
-const DIM    = '#cbd0e0'
+const MUTED  = 'var(--c-text-muted)'
+const TEXT   = 'var(--c-text)'
+const DIM    = 'var(--c-text-sub)'
 const TEAL   = '#06b6d4'
 
 const PAY_COLORS = {
@@ -23,7 +23,7 @@ const PAY_COLORS = {
   'External Credit': '#f59e0b',
   'Check':           '#8b5cf6',
 }
-const PAY_COLOR_DEFAULT = '#cbd0e0'
+const PAY_COLOR_DEFAULT = 'var(--c-text-sub)'
 
 const fmt$ = (n) => `$${(n || 0).toFixed(2)}`
 
@@ -266,7 +266,7 @@ export default function LocationReport({ onClose, sales = [] }) {
   )
 
   // ─────────────────────────────────────────────────────────────────────────────
-  const inp = { padding: '5px 10px', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 12, outline: 'none', colorScheme: 'dark' }
+  const inp = { padding: '5px 10px', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 12, outline: 'none',  }
 
   const Stat = ({ label, value, color = TEXT, sub }) => (
     <div>
@@ -352,22 +352,22 @@ export default function LocationReport({ onClose, sales = [] }) {
             <div>
               <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 }}>TOTAL SPARE</p>
               <p style={{ color: DIM, fontSize: 15, fontWeight: 700 }}>{fmt$(metrics.spare)}</p>
-              <p style={{ color: '#415569', fontSize: 9 }}>Sales above min price</p>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: 9 }}>Sales above min price</p>
             </div>
             <div>
               <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 }}>INVENTORY LOSSES</p>
               <p style={{ color: DIM, fontSize: 15, fontWeight: 700 }}>$0.00</p>
-              <p style={{ color: '#415569', fontSize: 9 }}>Damage / loss reports</p>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: 9 }}>Damage / loss reports</p>
             </div>
             <div>
               <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 }}>INVENTORY COST</p>
               <p style={{ color: DIM, fontSize: 15, fontWeight: 700 }}>{fmt$(metrics.invCost)}</p>
-              <p style={{ color: '#415569', fontSize: 9 }}>Cost of goods sold</p>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: 9 }}>Cost of goods sold</p>
             </div>
             <div>
               <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 2 }}>CURRENT INV VALUE</p>
               <p style={{ color: DIM, fontSize: 15, fontWeight: 700 }}>{fmt$(currentInvValue)}</p>
-              <p style={{ color: '#415569', fontSize: 9 }}>At cost · {locCfg?.name}</p>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: 9 }}>At cost · {locCfg?.name}</p>
             </div>
           </div>
         </div>
@@ -383,7 +383,7 @@ export default function LocationReport({ onClose, sales = [] }) {
             <div style={{ width: 280, flexShrink: 0, borderRight: `1px solid ${BORDER}`, overflowY: 'auto', maxHeight: 260 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead style={{ position: 'sticky', top: 0 }}>
-                  <tr style={{ background: CARD }}>
+                  <tr style={{ background: 'var(--c-bg-stripe)' }}>
                     {['Date', 'Sub', 'Tax', 'Total'].map(h => (
                       <th key={h} style={{ padding: '6px 10px', color: MUTED, fontWeight: 600, fontSize: 10, textAlign: h === 'Date' ? 'left' : 'right', borderBottom: `1px solid ${BORDER}` }}>{h}</th>
                     ))}
@@ -391,10 +391,10 @@ export default function LocationReport({ onClose, sales = [] }) {
                 </thead>
                 <tbody>
                   {dailySales.length === 0 && (
-                    <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: '#415569', fontSize: 12 }}>No sales in this period</td></tr>
+                    <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: 'var(--c-text-dim)', fontSize: 12 }}>No sales in this period</td></tr>
                   )}
                   {dailySales.map((d, i) => (
-                    <tr key={d.key} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)', borderBottom: `1px solid rgba(30,41,59,0.3)` }}>
+                    <tr key={d.key} style={{ background: i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)', borderBottom: `1px solid var(--c-border-row)` }}>
                       <td style={{ padding: '6px 10px', color: DIM }}>{d.label}</td>
                       <td style={{ padding: '6px 10px', color: DIM, textAlign: 'right' }}>{fmt$(d.subtotal)}</td>
                       <td style={{ padding: '6px 10px', color: MUTED, textAlign: 'right' }}>{fmt$(d.tax)}</td>

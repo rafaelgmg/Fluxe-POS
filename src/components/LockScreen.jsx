@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LockScreen.jsx
  *
  * Tela de bloqueio de estação (Lock Station).
@@ -17,17 +17,6 @@
 import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin } from '../services/supabaseAuth'
-
-// ─── Colors ───────────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#080f1f'
-const CARD   = '#0d1829'
-const BORDER = '#253349'
-const BLUE   = '#3b82f6'
-const RED    = '#ef4444'
-const MUTED  = '#94a3b8'
-const DIM    = '#cbd0e0'
-const TEXT   = '#f1f5f9'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function pad2(n) { return String(n).padStart(2, '0') }
@@ -75,13 +64,13 @@ function Numpad({ onKey }) {
           onClick={() => onKey(k)}
           style={{
             gridColumn: k === 'Clear' ? 'span 2' : 'auto',
-            padding: '14px', background: CARD,
-            border: `1px solid ${BORDER}`, borderRadius: 8,
-            color: TEXT, fontSize: k === 'Clear' ? 12 : 20,
+            padding: '14px', background: 'var(--c-bg-card)',
+            border: '1px solid var(--c-border)', borderRadius: 8,
+            color: 'var(--c-text)', fontSize: k === 'Clear' ? 12 : 20,
             fontWeight: 600, cursor: 'pointer', transition: 'all 0.1s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#131d35'; e.currentTarget.style.borderColor = '#263354' }}
-          onMouseLeave={e => { e.currentTarget.style.background = CARD; e.currentTarget.style.borderColor = BORDER }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-bg-hover)'; e.currentTarget.style.borderColor = 'var(--c-border-md)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--c-bg-card)'; e.currentTarget.style.borderColor = 'var(--c-border)' }}
         >
           {k}
         </button>
@@ -153,7 +142,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9000,
-      background: BG,
+      background: 'var(--c-bg)',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       userSelect: 'none',
@@ -168,7 +157,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
       }} />
 
       {/* Clock */}
-      <p style={{ color: DIM, fontSize: 13, marginBottom: 32, position: 'relative' }}>
+      <p style={{ color: 'var(--c-text-sub)', fontSize: 13, marginBottom: 32, position: 'relative' }}>
         {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         {'  ·  '}
         {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -183,19 +172,19 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
           <LockIcon size={72} />
 
           <div style={{ textAlign: 'center' }}>
-            <h1 style={{ color: TEXT, fontSize: 28, fontWeight: 800, margin: 0 }}>
+            <h1 style={{ color: 'var(--c-text)', fontSize: 28, fontWeight: 800, margin: 0 }}>
               Station is now locked
             </h1>
-            <p style={{ color: MUTED, fontSize: 14, marginTop: 8 }}>
+            <p style={{ color: 'var(--c-text-muted)', fontSize: 14, marginTop: 8 }}>
               You will need to sign in again to continue
             </p>
             {lockedBy && (
-              <p style={{ color: '#415569', fontSize: 12, marginTop: 4 }}>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: 12, marginTop: 4 }}>
                 Locked by {lockedBy} · {elapsed} ago
               </p>
             )}
             {!lockedBy && (
-              <p style={{ color: '#415569', fontSize: 12, marginTop: 4 }}>
+              <p style={{ color: 'var(--c-text-dim)', fontSize: 12, marginTop: 4 }}>
                 Locked {elapsed} ago
               </p>
             )}
@@ -206,13 +195,13 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
             style={{
               marginTop: 8,
               padding: '13px 48px',
-              background: BLUE, border: 'none', borderRadius: 8,
+              background: 'var(--c-btn-cta-bg)', border: 'none', borderRadius: 8,
               color: '#fff', fontSize: 16, fontWeight: 700,
-              cursor: 'pointer', transition: 'all 0.2s',
-              boxShadow: '0 0 30px rgba(37,99,235,0.35)',
+              cursor: 'pointer', transition: 'box-shadow 0.2s',
+              boxShadow: 'var(--c-btn-cta-shadow)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8'; e.currentTarget.style.boxShadow = '0 0 40px rgba(37,99,235,0.5)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = BLUE; e.currentTarget.style.boxShadow = '0 0 30px rgba(37,99,235,0.35)' }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow-hv)' }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow)' }}
           >
             Unlock
           </button>
@@ -221,10 +210,10 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
       ) : (
         /* ── UNLOCK FORM ───────────────────────────────────────────────── */
         <div style={{
-          background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
-          border: `1px solid ${BORDER}`, borderRadius: 12,
+          background: 'var(--c-bg-panel)',
+          border: '1px solid var(--c-border)', borderRadius: 12,
           width: 360, padding: 28,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
           position: 'relative',
           animation: shake ? 'shake 0.4s ease' : 'none',
         }}>
@@ -250,30 +239,30 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
               <LockIcon size={20} />
             </div>
             <div>
-              <p style={{ color: TEXT, fontWeight: 700, fontSize: 15 }}>Unlock Station</p>
-              <p style={{ color: MUTED, fontSize: 11 }}>Select your profile and enter PIN</p>
+              <p style={{ color: 'var(--c-text)', fontWeight: 700, fontSize: 15 }}>Unlock Station</p>
+              <p style={{ color: 'var(--c-text-muted)', fontSize: 11 }}>Select your profile and enter PIN</p>
             </div>
             <button
               onClick={() => { setUnlocking(false); setPin(''); setError('') }}
               style={{
                 marginLeft: 'auto', background: 'none', border: 'none',
-                color: MUTED, fontSize: 20, cursor: 'pointer', lineHeight: 1,
+                color: 'var(--c-text-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1,
               }}
             >×</button>
           </div>
 
           {/* Employee selector */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ color: MUTED, fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+            <label style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
               SELECT PROFILE
             </label>
             <select
               value={selected}
               onChange={e => { setSelected(e.target.value); setPin(''); setError('') }}
               style={{
-                width: '100%', padding: '9px 12px', background: '#111d30',
-                border: `1px solid ${BORDER}`, borderRadius: 6,
-                color: TEXT, fontSize: 13, outline: 'none', cursor: 'pointer',
+                width: '100%', padding: '9px 12px', background: 'var(--c-bg-card)',
+                border: '1px solid var(--c-border)', borderRadius: 6,
+                color: 'var(--c-text)', fontSize: 13, outline: 'none', cursor: 'pointer',
               }}
             >
               {employees.map(e => (
@@ -284,7 +273,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
 
           {/* PIN display */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ color: MUTED, fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
+            <label style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 6, letterSpacing: 0.5 }}>
               PIN
             </label>
             <input
@@ -292,15 +281,15 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
               value={pin}
               readOnly
               style={{
-                width: '100%', padding: '10px 14px', background: '#111d30',
-                border: `1px solid ${error ? RED : BORDER}`,
-                borderRadius: 6, color: TEXT,
+                width: '100%', padding: '10px 14px', background: 'var(--c-bg-card)',
+                border: `1px solid ${error ? '#ef4444' : 'var(--c-border)'}`,
+                borderRadius: 6, color: 'var(--c-text)',
                 fontSize: 22, letterSpacing: 10, outline: 'none', boxSizing: 'border-box',
                 transition: 'border-color 0.2s',
               }}
             />
             {error && (
-              <p style={{ color: RED, fontSize: 11, marginTop: 5 }}>{error}</p>
+              <p style={{ color: '#ef4444', fontSize: 11, marginTop: 5 }}>{error}</p>
             )}
           </div>
 
@@ -315,16 +304,16 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
             disabled={pin.length === 0}
             style={{
               width: '100%', padding: '13px',
-              background: pin.length > 0 ? BLUE : '#253349',
+              background: pin.length > 0 ? 'var(--c-btn-cta-bg)' : 'var(--c-border)',
               border: 'none', borderRadius: 7,
-              color: pin.length > 0 ? '#fff' : MUTED,
+              color: pin.length > 0 ? '#fff' : 'var(--c-text-muted)',
               fontSize: 15, fontWeight: 700,
               cursor: pin.length > 0 ? 'pointer' : 'not-allowed',
               transition: 'all 0.2s',
-              boxShadow: pin.length > 0 ? '0 0 20px rgba(37,99,235,0.3)' : 'none',
+              boxShadow: pin.length > 0 ? 'var(--c-btn-cta-shadow)' : 'none',
             }}
-            onMouseEnter={e => { if (pin.length > 0) e.currentTarget.style.background = '#1d4ed8' }}
-            onMouseLeave={e => { if (pin.length > 0) e.currentTarget.style.background = BLUE }}
+            onMouseEnter={e => { if (pin.length > 0) e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow-hv)' }}
+            onMouseLeave={e => { if (pin.length > 0) e.currentTarget.style.boxShadow = 'var(--c-btn-cta-shadow)' }}
           >
             🔓 Unlock
           </button>
@@ -332,7 +321,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
       )}
 
       {/* Bottom brand */}
-      <p style={{ color: '#253349', fontSize: 11, position: 'absolute', bottom: 18 }}>
+      <p style={{ color: 'var(--c-text-dim)', fontSize: 11, position: 'absolute', bottom: 18 }}>
         Fluxe — Station secured
       </p>
     </div>

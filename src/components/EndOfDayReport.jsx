@@ -8,18 +8,18 @@ import { byPaymentMethod } from '../services/dashboardService'
 import { printEODReceipt } from '../utils/printEODReceipt'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 const PURPLE = '#8b5cf6'
-const MUTED  = '#94a3b8'
-const DIM    = '#cbd0e0'
-const TEXT   = '#f1f5f9'
+const MUTED  = 'var(--c-text-muted)'
+const DIM    = 'var(--c-text-sub)'
+const TEXT   = 'var(--c-text)'
 const ORANGE = '#f97316'
 const CYAN   = '#06b6d4'
 
@@ -276,12 +276,12 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000, padding: 20, backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: `linear-gradient(160deg, #0d1829 0%, ${PANEL} 100%)`,
+        background: PANEL,
         border: `1px solid ${BORDER}`, borderRadius: 10,
         width: '100%', maxWidth: 880, maxHeight: '92vh',
         display: 'flex', flexDirection: 'column',
@@ -315,8 +315,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
               style={{
                 background: BG, border: `1px solid ${BORDER}`, borderRadius: 6,
                 color: TEXT, fontSize: 12, padding: '5px 10px', cursor: 'pointer', outline: 'none',
-                colorScheme: 'dark',
-              }}
+                              }}
             />
           ) : (
             <span style={{ color: MUTED, fontSize: 12, padding: '5px 10px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 6 }}>
@@ -327,7 +326,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
           {/* Data source badge */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 5,
-            padding: '4px 10px', background: 'rgba(15,23,42,0.6)',
+            padding: '4px 10px', background: 'var(--c-bg)',
             border: `1px solid ${BORDER}`, borderRadius: 20,
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: sourceBadge.dot }} />
@@ -408,7 +407,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
         {/* ── Body ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 22, display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-          <p style={{ color: '#415569', fontSize: 11 }}>{dateLabel} · Printed at {printedAt}</p>
+          <p style={{ color: 'var(--c-text-dim)', fontSize: 11 }}>{dateLabel} · Printed at {printedAt}</p>
 
           {/* ══ OVERVIEW ══ */}
           {section === 'overview' && (
@@ -483,7 +482,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                         }}>{todayNewCustomers.length} new</span>
                       </div>
                       {leadsByEmployee.length === 0 ? (
-                        <p style={{ color: '#415569', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>None captured</p>
+                        <p style={{ color: 'var(--c-text-dim)', fontSize: 12, textAlign: 'center', padding: '16px 0' }}>None captured</p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                           {leadsByEmployee.map(([name, count], i) => (
@@ -495,7 +494,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                                 <span style={{ color: CYAN, fontSize: 12, fontWeight: 700 }}>{count} lead{count !== 1 ? 's' : ''}</span>
                               </div>
                               <div style={{ height: 4, background: BORDER, borderRadius: 2 }}>
-                                <div style={{ height: '100%', borderRadius: 2, background: i === 0 ? CYAN : '#415569', width: `${(count / maxLeads) * 100}%` }} />
+                                <div style={{ height: '100%', borderRadius: 2, background: i === 0 ? CYAN : 'var(--c-text-dim)', width: `${(count / maxLeads) * 100}%` }} />
                               </div>
                             </div>
                           ))}
@@ -516,7 +515,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                             <th key={h} style={{
                               padding: '8px 14px', textAlign: h === 'Employee' ? 'left' : 'right',
                               color: MUTED, fontWeight: 600, fontSize: 10,
-                              background: 'rgba(15,23,42,0.6)', borderBottom: `1px solid ${BORDER}`, letterSpacing: 0.4,
+                              background: 'var(--c-bg)', borderBottom: `1px solid ${BORDER}`, letterSpacing: 0.4,
                             }}>{h}</th>
                           ))}
                         </tr>
@@ -526,32 +525,32 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                           const hrs = clockHoursMap?.[emp.name]
                           return (
                             <tr key={emp.name} style={{
-                              borderBottom: `1px solid rgba(30,41,59,0.4)`,
-                              background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.3)',
+                              borderBottom: `1px solid var(--c-border-row)`,
+                              background: i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)',
                             }}>
                               <td style={{ padding: '9px 14px', color: TEXT, fontSize: 13, fontWeight: 600 }}>{emp.name}</td>
                               <td style={{ padding: '9px 14px', color: MUTED, fontSize: 12, textAlign: 'right' }}>{emp.count}</td>
                               <td style={{ padding: '9px 14px', color: GREEN, fontSize: 13, fontWeight: 700, textAlign: 'right' }}>{fmt$(emp.subtotal)}</td>
                               <td style={{ padding: '9px 14px', color: PURPLE, fontSize: 12, textAlign: 'right' }}>{fmt$(emp.spare)}</td>
                               <td style={{ padding: '9px 14px', color: CYAN, fontSize: 12, textAlign: 'right' }}>
-                                {emp.commission > 0 ? fmt$(emp.commission) : <span style={{ color: '#415569' }}>—</span>}
+                                {emp.commission > 0 ? fmt$(emp.commission) : <span style={{ color: 'var(--c-text-dim)' }}>—</span>}
                               </td>
                               <td style={{ padding: '9px 14px', color: AMBER, fontSize: 12, textAlign: 'right' }}>
-                                {hrs != null ? fmtHrs(hrs) : <span style={{ color: '#415569' }}>—</span>}
+                                {hrs != null ? fmtHrs(hrs) : <span style={{ color: 'var(--c-text-dim)' }}>—</span>}
                               </td>
                             </tr>
                           )
                         })}
                         {/* Totals row */}
-                        <tr style={{ borderTop: `1px solid ${BORDER}`, background: 'rgba(15,23,42,0.6)' }}>
+                        <tr style={{ borderTop: `1px solid ${BORDER}`, background: 'var(--c-bg)' }}>
                           <td style={{ padding: '9px 14px', color: MUTED, fontSize: 11, fontWeight: 700 }}>TOTAL</td>
                           <td style={{ padding: '9px 14px', color: MUTED, fontSize: 11, textAlign: 'right' }}>{activeSales.length}</td>
                           <td style={{ padding: '9px 14px', color: GREEN, fontSize: 13, fontWeight: 800, textAlign: 'right' }}>{fmt$(netRevenue)}</td>
                           <td style={{ padding: '9px 14px', color: PURPLE, fontSize: 12, fontWeight: 700, textAlign: 'right' }}>{fmt$(totalSpare)}</td>
                           <td style={{ padding: '9px 14px', color: CYAN, fontSize: 12, fontWeight: 700, textAlign: 'right' }}>
-                            {totalCommission > 0 ? fmt$(totalCommission) : <span style={{ color: '#415569' }}>—</span>}
+                            {totalCommission > 0 ? fmt$(totalCommission) : <span style={{ color: 'var(--c-text-dim)' }}>—</span>}
                           </td>
-                          <td style={{ padding: '9px 14px', color: '#415569', fontSize: 11, textAlign: 'right' }}>—</td>
+                          <td style={{ padding: '9px 14px', color: 'var(--c-text-dim)', fontSize: 11, textAlign: 'right' }}>—</td>
                         </tr>
                       </tbody>
                     </table>
@@ -575,7 +574,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                     </div>
                   )}
 
-                  <p style={{ color: '#415569', fontSize: 11, textAlign: 'center' }}>
+                  <p style={{ color: 'var(--c-text-dim)', fontSize: 11, textAlign: 'center' }}>
                     No Refunds. Exchanges within 14 days.
                   </p>
                 </>
@@ -639,7 +638,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                         padding: '8px 12px',
                         textAlign: ['Subtotal','Tax','Total'].includes(h) ? 'right' : 'left',
                         color: MUTED, fontWeight: 600, fontSize: 10,
-                        background: CARD, borderBottom: `1px solid ${BORDER}`, letterSpacing: 0.4,
+                        background: 'var(--c-bg-stripe)', borderBottom: `1px solid ${BORDER}`, letterSpacing: 0.4,
                       }}>{h}</th>
                     ))}
                   </tr>
@@ -647,7 +646,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                 <tbody>
                   {allDaySales.length === 0 && (
                     <tr>
-                      <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: '#415569', fontSize: 13 }}>
+                      <td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--c-text-dim)', fontSize: 13 }}>
                         No sales{isToday ? ' today' : ' on this date'}
                       </td>
                     </tr>
@@ -656,10 +655,10 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                     const voided = s.status === 'voided' || s.status === 'deleted'
                     return (
                       <tr key={s.number ?? i} style={{
-                        borderBottom: `1px solid rgba(30,41,59,0.4)`,
+                        borderBottom: `1px solid var(--c-border-row)`,
                         background: voided
                           ? 'rgba(239,68,68,0.04)'
-                          : i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)',
+                          : i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)',
                         opacity: voided ? 0.6 : 1,
                       }}>
                         <td style={{ padding: '8px 12px', color: voided ? RED : BLUE, fontWeight: 700, fontSize: 13, textDecoration: voided ? 'line-through' : 'none' }}>
@@ -683,7 +682,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
                 </tbody>
                 {activeSales.length > 0 && (
                   <tfoot>
-                    <tr style={{ background: 'rgba(15,23,42,0.8)', borderTop: `1px solid ${BORDER}` }}>
+                    <tr style={{ background: 'var(--c-bg)', borderTop: `1px solid ${BORDER}` }}>
                       <td colSpan={4} style={{ padding: '9px 12px', color: MUTED, fontSize: 11, fontWeight: 700 }}>
                         TOTAL ({activeSales.length} active{voidedSales.length > 0 ? ` · ${voidedSales.length} voided` : ''})
                       </td>
