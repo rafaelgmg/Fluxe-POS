@@ -485,7 +485,8 @@ export default function App() {
         background: 'var(--c-bg-panel)',
         borderBottom: '1px solid var(--c-border)',
         display: 'flex', alignItems: 'center', padding: '0 16px', gap: 4, flexShrink: 0,
-        boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
+        boxShadow: 'var(--c-shadow-bar)',
+        position: 'relative', zIndex: 10,
       }}>
         {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 12 }}>

@@ -13,10 +13,14 @@ export const DARK = {
   '--c-bg-hover':  '#131d35',
   '--c-bg-active': '#1a2744',
   '--c-bg-glass':  'rgba(255,255,255,0.035)',
-  '--c-bg-stripe': 'rgba(15,23,42,0.5)',   // alternating table rows
+  '--c-bg-stripe': 'rgba(15,23,42,0.5)',
   // Borders
   '--c-border':    '#253349',
   '--c-border-md': '#263354',
+  '--c-border-row':'rgba(30,41,59,0.55)',   // row dividers (lighter than section borders)
+  // Shadows
+  '--c-shadow-card': '0 8px 32px rgba(0,0,0,0.40)',  // GLOW.card equivalent
+  '--c-shadow-bar':  'none',
   // Text
   '--c-text':       '#f1f5f9',
   '--c-text-sub':   '#cbd0e0',
@@ -36,13 +40,17 @@ export const LIGHT = {
   '--c-bg':        '#F3F4F6',      // page bg — clearly separated from white cards
   '--c-bg-panel':  '#FFFFFF',      // nav, sidebar — white panels pop against bg
   '--c-bg-card':   '#FFFFFF',      // cards, modals
-  '--c-bg-hover':  '#EAF0F7',      // visible but not aggressive row hover
+  '--c-bg-hover':  '#EDF1F7',      // row/button hover
   '--c-bg-active': '#DCE4EF',      // pressed state
   '--c-bg-glass':  'rgba(0,0,0,0.025)',
-  '--c-bg-stripe': '#F8FAFC',      // alternating table rows (barely-there tint)
+  '--c-bg-stripe': '#F8FAFC',      // alternating table rows
   // Borders — present but not heavy
-  '--c-border':    '#E2E8F0',      // subtle section dividers
-  '--c-border-md': '#C9D3DF',      // inputs, more prominent edges
+  '--c-border':    '#E2E8F0',      // section dividers
+  '--c-border-md': '#C9D3DF',      // inputs, prominent edges
+  '--c-border-row':'#F1F5F9',      // row dividers (ultra-light, just a hint)
+  // Shadows — subtle depth, no heavy drop shadows
+  '--c-shadow-card': '0 1px 3px rgba(0,0,0,0.06)',
+  '--c-shadow-bar':  '0 1px 3px rgba(0,0,0,0.06)',
   // Text — high contrast hierarchy
   '--c-text':       '#111827',     // near-black (Tailwind gray-900)
   '--c-text-sub':   '#374151',     // Tailwind gray-700

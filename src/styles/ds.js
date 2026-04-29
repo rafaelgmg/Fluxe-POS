@@ -137,7 +137,7 @@ export const tableHeader = {
 }
 
 export const tableRow = (idx = 0, extra = {}) => ({
-  borderBottom: `1px solid ${C.border}`,
+  borderBottom: '1px solid var(--c-border-row)',
   background: idx % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)',
   transition: T.fast,
   ...extra,
@@ -205,8 +205,8 @@ export const btnPrimary = (disabled = false, extra = {}) => ({
 
 export const btnSecondary = (extra = {}) => ({
   padding: '10px 20px',
-  background: C.bgGlass,
-  border: `1px solid ${C.border}`,
+  background: C.bgCard,
+  border: `1px solid ${C.borderMd}`,
   borderRadius: R.md,
   color: C.textSub,
   fontSize: 14,
@@ -219,7 +219,7 @@ export const btnSecondary = (extra = {}) => ({
 export const btnGhost = (extra = {}) => ({
   padding: '9px 16px',
   background: 'transparent',
-  border: `1px solid ${C.border}`,
+  border: `1px solid ${C.borderMd}`,
   borderRadius: R.md,
   color: C.textSub,
   fontSize: 14,
@@ -270,6 +270,6 @@ export const cardStyle = (extra = {}) => ({
   background: C.bgGlass,
   border: `1px solid ${C.borderGlass}`,
   borderRadius: R.lg,
-  boxShadow: GLOW.card,
+  boxShadow: 'var(--c-shadow-card)',
   ...extra,
 })

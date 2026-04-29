@@ -5,6 +5,7 @@
   --c-bg-card:     #111d30;
   --c-bg-stripe:   rgba(15,23,42,0.5);
   --c-border:      #253349;
+  --c-border-row:  rgba(30,41,59,0.55);
   --c-text:        #f1f5f9;
   --c-text-sub:    #cbd0e0;
   --c-text-muted:  #94a3b8;
@@ -12,6 +13,8 @@
   --c-scrollbar:   #253349;
   --c-scrollbar-hover: #415569;
   --c-bg-grad:     radial-gradient(ellipse at top, #0d1829 0%, #030e1e 60%);
+  --c-shadow-card: 0 8px 32px rgba(0,0,0,0.40);
+  --c-shadow-bar:  none;
 }
 
 /* ── Reset ────────────────────────────────────────────────────────────────── */

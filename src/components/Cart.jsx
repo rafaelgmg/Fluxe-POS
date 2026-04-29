@@ -23,7 +23,9 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
 
   return (
     <div style={{
-      width: 320, background: 'var(--c-bg-panel)', borderLeft: '1px solid var(--c-border)',
+      width: 320, background: 'var(--c-bg-panel)',
+      borderLeft: '1px solid var(--c-border)',
+      boxShadow: 'var(--c-shadow-card)',
       display: 'flex', flexDirection: 'column', height: '100%'
     }}>
       {/* Header */}
