@@ -92,7 +92,7 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
           </label>
           <select
             value={selectedEmployee}
-            onChange={e => { setSelectedEmployee(e.target.value); setPin(''); setError('') }}
+            onChange={e => { setSelectedEmployee(e.target.value); setPin(''); setError(''); e.target.blur() }}
             style={{
               width: '100%', padding: '9px 12px', background: 'var(--c-bg-card)',
               border: '1px solid var(--c-border-md)', borderRadius: 6, color: 'var(--c-text)',

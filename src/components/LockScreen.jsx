@@ -129,11 +129,13 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
     }
   }
 
-  // Allow Enter key to submit
+  // Physical keyboard / numpad support
   useEffect(() => {
     const handler = (e) => {
-      if (!unlocking) return
-      if (e.key === 'Enter') handleUnlock()
+      if (e.target.tagName === 'INPUT') return
+      if (/^[0-9]$/.test(e.key))  handleKey(e.key)
+      else if (e.key === 'Backspace') handleKey('Clear')
+      else if (e.key === 'Enter')     handleUnlock()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -258,7 +260,7 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
             </label>
             <select
               value={selected}
-              onChange={e => { setSelected(e.target.value); setPin(''); setError('') }}
+              onChange={e => { setSelected(e.target.value); setPin(''); setError(''); e.target.blur() }}
               style={{
                 width: '100%', padding: '9px 12px', background: 'var(--c-bg-card)',
                 border: '1px solid var(--c-border)', borderRadius: 6,
