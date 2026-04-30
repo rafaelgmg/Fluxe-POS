@@ -3,6 +3,7 @@ import { COLORS } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { localDateKey } from '../utils/dateUtils'
 import { fetchSalesByLocationAndDate, isSupabaseConfigured } from '../services/supabaseRead'
+import { loadActiveEmployees } from '../utils/usersStorage'
 
 // ── Avatar colors ─────────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
@@ -185,6 +186,13 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
     return () => clearInterval(id)
   }, [])
 
+  // ── Photo map: employee name → photo URL ─────────────────────────────────────
+  const photoMap = useMemo(() => {
+    const map = {}
+    loadActiveEmployees().forEach(e => { if (e.photo) map[e.name] = e.photo })
+    return map
+  }, [])
+
   // ── Build standings ────────────────────────────────────────────────────────
   // Always computes subtotal, spare, commission, count, location for every entry.
   // `value` = sort key for the active tab (subtotal / spare / hybrid score).
@@ -270,6 +278,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
       location:   meta[name].location,
       initials:   getInitials(name),
       color:      AVATAR_COLORS[names.indexOf(name) % AVATAR_COLORS.length],
+      photo:      photoMap[name] || null,
       extra:      extraMap[name] || null,
     })).sort((a, b) => b.value - a.value)
 
@@ -453,18 +462,27 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                   )}
 
                   {/* Avatar */}
-                  <div style={{
-                    width: isCenter ? 90 : 72, height: isCenter ? 90 : 72,
-                    borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${person.color}, ${person.color}88)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: isCenter ? 30 : 24, fontWeight: 800, color: '#fff',
-                    border: `3px solid ${person.color}`,
-                    boxShadow: isCenter ? `0 0 30px ${person.color}66, 0 0 60px ${person.color}22` : 'none',
-                    marginBottom: 8, transition: 'all 0.4s ease',
-                  }}>
-                    {person.initials}
-                  </div>
+                  {person.photo
+                    ? <img src={person.photo} alt={person.initials} style={{
+                        width: isCenter ? 90 : 72, height: isCenter ? 90 : 72,
+                        borderRadius: '50%', objectFit: 'cover',
+                        border: `3px solid ${person.color}`,
+                        boxShadow: isCenter ? `0 0 30px ${person.color}66, 0 0 60px ${person.color}22` : 'none',
+                        marginBottom: 8, transition: 'all 0.4s ease', flexShrink: 0,
+                      }} />
+                    : <div style={{
+                        width: isCenter ? 90 : 72, height: isCenter ? 90 : 72,
+                        borderRadius: '50%',
+                        background: `linear-gradient(135deg, ${person.color}, ${person.color}88)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: isCenter ? 30 : 24, fontWeight: 800, color: '#fff',
+                        border: `3px solid ${person.color}`,
+                        boxShadow: isCenter ? `0 0 30px ${person.color}66, 0 0 60px ${person.color}22` : 'none',
+                        marginBottom: 8, transition: 'all 0.4s ease',
+                      }}>
+                        {person.initials}
+                      </div>
+                  }
 
                   <p style={{ color: '#fff', fontSize: isCenter ? 16 : 13, fontWeight: 700, marginBottom: 2, textAlign: 'center' }}>
                     {person.name}
@@ -516,11 +534,17 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                   <span style={{ color: DIM, fontSize: 13, fontWeight: 700, minWidth: 22 }}>
                     {i + 4}.
                   </span>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: '50%', background: person.color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
-                  }}>{person.initials}</div>
+                  {person.photo
+                    ? <img src={person.photo} alt={person.initials} style={{
+                        width: 36, height: 36, borderRadius: '50%', objectFit: 'cover',
+                        border: `2px solid ${person.color}`, flexShrink: 0,
+                      }} />
+                    : <div style={{
+                        width: 36, height: 36, borderRadius: '50%', background: person.color,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
+                      }}>{person.initials}</div>
+                  }
                   <div>
                     <p style={{ color: '#cbd0e0', fontSize: 13, marginBottom: 2 }}>{person.name}</p>
                     <p style={{ color: person.color, fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
@@ -561,18 +585,27 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                 </div>
 
                 {/* Avatar */}
-                <div style={{
-                  width: isFirst ? 52 : 44, height: isFirst ? 52 : 44,
-                  borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${person.color}, ${person.color}88)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: isFirst ? 18 : 15, fontWeight: 800, color: '#fff',
-                  border: `2px solid ${person.color}`,
-                  boxShadow: isFirst ? `0 0 16px ${person.color}55` : 'none',
-                  flexShrink: 0,
-                }}>
-                  {person.initials}
-                </div>
+                {person.photo
+                  ? <img src={person.photo} alt={person.initials} style={{
+                      width: isFirst ? 52 : 44, height: isFirst ? 52 : 44,
+                      borderRadius: '50%', objectFit: 'cover',
+                      border: `2px solid ${person.color}`,
+                      boxShadow: isFirst ? `0 0 16px ${person.color}55` : 'none',
+                      flexShrink: 0,
+                    }} />
+                  : <div style={{
+                      width: isFirst ? 52 : 44, height: isFirst ? 52 : 44,
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${person.color}, ${person.color}88)`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: isFirst ? 18 : 15, fontWeight: 800, color: '#fff',
+                      border: `2px solid ${person.color}`,
+                      boxShadow: isFirst ? `0 0 16px ${person.color}55` : 'none',
+                      flexShrink: 0,
+                    }}>
+                      {person.initials}
+                    </div>
+                }
 
                 {/* Name + secondary metrics */}
                 <div style={{ flex: 1, minWidth: 0 }}>
