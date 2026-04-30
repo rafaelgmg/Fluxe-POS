@@ -1,69 +1,68 @@
 /**
  * printEODReceipt.js
- * End-of-Day receipt generator — 80mm / Star TSP100III compatible.
- * Same window.open() approach as printReceipt.js so the app's CSS cannot
- * interfere with the print output (avoids the @media print hidden-div issue).
- *
- * Reads receiptHeader and receiptFooter from LocationSettings config.
+ * End-of-Day receipt — 80mm / Star TSP100III compatible.
+ * Structure mirrors NOVA POS EOD with improved readability.
  */
 
 import { loadLocationConfig } from './locationConfig'
 
-const PAY_LABELS = {
-  cash:     'Cash',
-  card:     'Credit Cards',
-  external: 'Ext. Credit',
-  check:    'Checks',
-}
+// ── Standard payment method definitions ────────────────────────────────────────
+const METHODS = [
+  { key: 'cash',        summary: 'Cash',             inLbl: 'Total Cash In',          outLbl: 'Total Cash Out'          },
+  { key: 'external',    summary: 'Ext. Credit',       inLbl: 'Total Ext. Credit In',   outLbl: 'Total Ext. Credit Out'   },
+  { key: 'card',        summary: 'Credit Cards',      inLbl: 'Total Credit Cards In',  outLbl: 'Total Credit Cards Out'  },
+  { key: 'check',       summary: 'Checks',            inLbl: 'Total Checks In',        outLbl: 'Total Checks Out'        },
+  { key: 'storecredit', summary: 'Store Credit Out',  inLbl: 'Store Credit In',        outLbl: 'Store Credit Out'        },
+]
 
-function fmt$(n) {
-  return '$' + (n || 0).toFixed(2)
-}
+function fmt$(n) { return '$' + (n || 0).toFixed(2) }
 
 /**
- * @param {object} opts
+ * @param {object}   opts
  * @param {string}   opts.location
- * @param {string}   opts.dateLabel       e.g. "Monday, April 26, 2026"
- * @param {string}   opts.printedAt       e.g. "10:45 PM"
+ * @param {string}   opts.dateLabel          e.g. "Monday, April 26, 2026"
+ * @param {string}   opts.printedAt          e.g. "4/29/2026 4:05:21 PM"
  * @param {string}  [opts.printedBy]
- * @param {number}  [opts.netRevenue]
+ * @param {number}  [opts.netRevenue]        subtotal sum (no tax)
  * @param {number}  [opts.taxRevenue]
- * @param {number}  [opts.grossRevenue]
+ * @param {number}  [opts.grossRevenue]      net + tax
  * @param {number}  [opts.transactionCount]
- * @param {number}  [opts.taxRatePct]     e.g. 8.5
- * @param {Array}   [opts.payMethods]     [{ label, total }]
- * @param {Array}   [opts.employeeSummary] [{ name, subtotal, count }]
- * @param {Array}   [opts.productsSummary] [{ name, qty }]  — sorted by qty desc
+ * @param {number}  [opts.taxRatePct]
+ * @param {Array}   [opts.payMethodsDetailed] [{ label, in, out }] — preferred
+ * @param {Array}   [opts.payMethods]         [{ label, total }]   — legacy fallback
+ * @param {Array}   [opts.employeeSummary]    [{ name, subtotal, count }]
+ * @param {Array}   [opts.productsSummary]    [{ name, qty }]
  * @param {number}  [opts.voidedCount]
  * @param {number}  [opts.refundAmount]
  * @param {string}  [opts.notes]
- * @param {object}  [opts.locCfg]         preloaded LocationConfig; falls back to loadLocationConfig
- * @param {string}  [opts.printMode]      'browser' (window.open, default) | 'iframe' (hidden iframe, no popup)
- * @param {Function}[opts.onStatus]       callback(status) — 'printing' | 'done' | 'error'
+ * @param {object}  [opts.locCfg]
+ * @param {string}  [opts.printMode]         'browser' | 'iframe'
+ * @param {Function}[opts.onStatus]
  */
 export function printEODReceipt({
   location,
   dateLabel,
   printedAt,
-  printedBy     = '',
-  netRevenue    = 0,
-  taxRevenue    = 0,
-  grossRevenue  = 0,
+  printedBy        = '',
+  netRevenue       = 0,
+  taxRevenue       = 0,
+  grossRevenue     = 0,
   transactionCount = 0,
-  taxRatePct    = 8.5,
-  payMethods    = [],
-  employeeSummary = [],
-  productsSummary = [],
-  voidedCount   = 0,
-  refundAmount  = 0,
-  notes         = '',
-  locCfg        = null,
-  printMode     = 'browser',
-  onStatus      = null,
+  taxRatePct       = 8.5,
+  payMethodsDetailed = null,
+  payMethods         = [],       // legacy
+  employeeSummary  = [],
+  productsSummary  = [],
+  voidedCount      = 0,
+  refundAmount     = 0,
+  notes            = '',
+  locCfg           = null,
+  printMode        = 'browser',
+  onStatus         = null,
 }) {
   const cfg = locCfg || loadLocationConfig(location) || {}
 
-  // ── Location header — same logic as printReceipt.js ────────────────────────
+  // ── Location header ──────────────────────────────────────────────────────────
   const rawHeader   = (cfg.receiptHeader || '').trim()
   const headerLines = rawHeader
     ? rawHeader.split('\n').map(l => l.trim()).filter(Boolean)
@@ -72,85 +71,80 @@ export function printEODReceipt({
   let headerHtml
   if (headerLines.length > 0) {
     headerHtml = `<div class="loc-name">${headerLines[0]}</div>` +
-      headerLines.slice(1).map(l => `\n  <div class="loc-sub">${l}</div>`).join('')
+      headerLines.slice(1).map(l => `<div class="loc-sub">${l}</div>`).join('')
   } else {
     const city = cfg.city
       ? `${cfg.city}, ${cfg.state || ''}`.trim().replace(/,$/, '')
       : cfg.state || ''
     headerHtml = `<div class="loc-name">${cfg.name || location}</div>`
-    if (cfg.address) headerHtml += `\n  <div class="loc-sub">${cfg.address}</div>`
-    if (city)        headerHtml += `\n  <div class="loc-sub">${city}</div>`
+    if (cfg.address) headerHtml += `<div class="loc-sub">${cfg.address}</div>`
+    if (city)        headerHtml += `<div class="loc-sub">${city}</div>`
   }
 
-  const receiptFooter = cfg.receiptFooter || 'No Refunds. Exchanges within 14 days.'
+  // ── Build per-method in/out map ──────────────────────────────────────────────
+  // Prefer payMethodsDetailed; fall back to payMethods (legacy, no out split).
+  const detailMap = {}
+  if (payMethodsDetailed && payMethodsDetailed.length > 0) {
+    payMethodsDetailed.forEach(m => {
+      detailMap[m.label] = { in: m.in || 0, out: m.out || 0 }
+    })
+  } else {
+    payMethods.forEach(m => {
+      detailMap[m.label] = { in: m.total || 0, out: 0 }
+    })
+  }
 
-  // ── Payment methods ─────────────────────────────────────────────────────────
-  const payHtml = payMethods.length > 0
-    ? payMethods.map(m => {
-        const label = PAY_LABELS[m.label] || m.label
-        return `<div class="row"><span>${label}</span><span>${fmt$(m.total)}</span></div>`
-      }).join('\n      ')
-    : '<p class="dim-center">No payment data</p>'
+  // All method keys that appear — standard ones always shown (at $0 if absent)
+  const allKeys = [...new Set([...METHODS.map(m => m.key), ...Object.keys(detailMap)])]
 
-  // ── Employee summary ────────────────────────────────────────────────────────
-  const empTotalSales = employeeSummary.reduce((s, e) => s + e.subtotal, 0)
-  const empTotalCount = employeeSummary.reduce((s, e) => s + e.count, 0)
+  // ── Payment SUMMARY rows (bold, one total per method) ────────────────────────
+  const summaryHtml = METHODS.map(m => {
+    const d    = detailMap[m.key] || { in: 0, out: 0 }
+    // For most methods show "in"; for storecredit show "out" (matches NOVA)
+    const net  = m.key === 'storecredit' ? d.out : d.in
+    return `<div class="row bold-lg"><span>${m.summary}:</span><span>${fmt$(net)}</span></div>`
+  }).join('\n  ')
 
-  const empRows = employeeSummary.length > 0
+  // ── Employee rows ────────────────────────────────────────────────────────────
+  const empHtml = employeeSummary.length > 0
     ? employeeSummary.map(e => {
-        const name = e.name.length > 18 ? e.name.slice(0, 17) + '…' : e.name
-        return `<tr>
-          <td>${name}</td>
-          <td class="right">${fmt$(e.subtotal)}</td>
-          <td class="right">${e.count}</td>
-        </tr>`
-      }).join('\n        ')
-    : '<tr><td colspan="3" class="dim-center">No data</td></tr>'
+        const name = e.name.length > 20 ? e.name.slice(0, 19) + '…' : e.name
+        return `<div class="row"><span>${name}</span><span>${fmt$(e.subtotal)}</span></div>`
+      }).join('\n  ')
+    : '<p class="center">No data</p>'
 
-  const empFooterRow = employeeSummary.length > 0
-    ? `<tr class="total-row">
-          <td><b>TOTAL</b></td>
-          <td class="right"><b>${fmt$(empTotalSales)}</b></td>
-          <td class="right"><b>${empTotalCount}</b></td>
-        </tr>`
-    : ''
-
-  // ── Products sold (max 12 lines) ────────────────────────────────────────────
-  const MAX_PROD = 12
-  const prodSlice = productsSummary.slice(0, MAX_PROD)
-  const prodExtra = productsSummary.length - prodSlice.length
-
-  const prodHtml = prodSlice.length > 0
-    ? `<table>
-      <thead><tr class="thead"><td>Product</td><td class="right">Qty</td></tr></thead>
-      <tbody>
-        ${prodSlice.map(p => {
-          const name = p.name.length > 23 ? p.name.slice(0, 22) + '…' : p.name
-          return `<tr><td>${name}</td><td class="right">x${p.qty}</td></tr>`
-        }).join('\n        ')}
-      </tbody>
-    </table>
-    ${prodExtra > 0 ? `<p class="dim-center" style="margin-top:2px;">+ ${prodExtra} more</p>` : ''}`
-    : '<p class="dim-center">No products</p>'
-
-  // ── Refunds ─────────────────────────────────────────────────────────────────
+  // ── Refund block ─────────────────────────────────────────────────────────────
   const refundHtml = voidedCount === 0
-    ? '<p style="text-align:center;font-size:13px;">No Refunds</p>'
-    : `<div class="row"><span>Voided sales</span><span>${voidedCount}</span></div>
-      <div class="row bold"><span>Total voided</span><span>${fmt$(refundAmount)}</span></div>`
+    ? '<p class="bold-text">No Refunds</p>'
+    : `<div class="row"><span>Voided sales</span><span>${voidedCount}</span></div>` +
+      `<div class="row bold-text"><span>Total voided</span><span>${fmt$(refundAmount)}</span></div>`
 
-  // ── Notes ───────────────────────────────────────────────────────────────────
+  // ── Payment Methods DETAIL rows (In + Out per method) ────────────────────────
+  const detailRows = allKeys.map(key => {
+    const def  = METHODS.find(m => m.key === key)
+    const d    = detailMap[key] || { in: 0, out: 0 }
+    const inLbl  = def ? def.inLbl  : `${key} In`
+    const outLbl = def ? def.outLbl : `${key} Out`
+    return `<div class="row sm"><span>${inLbl}:</span><span>${fmt$(d.in)}</span></div>` +
+           `<div class="row sm"><span>${outLbl}:</span><span>${fmt$(d.out)}</span></div>`
+  }).join('\n  ')
+
+  // ── Notes (only if non-empty) ────────────────────────────────────────────────
   const notesHtml = notes.trim()
-    ? `<hr class="dashed" />
-      <div class="section-title">ADDITIONAL NOTES</div>
-      <p style="font-size:13px;line-height:1.5;white-space:pre-wrap;margin-top:3px;">${notes.trim()}</p>`
+    ? `<hr class="dash" />
+  <p class="bold-text" style="margin-bottom:3px;">Additional Notes:</p>
+  <p class="notes-text">${notes.trim().replace(/\n/g, '<br/>')}</p>`
     : ''
 
-  const printedByLine = printedBy
-    ? `<div style="text-align:center;font-size:12px;margin:1px 0;">Printed by: ${printedBy}</div>`
+  // ── Printed-by line ──────────────────────────────────────────────────────────
+  const byLine = printedBy
+    ? `<div class="meta">Printed by: ${printedBy}</div>`
     : ''
 
-  // ── Full HTML document ──────────────────────────────────────────────────────
+  // ── Gross validation: net + tax should equal gross ───────────────────────────
+  // (calculated by caller — we trust the values passed in)
+
+  // ── Full HTML ────────────────────────────────────────────────────────────────
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -161,53 +155,40 @@ export function printEODReceipt({
     body {
       font-family: 'Courier New', Courier, monospace;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.55;
       width: 302px;
       margin: 0 auto;
-      padding: 8px 4px;
+      padding: 8px 4px 16px;
       color: #000;
       background: #fff;
     }
 
-    /* Header */
-    .loc-name { font-size:16px; font-weight:bold; text-align:center; margin-bottom:2px; }
-    .loc-sub  { font-size:12px; text-align:center; color:#222; line-height:1.4; }
+    .loc-name { font-size:15px; font-weight:bold; text-align:center; margin-bottom:1px; }
+    .loc-sub  { font-size:12px; text-align:center; line-height:1.4; }
 
-    /* Dividers */
-    .solid  { border:none; border-top:2px solid #000; margin:6px 0; }
-    .dashed { border:none; border-top:1px dashed #555; margin:6px 0; }
+    hr.solid { border:none; border-top:2px solid #000; margin:6px 0; }
+    hr.dash  { border:none; border-top:1px dashed #555; margin:6px 0; }
 
-    /* Section title */
-    .section-title {
-      font-size:12px; font-weight:bold; text-align:center;
-      letter-spacing:1.5px; text-transform:uppercase; margin:5px 0 4px;
-    }
+    .title   { font-size:14px; font-weight:bold; margin:4px 0 1px; }
+    .meta    { font-size:12px; line-height:1.5; }
 
-    /* Key-value rows */
-    .row {
-      display:flex; justify-content:space-between;
-      font-size:13px; margin:3px 0; line-height:1.5;
-    }
-    .row.bold  span { font-weight:bold; }
-    .row.large span { font-size:15px; font-weight:bold; }
+    /* key-value rows */
+    .row { display:flex; justify-content:space-between; margin:2px 0; font-size:13px; }
+    .row.sm span { font-size:12px; }
 
-    /* Misc */
-    .dim-center { text-align:center; font-size:12px; color:#555; margin:3px 0; }
+    /* large bold rows — Net / Tax / Gross + payment summary */
+    .row.bold-lg span { font-size:16px; font-weight:bold; }
 
-    /* Tables */
-    table { width:100%; border-collapse:collapse; }
-    td { font-size:12px; padding:2px 0; vertical-align:top; }
-    .thead td { font-size:11px; font-weight:bold; border-bottom:1px solid #000; padding-bottom:3px; }
-    .right { text-align:right; white-space:nowrap; }
-    .total-row td { border-top:1px solid #000; padding-top:3px; font-size:13px; }
+    /* section labels */
+    .sec { font-size:12px; font-weight:bold; margin:4px 0 2px; }
 
-    /* Footer */
-    .footer-msg { text-align:center; font-size:13px; font-weight:bold;
-      text-transform:uppercase; letter-spacing:0.5px; margin:5px 0 2px; }
+    .bold-text { font-weight:bold; font-size:13px; margin:2px 0; }
+    .center { text-align:center; font-size:12px; color:#444; margin:3px 0; }
+    .notes-text { font-size:12px; line-height:1.5; white-space:pre-wrap; margin-top:2px; }
 
     @media print {
-      body { width:302px; margin:0; padding:4px 2px; }
-      @page { margin:4mm 2mm; size:80mm auto; }
+      body { width:302px; margin:0; padding:4px 2px 16px; }
+      @page { margin:3mm 2mm; size:80mm auto; }
     }
   </style>
 </head>
@@ -216,50 +197,43 @@ export function printEODReceipt({
   ${headerHtml}
   <hr class="solid" />
 
-  <div style="text-align:center; font-size:16px; font-weight:bold; margin:4px 0; letter-spacing:0.5px;">END OF DAY REPORT</div>
-  <div style="text-align:center; font-size:12px; margin:2px 0;">${dateLabel}</div>
-  <div style="text-align:center; font-size:12px; margin:1px 0;">Printed at: ${printedAt}</div>
-  ${printedByLine}
+  <p class="title">End of Day Report: ${cfg.name || location}</p>
+  <div class="meta">Report for date: ${dateLabel}</div>
+  <div class="meta">Printed at: ${printedAt}</div>
+  ${byLine}
 
-  <hr class="dashed" />
-  <div class="section-title">Revenue</div>
-  <div class="row"><span>Net Revenue</span><span>${fmt$(netRevenue)}</span></div>
-  <div class="row"><span>Tax (${taxRatePct}%)</span><span>${fmt$(taxRevenue)}</span></div>
-  <div class="row large"><span>Gross Revenue</span><span>${fmt$(grossRevenue)}</span></div>
-  <div class="row"><span>Transactions</span><span>${transactionCount}</span></div>
+  <hr class="solid" />
 
-  <hr class="dashed" />
-  <div class="section-title">Payment Methods</div>
-  ${payHtml}
+  <div class="row bold-lg"><span>Net:</span><span>${fmt$(netRevenue)}</span></div>
+  <div class="row bold-lg"><span>Tax:</span><span>${fmt$(taxRevenue)}</span></div>
+  <div class="row bold-lg"><span>Gross:</span><span>${fmt$(grossRevenue)}</span></div>
 
-  <hr class="dashed" />
-  <div class="section-title">Sales by Employee</div>
-  <table>
-    <thead><tr class="thead"><td>Employee</td><td class="right">Sales</td><td class="right">Trans</td></tr></thead>
-    <tbody>
-      ${empRows}
-    </tbody>
-    ${empFooterRow ? `<tfoot>${empFooterRow}</tfoot>` : ''}
-  </table>
+  <hr class="dash" />
 
-  <hr class="dashed" />
-  <div class="section-title">Products Sold</div>
-  ${prodHtml}
+  ${summaryHtml}
 
-  <hr class="dashed" />
-  <div class="section-title">Refunds</div>
+  <hr class="dash" />
+
+  <p class="sec">Sales by employee:</p>
+  <p class="sec">Employee Name / Total Sales</p>
+  ${empHtml}
+
+  <hr class="dash" />
+
   ${refundHtml}
+
+  <hr class="dash" />
+
+  <p class="sec">Payment Methods:</p>
+  ${detailRows}
 
   ${notesHtml}
 
-  <hr class="solid" />
-  <p class="footer-msg">${receiptFooter}</p>
-  <div style="height:20px"></div>
+  <div style="height:16px"></div>
 
 </body>
 </html>`
 
-  // ── Dispatch to the configured print mode ──────────────────────────────────
   if (printMode === 'iframe') {
     _printViaIframe(html, onStatus)
   } else {
@@ -267,10 +241,9 @@ export function printEODReceipt({
   }
 }
 
-// ── iframe mode: no popup window, works silently with Chrome --kiosk-printing ─
+// ── iframe mode ────────────────────────────────────────────────────────────────
 function _printViaIframe(html, onStatus) {
   onStatus?.('printing')
-
   const iframe = document.createElement('iframe')
   iframe.setAttribute('aria-hidden', 'true')
   iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:302px;height:1px;border:0;overflow:hidden;'
@@ -278,8 +251,7 @@ function _printViaIframe(html, onStatus) {
 
   let done = false
   const cleanup = () => {
-    if (done) return
-    done = true
+    if (done) return; done = true
     try { document.body.removeChild(iframe) } catch {}
   }
 
@@ -287,39 +259,20 @@ function _printViaIframe(html, onStatus) {
     iframe.contentDocument.open()
     iframe.contentDocument.write(html)
     iframe.contentDocument.close()
-  } catch {
-    onStatus?.('error')
-    cleanup()
-    return
-  }
+  } catch { onStatus?.('error'); cleanup(); return }
 
-  // onafterprint fires after the dialog is closed (printed or cancelled)
-  iframe.contentWindow.addEventListener('afterprint', () => {
-    onStatus?.('done')
-    setTimeout(cleanup, 500)
-  })
-
+  iframe.contentWindow.addEventListener('afterprint', () => { onStatus?.('done'); setTimeout(cleanup, 500) })
   setTimeout(() => {
-    try {
-      iframe.contentWindow.focus()
-      iframe.contentWindow.print()
-    } catch {
-      onStatus?.('error')
-      cleanup()
-    }
+    try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch { onStatus?.('error'); cleanup() }
   }, 250)
-
-  // Failsafe: cleanup after 2 min if afterprint never fires (e.g. kiosk silent print)
   setTimeout(() => { onStatus?.('done'); cleanup() }, 120_000)
 }
 
-// ── browser mode: window.open (original behavior, works everywhere) ──────────
+// ── browser mode ───────────────────────────────────────────────────────────────
 function _printViaBrowserWindow(html, onStatus) {
   onStatus?.('printing')
-
   const win = window.open('', '_blank', 'width=420,height=700,toolbar=0,menubar=0,scrollbars=1')
   if (!win) {
-    // Popup blocked — blob fallback
     const blob = new Blob([html], { type: 'text/html' })
     const url  = URL.createObjectURL(blob)
     Object.assign(document.createElement('a'), { href: url, target: '_blank' }).click()
@@ -327,20 +280,10 @@ function _printViaBrowserWindow(html, onStatus) {
     onStatus?.('done')
     return
   }
-
   win.document.write(html)
   win.document.close()
   win.addEventListener('afterprint', () => { onStatus?.('done'); try { win.close() } catch {} })
   let printed = false
-  win.onload = () => {
-    if (printed) return
-    printed = true
-    win.focus(); win.print()
-  }
-  // Fallback: onload sometimes doesn't fire if document.write was used
-  setTimeout(() => {
-    if (printed) return
-    printed = true
-    try { win.focus(); win.print() } catch {}
-  }, 450)
+  win.onload = () => { if (printed) return; printed = true; win.focus(); win.print() }
+  setTimeout(() => { if (printed) return; printed = true; try { win.focus(); win.print() } catch {} }, 450)
 }

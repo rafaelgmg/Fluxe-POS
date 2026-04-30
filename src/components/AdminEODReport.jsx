@@ -141,6 +141,15 @@ export default function AdminEODReport({ onClose }) {
     }))
   }, [activeSales])
 
+  const payMethodsDetailed = useMemo(() => {
+    const STANDARD_KEYS = ['cash', 'external', 'card', 'check', 'storecredit']
+    const inMap = {}, outMap = {}
+    byPaymentMethod(activeSales).forEach(m => { inMap[m.label] = m.total })
+    byPaymentMethod(voidedSales).forEach(m => { outMap[m.label] = m.total })
+    const allKeys = [...new Set([...STANDARD_KEYS, ...Object.keys(inMap), ...Object.keys(outMap)])]
+    return allKeys.map(label => ({ label, in: inMap[label] || 0, out: outMap[label] || 0 }))
+  }, [activeSales, voidedSales])
+
   // Products sold
   const productRows = useMemo(() => {
     const map = {}
@@ -289,7 +298,7 @@ export default function AdminEODReport({ onClose }) {
               grossRevenue,
               transactionCount: activeSales.length,
               taxRatePct: locCfg.taxRate ?? 8.5,
-              payMethods: payMethods.map(m => ({ label: m.label, total: m.total })),
+              payMethodsDetailed,
               employeeSummary,
               productsSummary: productRows.map(p => ({ name: p.name, qty: p.qty })),
               voidedCount: voidedSales.length,
