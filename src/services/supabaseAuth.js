@@ -198,8 +198,9 @@ export async function verifyEmployeePin(employeeName, pin) {
           photo: localEmp?.photo || null,
         }
       }
-      // RPC succeeded but returned no rows → wrong PIN or unknown employee
-      return null
+      // RPC returned no rows — Supabase hash may be stale (e.g. set_user_pin failed).
+      // Fall through to local plaintext check so a recently-changed PIN still works.
+      console.warn('[Fluxe] verify_employee_pin returned no rows — trying local PIN fallback.')
     } catch (err) {
       console.warn('[Fluxe] verify_employee_pin RPC failed — falling back to local:', err.message)
     }

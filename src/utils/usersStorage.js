@@ -23,17 +23,18 @@ const DEFAULT_USERS = [
 // ─── Schema migration: fills in missing fields from older formats ──────────────
 function migrateUser(u) {
   return {
-    id:        u.id        ?? 0,
-    firstName: (u.firstName ?? u.name ?? '').trim(),
-    lastName:  (u.lastName  ?? '').trim(),
-    position:  u.position  ?? 'Sales',
-    email:     (u.email     ?? '').trim(),
-    phone:     (u.phone     ?? '').trim(),
+    id:         u.id         ?? 0,
+    firstName:  (u.firstName ?? u.name ?? '').trim(),
+    lastName:   (u.lastName  ?? '').trim(),
+    position:   u.position   ?? 'Sales',
+    email:      (u.email     ?? '').trim(),
+    phone:      (u.phone     ?? '').trim(),
     pin:        u.pin        ?? '',
     status:     u.status     ?? 'active',
     photo:      u.photo      ?? null,
     hourlyRate: u.hourlyRate ?? 0,
     createdAt:  u.createdAt  ?? new Date().toISOString(),
+    supabaseId: u.supabaseId ?? null,
   }
 }
 
