@@ -1,13 +1,9 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
-const BLUE = '#3b82f6'
+const BLUE  = '#3b82f6'
 const AMBER = '#f59e0b'
 const GREEN = '#22c55e'
 const RED   = '#ef4444'
-
-const BG      = '#0d1526'
-const BGCARD  = '#111d30'
-const BORDER  = '#253349'
 
 export default function EditItemModal({ product, onAdd, onExchange, onCancel }) {
   const [priceInput,    setPriceInput]    = useState(String(product._cartPrice ?? product.systemPrice))
@@ -47,7 +43,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
   }, [priceInput, qty, activeField, priceTouched, showDiscount, showExchange])
 
   const price    = parseFloat(priceInput) || 0
-  const qtyNum   = parseInt(qty) || 1        // fallback 1 só para cálculo/exibição
+  const qtyNum   = parseInt(qty) || 1
   const subtotal = price * qtyNum
 
   const handleNumpad = (val) => {
@@ -73,16 +69,13 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
   }
 
   const handleAdd = () => {
-    const resolvedQty = parseInt(qty) || 1   // campo vazio → 1
+    const resolvedQty = parseInt(qty) || 1
     const discount    = product.systemPrice - price
     onAdd({
       product, qty: resolvedQty, salePrice: price,
       systemPrice: product.systemPrice,
       discount:    discount > 0 ? discount : 0,
       subtotal:    price * resolvedQty,
-      // True economic spare per line — can be negative when sold below minPrice.
-      // Negative values reduce cartTotalSpare correctly (e.g. fully-discounted lines).
-      // Commission calculations clamp this to 0 in commissionEngine.resolveItemFields.
       spare:       (price - (product.minPrice ?? 0)) * resolvedQty,
     })
   }
@@ -114,29 +107,32 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
   }
 
   const numBtnStyle = (active = false) => ({
-    padding: '13px 0', background: active ? `${BLUE}22` : BGCARD,
-    border: `1px solid ${active ? BLUE : BORDER}`,
-    borderRadius: 6, color: active ? '#93c5fd' : '#f1f5f9',
+    padding: '13px 0',
+    background: active ? `${BLUE}22` : 'var(--c-bg-card)',
+    border: `1px solid ${active ? BLUE : 'var(--c-border)'}`,
+    borderRadius: 6,
+    color: active ? BLUE : 'var(--c-text)',
     fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'all 0.1s',
   })
 
   const fieldStyle = (active) => ({
-    width: '100%', padding: '9px 12px', background: active ? `${BLUE}12` : BGCARD,
-    border: `1px solid ${active ? BLUE : BORDER}`,
-    borderRadius: 6, color: '#f1f5f9', fontSize: 16, cursor: 'pointer',
+    width: '100%', padding: '9px 12px',
+    background: active ? `${BLUE}12` : 'var(--c-bg-card)',
+    border: `1px solid ${active ? BLUE : 'var(--c-border)'}`,
+    borderRadius: 6, color: 'var(--c-text)', fontSize: 16, cursor: 'pointer',
     outline: 'none', boxSizing: 'border-box',
   })
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
       backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: BG, border: `1px solid ${BORDER}`, borderRadius: 10,
+        background: 'var(--c-bg)', border: '1px solid var(--c-border)', borderRadius: 10,
         width: 500, padding: 24, position: 'relative',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+        boxShadow: 'var(--c-shadow-card)',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
@@ -145,11 +141,11 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
             border: '1px solid rgba(37,99,235,0.3)',
             borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16
           }}>🏷️</div>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>Add to Cart</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text)' }}>Add to Cart</h2>
           <button onClick={onCancel} style={{
             marginLeft: 'auto', background: 'transparent',
-            border: `1px solid ${BORDER}`, borderRadius: 6,
-            color: '#94a3b8', width: 28, height: 28, fontSize: 16, cursor: 'pointer',
+            border: '1px solid var(--c-border)', borderRadius: 6,
+            color: 'var(--c-text-muted)', width: 28, height: 28, fontSize: 16, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>×</button>
         </div>
@@ -158,25 +154,25 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
           {/* Left: product info */}
           <div style={{ flex: 1 }}>
             <div style={{
-              width: 72, height: 72, background: BGCARD, borderRadius: 8,
+              width: 72, height: 72, background: 'var(--c-bg-card)', borderRadius: 8,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 28, marginBottom: 12, border: `1px solid ${BORDER}`,
+              fontSize: 28, marginBottom: 12, border: '1px solid var(--c-border)',
               boxShadow: `0 0 20px ${BLUE}20`,
             }}>🧴</div>
 
-            <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 4, fontFamily: "'Courier New', Courier, monospace" }}>
+            <p style={{ color: 'var(--c-text-muted)', fontSize: 13, marginBottom: 4, fontFamily: "'Courier New', Courier, monospace" }}>
               {product.barcode}
               {product.minPrice != null && (
-                <span style={{ color: '#94a3b8', marginLeft: 4 }}>
+                <span style={{ color: 'var(--c-text-muted)', marginLeft: 4 }}>
                   .{product.minPrice}
                 </span>
               )}
             </p>
-            <p style={{ color: '#93c5fd', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+            <p style={{ color: BLUE, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
               {product.name}
             </p>
             {product.description && (
-              <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 12 }}>{product.description}</p>
+              <p style={{ color: 'var(--c-text-muted)', fontSize: 12, marginBottom: 12 }}>{product.description}</p>
             )}
 
             {/* Action buttons */}
@@ -184,20 +180,20 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
               <button onClick={() => setShowExchange(true)} style={{
                 padding: '7px 12px', background: `${RED}15`,
                 border: `1px solid ${RED}40`, borderRadius: 6,
-                color: '#fca5a5', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                color: RED, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}>🔄 Exchange</button>
               <button onClick={() => { setDiscInput('0'); setDiscTouched(false); setShowDiscount(true) }} style={{
                 padding: '7px 12px', background: `${AMBER}15`,
                 border: `1px solid ${AMBER}40`, borderRadius: 6,
-                color: '#fcd34d', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                color: AMBER, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}>% Discount</button>
             </div>
 
             {/* Price */}
             <div style={{ marginBottom: 10 }}>
-              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
+              <label style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
                 PRICE PER ITEM
               </label>
               <input readOnly value={priceInput}
@@ -209,7 +205,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
 
             {/* Quantity */}
             <div style={{ marginBottom: 10 }}>
-              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
+              <label style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
                 QUANTITY
               </label>
               <input readOnly value={qty}
@@ -220,7 +216,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
 
             {/* Subtotal */}
             <div>
-              <label style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
+              <label style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 600, display: 'block', marginBottom: 5, letterSpacing: 0.5 }}>
                 SUBTOTAL
               </label>
               <input readOnly value={subtotal.toFixed(2)} style={{
@@ -241,8 +237,8 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                   padding: k === 'Clear' ? '9px' : '13px',
                   fontSize: k === 'Clear' ? 11 : 16,
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#131d35'; e.currentTarget.style.borderColor = '#263354' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = BGCARD; e.currentTarget.style.borderColor = BORDER }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-bg-hover)'; e.currentTarget.style.borderColor = 'var(--c-border-md)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--c-bg-card)'; e.currentTarget.style.borderColor = 'var(--c-border)' }}
                 >{k}</button>
               ))}
             </div>
@@ -258,12 +254,12 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
             >Add to Cart</button>
             <button onClick={onCancel} style={{
               width: '100%', padding: '10px', background: 'transparent',
-              border: `1px solid ${BORDER}`, borderRadius: 6,
-              color: '#94a3b8', fontSize: 13, cursor: 'pointer',
+              border: '1px solid var(--c-border)', borderRadius: 6,
+              color: 'var(--c-text-muted)', fontSize: 13, cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#263354'; e.currentTarget.style.color = '#cbd0e0' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#94a3b8' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--c-border-md)'; e.currentTarget.style.color = 'var(--c-text-sub)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--c-border)'; e.currentTarget.style.color = 'var(--c-text-muted)' }}
             >Cancel</button>
           </div>
         </div>
@@ -271,11 +267,11 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
         {/* ── DISCOUNT MODAL ─────────────────────────────────────────────────── */}
         {showDiscount && (
           <div style={{
-            position: 'absolute', inset: 0, background: 'rgba(0,2,15,0.92)',
+            position: 'absolute', inset: 0, background: 'var(--c-overlay)',
             borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10,
           }}>
             <div style={{
-              background: BG, border: `1px solid ${AMBER}40`, borderRadius: 10,
+              background: 'var(--c-bg-panel)', border: `1px solid ${AMBER}40`, borderRadius: 10,
               padding: 24, width: 320,
               boxShadow: `0 0 40px ${AMBER}20`,
             }}>
@@ -285,33 +281,33 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                   border: `1px solid ${AMBER}40`, borderRadius: 6,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14
                 }}>%</div>
-                <h3 style={{ color: '#f1f5f9', fontSize: 15, fontWeight: 700 }}>Add Discount</h3>
+                <h3 style={{ color: 'var(--c-text)', fontSize: 15, fontWeight: 700 }}>Add Discount</h3>
                 <button onClick={() => setShowDiscount(false)} style={{
-                  marginLeft: 'auto', background: 'transparent', border: `1px solid ${BORDER}`,
-                  borderRadius: 5, color: '#94a3b8', width: 26, height: 26, fontSize: 15, cursor: 'pointer'
+                  marginLeft: 'auto', background: 'transparent', border: '1px solid var(--c-border)',
+                  borderRadius: 5, color: 'var(--c-text-muted)', width: 26, height: 26, fontSize: 15, cursor: 'pointer'
                 }}>×</button>
               </div>
 
-              <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 10, letterSpacing: 0.3 }}>SELECT DISCOUNT TYPE</p>
+              <p style={{ color: 'var(--c-text-muted)', fontSize: 12, marginBottom: 10, letterSpacing: 0.3 }}>SELECT DISCOUNT TYPE</p>
               <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
                 {[['pct','%','f59e0b'],['dollar','$','2563eb']].map(([type, sym, col]) => (
                   <button key={type}
                     onClick={() => { setDiscType(type); setDiscInput('0'); setDiscTouched(false) }}
                     style={{
                       flex: 1, padding: '13px 0',
-                      border: `2px solid ${discType === type ? `#${col}` : BORDER}`,
-                      borderRadius: 6, background: discType === type ? `#${col}20` : BGCARD,
-                      color: discType === type ? '#f1f5f9' : '#94a3b8',
+                      border: `2px solid ${discType === type ? `#${col}` : 'var(--c-border)'}`,
+                      borderRadius: 6, background: discType === type ? `#${col}20` : 'var(--c-bg-card)',
+                      color: discType === type ? 'var(--c-text)' : 'var(--c-text-muted)',
                       fontSize: 22, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s ease',
                     }}>{sym}</button>
                 ))}
               </div>
 
-              <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>ENTER VALUE</p>
+              <p style={{ color: 'var(--c-text-muted)', fontSize: 12, marginBottom: 8 }}>ENTER VALUE</p>
               <input readOnly value={discInput} style={{
-                width: '100%', padding: '9px 12px', background: BGCARD,
+                width: '100%', padding: '9px 12px', background: 'var(--c-bg-card)',
                 border: `1px solid ${AMBER}50`, borderRadius: 6,
-                color: '#fcd34d', fontSize: 20, fontWeight: 700,
+                color: AMBER, fontSize: 20, fontWeight: 700,
                 marginBottom: 12, boxSizing: 'border-box', outline: 'none',
               }} />
 
@@ -326,8 +322,8 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5, marginBottom: 14 }}>
                 {['7','8','9','4','5','6','1','2','3','0','.','Clear'].map(k => (
                   <button key={k} onClick={() => handleDiscNumpad(k)} style={{
-                    padding: '9px 0', background: BGCARD, border: `1px solid ${BORDER}`,
-                    borderRadius: 5, color: '#f1f5f9', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    padding: '9px 0', background: 'var(--c-bg-card)', border: '1px solid var(--c-border)',
+                    borderRadius: 5, color: 'var(--c-text)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   }}>{k}</button>
                 ))}
               </div>
@@ -339,7 +335,8 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                 }}>Apply</button>
                 <button onClick={() => setShowDiscount(false)} style={{
                   flex: 1, padding: '11px', background: 'transparent',
-                  border: `1px solid ${BORDER}`, borderRadius: 6, color: '#94a3b8', fontSize: 13, cursor: 'pointer',
+                  border: '1px solid var(--c-border)', borderRadius: 6,
+                  color: 'var(--c-text-muted)', fontSize: 13, cursor: 'pointer',
                 }}>Cancel</button>
               </div>
             </div>
@@ -349,18 +346,18 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
         {/* ── EXCHANGE MODAL ─────────────────────────────────────────────────── */}
         {showExchange && (
           <div style={{
-            position: 'absolute', inset: 0, background: 'rgba(0,2,15,0.92)',
+            position: 'absolute', inset: 0, background: 'var(--c-overlay)',
             borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10,
           }}>
             <div style={{
-              background: BG, border: `1px solid ${RED}40`, borderRadius: 10,
+              background: 'var(--c-bg-panel)', border: `1px solid ${RED}40`, borderRadius: 10,
               padding: 28, width: 320, textAlign: 'center',
             }}>
               <div style={{ fontSize: 26, marginBottom: 8 }}>🔄</div>
-              <h3 style={{ color: '#f1f5f9', fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
+              <h3 style={{ color: 'var(--c-text)', fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
                 Exchange — {product.name}
               </h3>
-              <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 22 }}>
+              <p style={{ color: 'var(--c-text-muted)', fontSize: 13, marginBottom: 22 }}>
                 What would you like to do?
               </p>
 
@@ -368,14 +365,14 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                 <button onClick={() => { setShowExchange(false); onExchange({ type: 'return', product }) }} style={{
                   padding: '16px', background: `${GREEN}10`,
                   border: `1px solid ${GREEN}30`, borderRadius: 8,
-                  color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  color: 'var(--c-text)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
                   transition: 'all 0.2s ease',
                 }}>
                   <span style={{ fontSize: 22 }}>📦</span>
                   <div>
-                    <p style={{ color: '#86efac', fontWeight: 700, marginBottom: 2 }}>Return to Inventory</p>
-                    <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 400 }}>
+                    <p style={{ color: GREEN, fontWeight: 700, marginBottom: 2 }}>Return to Inventory</p>
+                    <p style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 400 }}>
                       Product returns · Spare +${product.systemPrice.toFixed(2)}
                     </p>
                   </div>
@@ -383,14 +380,14 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
                 <button onClick={() => { setShowExchange(false); onExchange({ type: 'damage', product }) }} style={{
                   padding: '16px', background: `${RED}10`,
                   border: `1px solid ${RED}30`, borderRadius: 8,
-                  color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  color: 'var(--c-text)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
                   transition: 'all 0.2s ease',
                 }}>
                   <span style={{ fontSize: 22 }}>⚠️</span>
                   <div>
-                    <p style={{ color: '#fca5a5', fontWeight: 700, marginBottom: 2 }}>Report as Damaged</p>
-                    <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 400 }}>
+                    <p style={{ color: RED, fontWeight: 700, marginBottom: 2 }}>Report as Damaged</p>
+                    <p style={{ color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 400 }}>
                       Product written off · No spare added
                     </p>
                   </div>
@@ -399,8 +396,8 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
 
               <button onClick={() => setShowExchange(false)} style={{
                 width: '100%', padding: '10px', background: 'transparent',
-                border: `1px solid ${BORDER}`, borderRadius: 6,
-                color: '#94a3b8', fontSize: 13, cursor: 'pointer',
+                border: '1px solid var(--c-border)', borderRadius: 6,
+                color: 'var(--c-text-muted)', fontSize: 13, cursor: 'pointer',
               }}>Cancel</button>
             </div>
           </div>
