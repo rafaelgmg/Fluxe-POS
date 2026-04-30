@@ -49,10 +49,15 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
   // Physical keyboard / numpad support
   useEffect(() => {
     const onKey = (e) => {
-      if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return
-      if (/^[0-9]$/.test(e.key)) handleKey(e.key)
-      else if (e.key === 'Backspace') handleKey('⌫')
-      else if (e.key === 'Enter') handleSignIn()
+      if (e.target.tagName === 'INPUT') return
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault()           // prevent SELECT from jumping to matching option
+        handleKey(e.key)
+      } else if (e.key === 'Backspace' && e.target.tagName !== 'SELECT') {
+        handleKey('⌫')
+      } else if (e.key === 'Enter' && e.target.tagName !== 'SELECT') {
+        handleSignIn()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

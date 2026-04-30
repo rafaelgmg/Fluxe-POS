@@ -133,9 +133,14 @@ export default function LockScreen({ lockedAt, lockedBy, onUnlock }) {
   useEffect(() => {
     const handler = (e) => {
       if (e.target.tagName === 'INPUT') return
-      if (/^[0-9]$/.test(e.key))  handleKey(e.key)
-      else if (e.key === 'Backspace') handleKey('Clear')
-      else if (e.key === 'Enter')     handleUnlock()
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault()           // prevent SELECT from jumping to matching option
+        handleKey(e.key)
+      } else if (e.key === 'Backspace' && e.target.tagName !== 'SELECT') {
+        handleKey('Clear')
+      } else if (e.key === 'Enter' && e.target.tagName !== 'SELECT') {
+        handleUnlock()
+      }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
