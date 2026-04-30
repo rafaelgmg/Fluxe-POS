@@ -49,26 +49,12 @@ function appendLog(entry) {
 //
 // This is the only reliable browser-native method for USB Printer Class devices
 // (TSP143IIIU USB is not CDC ACM — Web Serial cannot address it).
-function _kickViaDrawerSlip(employeeName) {
-  const now  = new Date()
-  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
-  const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Courier New',monospace;font-size:12px;width:302px;margin:0 auto;padding:5px 4px;color:#000;background:#fff;}
-  .c{text-align:center;} .b{font-weight:bold;}
-  hr{border:none;border-top:1px dashed #000;margin:5px 0;}
-  @media print{body{width:302px;margin:0;padding:3px 2px;}@page{margin:2mm;size:80mm auto;}}
-</style></head><body>
-<p class="c b" style="font-size:14px;margin-bottom:2px;">CASH DRAWER</p>
-<hr/>
-<p class="c">By: ${employeeName}</p>
-<p class="c">${date} &middot; ${time}</p>
-<hr/>
-<div style="height:6px"></div>
-</body></html>`
+function _kickViaDrawerSlip(_employeeName) {
+  // Blank document — just enough to trigger the Star driver's
+  // "Open before printing" hook without printing any visible content.
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<style>@page{margin:0;size:80mm 1px;}body{margin:0;padding:0;height:0;overflow:hidden;}</style>
+</head><body></body></html>`
 
   return new Promise((resolve) => {
     const iframe = document.createElement('iframe')
