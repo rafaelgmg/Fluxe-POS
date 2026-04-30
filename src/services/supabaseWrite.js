@@ -857,6 +857,35 @@ export async function upsertUserToSupabase(user) {
   }
 }
 
+/**
+ * Update an employee's PIN locally and in Supabase (fire-and-forget on backend).
+ * Called from ChangePinModal after identity is verified.
+ *
+ * @param {string} employeeName  Full name as stored in localStorage
+ * @param {string} newPin        Plaintext new PIN
+ */
+export async function updateEmployeePin(employeeName, newPin) {
+  const { loadUsers, saveUsers } = await import('../utils/usersStorage')
+  const users = loadUsers()
+  const idx   = users.findIndex(u => {
+    const full = `${u.firstName} ${u.lastName}`.replace(/\s+/g, ' ').trim()
+    return full === employeeName
+  })
+  if (idx === -1) throw new Error('Employee not found')
+
+  users[idx] = { ...users[idx], pin: newPin }
+  saveUsers(users)
+
+  // Sync to Supabase — non-blocking
+  const supabaseId = users[idx].supabaseId
+  if (isSupabaseConfigured() && supabaseId) {
+    awaitOrgSession().catch(() => null).then(() =>
+      sbPost('/rpc/set_user_pin', { p_user_id: supabaseId, p_plain_pin: newPin })
+        .catch(e => console.warn('[Fluxe] updateEmployeePin RPC failed:', e.message))
+    )
+  }
+}
+
 // ── Clock Records ─────────────────────────────────────────────────────────────
 
 /**
