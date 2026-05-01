@@ -39,19 +39,29 @@ function appendLog(entry) {
   localStorage.setItem(DRAWER_KEY, JSON.stringify(log))
 }
 
-// ── Drawer slip via hidden iframe ──────────────────────────────────────────────
-// Prints a minimal "CASH DRAWER" slip through the Star printer.
-// With Chrome --kiosk-printing this prints silently (no dialog).
+// ── Hardware trigger ───────────────────────────────────────────────────────────
+// Priority:
+//   1. Local server  POST /api/drawer/kick → Win32 Spooler raw ESC/POS (no paper)
+//   2. Web Serial    → raw bytes via virtual COM port (no paper)
+//   3. Drawer slip   → hidden iframe print (requires driver "Open before printing")
 //
-// For the drawer to OPEN when this prints, configure the Star Windows driver once:
-//   Devices & Printers → Star TSP100 → Printer Properties
-//   → Device Settings → Cash Drawer → "Open before printing"
-//
-// This is the only reliable browser-native method for USB Printer Class devices
-// (TSP143IIIU USB is not CDC ACM — Web Serial cannot address it).
-function _kickViaDrawerSlip(_employeeName) {
-  // Blank document — just enough to trigger the Star driver's
-  // "Open before printing" hook without printing any visible content.
+// Returns: 'ok-server' | 'ok' | 'ok-slip' | 'error'
+
+const KICK_BYTES = new Uint8Array([0x1B, 0x70, 0x00, 0x19, 0xFA])
+const SERVER_URL = 'http://localhost:3001/api/drawer/kick'
+
+async function kickViaServer(location) {
+  const res  = await fetch(SERVER_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ location: location || 'unknown' }),
+  })
+  const data = await res.json()
+  if (!data.ok) throw new Error(data.error || 'server kick failed')
+  return data
+}
+
+function kickViaDrawerSlip() {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
 <style>@page{margin:0;size:80mm 1px;}body{margin:0;padding:0;height:0;overflow:hidden;}</style>
 </head><body></body></html>`
@@ -79,37 +89,48 @@ function _kickViaDrawerSlip(_employeeName) {
     setTimeout(() => {
       try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch { finish() }
     }, 200)
-    setTimeout(finish, 30_000) // failsafe
+    setTimeout(finish, 30_000)
   })
 }
 
-// ── Hardware trigger ───────────────────────────────────────────────────────────
-// 1. Try Web Serial first (works if a Star virtual COM port was authorized)
-// 2. Always fall back to drawer slip print — works with --kiosk-printing
-// Returns: 'ok' | 'ok-slip' | 'error'
-async function triggerDrawerHardware(employeeName) {
-  // Try Web Serial (only works if Star driver created a virtual COM port)
+async function triggerDrawerHardware(location) {
+  const tag = `[CashDrawer] Location: ${location || 'unknown'}`
+
+  // 1. Local server (Win32 Spooler RAW — most reliable, no paper)
+  try {
+    const data = await kickViaServer(location)
+    console.log(`${tag} → ESC/POS raw via server → printer: "${data.printer}" → bytes: ${data.bytes}`)
+    return 'ok-server'
+  } catch (e) {
+    console.warn(`${tag} → server kick failed (${e.message}) → trying Web Serial`)
+  }
+
+  // 2. Web Serial (virtual COM port — no paper)
   if (navigator?.serial) {
     try {
       const ports = await navigator.serial.getPorts()
       if (ports.length > 0) {
-        const KICK = new Uint8Array([0x1B, 0x70, 0x00, 0x19, 0xFA])
         const port = ports[0]
         if (!port.readable) await port.open({ baudRate: 9600 })
         const writer = port.writable.getWriter()
-        await writer.write(KICK)
+        await writer.write(KICK_BYTES)
         await writer.close()
         await port.close()
+        console.log(`${tag} → ESC/POS via Web Serial`)
         return 'ok'
       }
-    } catch { /* fall through to slip */ }
+    } catch (e) {
+      console.warn(`${tag} → Web Serial failed (${e.message}) → fallback slip`)
+    }
   }
 
-  // Fallback: print a drawer slip via hidden iframe
+  // 3. Drawer slip (requires driver "Open before printing" — may print paper)
   try {
-    await _kickViaDrawerSlip(employeeName)
+    await kickViaDrawerSlip()
+    console.log(`${tag} → fallback drawer slip sent`)
     return 'ok-slip'
   } catch {
+    console.error(`${tag} → all methods failed`)
     return 'error'
   }
 }
@@ -500,7 +521,7 @@ function CashCountModal({ employee, onDone, onClose }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function CashDrawer({ onClose }) {
+export default function CashDrawer({ onClose, location }) {
   const [employee,     setEmployee]     = useState(null)
   const [mode,         setMode]         = useState(null)  // 'add' | 'remove' | 'count'
   // null | 'sending' | 'ok' | 'no-port' | 'unsupported' | 'error'
@@ -530,7 +551,7 @@ export default function CashDrawer({ onClose }) {
   const handleOpenRegister = async () => {
     appendLog({ type: 'open', employee: employee.name, amount: 0, notes: '' })
     setDrawerStatus('sending')
-    const result = await triggerDrawerHardware(employee.name)
+    const result = await triggerDrawerHardware(location)
     setDrawerStatus(result)
     if (result === 'ok' || result === 'ok-slip') setTimeout(() => setDrawerStatus(null), 4000)
     if (result === 'error')                      setTimeout(() => setDrawerStatus(null), 6000)
@@ -610,31 +631,31 @@ export default function CashDrawer({ onClose }) {
 
         {/* Open Register feedback */}
         {drawerStatus && (() => {
-          const isOk   = drawerStatus === 'ok' || drawerStatus === 'ok-slip'
-          const isInfo = drawerStatus === 'ok-slip'
-          const isBad  = drawerStatus === 'error'
-          const bgColor  = isOk  ? 'rgba(34,197,94,0.08)'  : isBad ? 'rgba(239,68,68,0.08)'  : 'rgba(245,158,11,0.08)'
-          const bdColor  = isOk  ? 'rgba(34,197,94,0.25)'  : isBad ? 'rgba(239,68,68,0.25)'  : 'rgba(245,158,11,0.25)'
-          const txtColor = isOk  ? GREEN                   : isBad ? RED                      : AMBER
+          const isOk  = ['ok-server','ok','ok-slip'].includes(drawerStatus)
+          const isBad = drawerStatus === 'error'
+          const bgColor  = isOk ? 'rgba(34,197,94,0.08)' : isBad ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)'
+          const bdColor  = isOk ? 'rgba(34,197,94,0.25)' : isBad ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'
+          const txtColor = isOk ? GREEN                  : isBad ? RED                     : AMBER
           return (
             <div style={{
               margin: '12px 22px 0', padding: '10px 14px', borderRadius: 8,
               background: bgColor, border: `1px solid ${bdColor}`,
               color: txtColor, fontSize: 12, fontWeight: 600,
             }}>
-              {drawerStatus === 'sending'  && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>⏳</span><span>Sending drawer command…</span></div>}
-              {drawerStatus === 'ok'       && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>✅</span><span>Drawer opened</span></div>}
-              {drawerStatus === 'ok-slip'  && (
+              {drawerStatus === 'sending'   && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>⏳</span><span>Sending drawer command…</span></div>}
+              {drawerStatus === 'ok-server' && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>✅</span><span>Drawer opened (ESC/POS direct)</span></div>}
+              {drawerStatus === 'ok'        && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>✅</span><span>Drawer opened (Web Serial)</span></div>}
+              {drawerStatus === 'ok-slip'   && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <span>🖨</span><span>Drawer slip sent to printer</span>
+                    <span>🖨</span><span>Fallback: slip sent — local server may be offline</span>
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 400, color: MUTED, lineHeight: 1.5 }}>
-                    If the drawer didn't open: in Windows go to <b style={{ color: DIM }}>Devices &amp; Printers → Star TSP100 → Printer Properties → Device Settings → Cash Drawer → Open before printing</b>.
+                    If the drawer didn't open: make sure the CRM server is running on this machine.
                   </div>
                 </div>
               )}
-              {drawerStatus === 'error'    && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>⚠️</span><span>Command failed — check printer connection.</span></div>}
+              {drawerStatus === 'error'     && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>⚠️</span><span>All methods failed — check printer connection.</span></div>}
             </div>
           )
         })()}

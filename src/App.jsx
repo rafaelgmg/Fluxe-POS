@@ -972,7 +972,7 @@ export default function App() {
       {showInventory   && <Inventory     onClose={() => setShowInventory(false)} products={products} />}
       {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} posSession={posSession} />}
       {showReceipts    && <Receipts      onClose={() => setShowReceipts(false)}    posSession={posSession} />}
-      {showCashDrawer  && <CashDrawer   onClose={() => setShowCashDrawer(false)} />}
+      {showCashDrawer  && <CashDrawer   onClose={() => setShowCashDrawer(false)} location={posSession?.location} />}
       {showCRM && (
         <CRMPanel
           customers={customers}
