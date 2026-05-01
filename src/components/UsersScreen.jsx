@@ -1,6 +1,7 @@
 ﻿import { useState, useMemo, useRef, useEffect } from 'react'
 import { loadUsers, saveUsers, hadStorageError } from '../utils/usersStorage'
 import { upsertUserToSupabase } from '../services/supabaseWrite'
+import { optimizeAvatarImage } from '../utils/imageOptimization'
 
 const POSITIONS = ['Sales', 'Manager', 'Admin']
 
@@ -69,8 +70,9 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
     photo:     user.photo     || null,
   } : { ...EMPTY_FORM })
 
-  const [errors,       setErrors]       = useState({})
+  const [errors,        setErrors]        = useState({})
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [optimizing,    setOptimizing]    = useState(false)
   const fileRef = useRef()
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -89,12 +91,21 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
     onSave(form)
   }
 
-  const handlePhoto = (e) => {
+  const handlePhoto = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => set('photo', ev.target.result)
-    reader.readAsDataURL(file)
+    setOptimizing(true)
+    try {
+      const optimized = await optimizeAvatarImage(file)
+      const reader = new FileReader()
+      reader.onload  = (ev) => { set('photo', ev.target.result); setOptimizing(false) }
+      reader.onerror = ()   => setOptimizing(false)
+      reader.readAsDataURL(optimized)
+    } catch (err) {
+      setOptimizing(false)
+      if (fileRef.current) fileRef.current.value = ''
+      alert(`Photo processing failed: ${err.message}\nPlease try a different image.`)
+    }
   }
 
   const inp = (key, extra = {}) => ({
@@ -160,9 +171,11 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
             onMouseEnter={e => { e.currentTarget.style.borderColor = PURPLE }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
           >
-            {form.photo
-              ? <img src={form.photo} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ fontSize: 22 }}>📷</span>
+            {optimizing
+              ? <span style={{ fontSize: 13, color: '#94a3b8' }}>⏳</span>
+              : form.photo
+                ? <img src={form.photo} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 22 }}>📷</span>
             }
           </div>
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display: 'none' }} />
@@ -177,7 +190,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
               onMouseEnter={e => { e.currentTarget.style.borderColor = PURPLE; e.currentTarget.style.color = '#c4b5fd' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#94a3b8' }}
             >
-              {form.photo ? 'Change Photo' : 'Upload Photo'}
+              {optimizing ? 'Processing…' : form.photo ? 'Change Photo' : 'Upload Photo'}
             </button>
             {form.photo && (
               <button onClick={() => set('photo', null)} style={{
