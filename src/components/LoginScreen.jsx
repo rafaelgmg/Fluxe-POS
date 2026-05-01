@@ -8,6 +8,7 @@ import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin, resolveSessionContext } from '../services/supabaseAuth'
 import LoginModal from './LoginModal'
 import AdminPanel from './AdminPanel'
+import ChangePinModal from './ChangePinModal'
 
 const LOCATION_PASSWORD = LOGIN_PASSWORD
 const LOC_KEY = 'fluxe-locations-v1'
@@ -69,6 +70,7 @@ export default function LoginScreen({ onLogin, onBack }) {
   const [pin,             setPin]             = useState('')
   const [pinError,        setPinError]        = useState('')
   const [verifying,       setVerifying]       = useState(false)
+  const [changingPin,     setChangingPin]     = useState(false)
 
   const locationList = loadActiveLocationNames(region)
 
@@ -341,6 +343,23 @@ export default function LoginScreen({ onLogin, onBack }) {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--c-border)'; e.currentTarget.style.color = 'var(--c-text-sub)'; e.currentTarget.style.background = 'var(--c-bg-hover)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--c-border-md)'; e.currentTarget.style.color = 'var(--c-text-muted)'; e.currentTarget.style.background = 'transparent' }}
               >← Back</button>
+
+              {/* Change PIN link */}
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  onClick={() => setChangingPin(true)}
+                  style={{
+                    background: 'none', border: 'none', padding: 0,
+                    color: 'var(--c-text-muted)', fontSize: 12, cursor: 'pointer',
+                    textDecoration: 'underline', textUnderlineOffset: 3,
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--c-text-sub)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--c-text-muted)' }}
+                >
+                  Change PIN
+                </button>
+              </div>
             </div>
           )}
 
@@ -607,6 +626,13 @@ export default function LoginScreen({ onLogin, onBack }) {
           posSession={null}
           currentUser={adminUser}
           onClose={() => setAdminUser(null)}
+        />
+      )}
+
+      {changingPin && (
+        <ChangePinModal
+          preselectedName={selectedEmp}
+          onClose={() => setChangingPin(false)}
         />
       )}
     </div>
