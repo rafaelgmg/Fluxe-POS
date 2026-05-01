@@ -681,7 +681,7 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
     whiteSpace: 'nowrap', letterSpacing: 0.4,
   }
 
-  const totalSales = invoices.reduce((s, i) => s + (i.status !== 'voided' ? i.total : 0), 0)
+  const totalSales = invoices.reduce((s, i) => s + (i.status !== 'voided' ? (i.subtotal || 0) : 0), 0)
   const avgDaily   = (() => {
     const days = [...new Set(invoices.filter(i => i.status !== 'voided').map(i => fmtDateOnly(i.timestamp)))]
     return days.length > 0 ? totalSales / days.length : 0
@@ -1181,17 +1181,25 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
           }}>📊</div>
           <span style={{ color: TEXT, fontWeight: 800, fontSize: 15 }}>User Report</span>
 
-          {/* User selector */}
-          <select
-            value={selectedName}
-            onChange={e => setSelectedName(e.target.value)}
-            style={{
-              padding: '6px 10px', background: BG, border: `1px solid ${BORDER}`,
-              borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', cursor: 'pointer',
-            }}
-          >
-            {employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
-          </select>
+          {/* User selector — admin only; self-mode shows locked name */}
+          {mode === 'admin' ? (
+            <select
+              value={selectedName}
+              onChange={e => setSelectedName(e.target.value)}
+              style={{
+                padding: '6px 10px', background: BG, border: `1px solid ${BORDER}`,
+                borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', cursor: 'pointer',
+              }}
+            >
+              {employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
+            </select>
+          ) : (
+            <span style={{
+              padding: '6px 12px', background: 'rgba(139,92,246,0.1)',
+              border: '1px solid rgba(139,92,246,0.25)', borderRadius: 4,
+              color: TEXT, fontSize: 13, fontWeight: 600,
+            }}>{unlockedEmployee?.name}</span>
+          )}
 
           <span style={{ color: MUTED, fontSize: 11 }}>From</span>
           <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
