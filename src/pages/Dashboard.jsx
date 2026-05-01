@@ -75,6 +75,33 @@ function fmtTime(ts)  { return new Date(ts).toLocaleTimeString('en-US', { hour: 
 function fmtHour(h)   { if (h === 0) return '12 AM'; if (h < 12) return `${h} AM`; if (h === 12) return '12 PM'; return `${h - 12} PM` }
 function toInputDate(d) { return d.toISOString().slice(0, 10) }
 
+function formatSaleText(sale) {
+  const name     = sale.employee || sale.employeeName || (sale.employees?.[0]?.name) || '—'
+  const location = sale.location || sale.locationName || 'Perfume Passage'
+  const total    = sale.total || 0
+  const tax      = sale.tax  || 0
+  const subtotal = sale.subtotal != null ? sale.subtotal : (total - tax)
+  const invoice  = sale.number || sale.id || '—'
+  const items    = sale.items || []
+  const divider  = '─'.repeat(24)
+
+  let t = `${name} has just made a sale of ${fmt$(total)} in ${location}, Invoice#: ${invoice}\n`
+  t += `Product x Qty = Price\n`
+  t += `${divider}\n`
+  for (const item of items) {
+    const qty   = item.qty || 1
+    const price = item.salePrice != null
+      ? item.salePrice * qty
+      : (item.subtotal || 0)
+    t += `${item.name || 'Item'} x${qty} = ${fmt$(price)}\n`
+  }
+  t += `${divider}\n`
+  t += `Subtotal: ${fmt$(subtotal)}\n`
+  t += `Tax: ${fmt$(tax)}\n`
+  t += `Total ${fmt$(total)}`
+  return t
+}
+
 const METHOD_LABEL = { cash: 'Cash', card: 'Credit Card', external: 'External Credit', check: 'Check', split: 'Split', other: 'Other' }
 const METHOD_COLOR = { cash: '#10B981', card: '#3B82F6', external: '#8B5CF6', check: '#F59E0B', split: '#6366F1', other: '#9CA3AF' }
 const METHOD_ICON  = { cash: '💵', card: '💳', external: '📱', check: '🔖', split: '🔀', other: '💰' }
@@ -290,6 +317,99 @@ function Empty({ message, icon }) {
   )
 }
 
+// ── Sale Detail Modal ─────────────────────────────────────────────────────────
+function SaleDetailModal({ sale, onClose }) {
+  const [copied, setCopied] = useState(false)
+  const text = formatSaleText(sale)
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2200)
+    })
+  }
+
+  const handleShare = () => {
+    if (navigator.share) navigator.share({ text })
+  }
+
+  const emp    = sale.employee || sale.employeeName || (sale.employees?.[0]?.name) || '—'
+  const isHigh = (sale.total || 0) >= HIGH
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.55)', display: 'flex',
+        flexDirection: 'column', justifyContent: 'flex-end',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: C.card, borderRadius: '22px 22px 0 0',
+          padding: '0 0 env(safe-area-inset-bottom, 16px)',
+          maxHeight: '88vh', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 -4px 30px rgba(0,0,0,0.18)',
+        }}
+      >
+        {/* drag handle */}
+        <div style={{ padding: '14px 0 0', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2 }} />
+        </div>
+
+        {/* header */}
+        <div style={{
+          padding: '14px 20px 12px', display: 'flex',
+          alignItems: 'center', justifyContent: 'space-between',
+          borderBottom: `1px solid ${C.border}`,
+        }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>
+              {isHigh && '🔥 '}{emp}
+            </div>
+            <div style={{ fontSize: 12, color: C.muted }}>
+              Invoice #{sale.number || sale.id} · {fmtTime(sale.timestamp)}
+            </div>
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: isHigh ? C.green : C.text }}>
+            {fmt$(sale.total)}
+          </div>
+        </div>
+
+        {/* scrollable text block */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+          <div style={{
+            background: '#0F172A', borderRadius: 14, padding: '16px 18px',
+            fontFamily: "'Courier New', monospace", fontSize: 13, lineHeight: 1.75,
+            color: '#E2E8F0', whiteSpace: 'pre', overflowX: 'auto',
+          }}>{text}</div>
+        </div>
+
+        {/* actions */}
+        <div style={{ padding: '12px 20px 4px', display: 'flex', gap: 10 }}>
+          <button onClick={handleCopy} style={{
+            flex: 1, padding: '15px 0', borderRadius: 14, border: 'none',
+            background: copied ? C.green : C.blue,
+            color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            transition: 'background 0.2s',
+          }}>{copied ? '✓ Copied!' : '📋 Copy'}</button>
+
+          {typeof navigator !== 'undefined' && 'share' in navigator && (
+            <button onClick={handleShare} style={{
+              flex: 1, padding: '15px 0', borderRadius: 14,
+              border: `1.5px solid ${C.border}`,
+              background: C.bg, color: C.text,
+              fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            }}>📤 Share</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TODAY tab ─────────────────────────────────────────────────────────────────
 function TodayTab({ current, comparison }) {
   if (!current) return <Skeleton />
@@ -386,7 +506,7 @@ function TodayTab({ current, comparison }) {
 // ── FEED tab ──────────────────────────────────────────────────────────────────
 const HIGH = 200
 
-function FeedTab({ feed }) {
+function FeedTab({ feed, onSelect }) {
   if (!feed) return <Skeleton />
   if (!feed.length) return <Empty message="No sales in this period" icon="🧾" />
 
@@ -402,17 +522,23 @@ function FeedTab({ feed }) {
           : (method || '').toLowerCase().includes('cash') ? 'cash' : 'other'
 
         return (
-          <div key={sale.number || i} style={{
-            background: C.card, borderRadius: 14, padding: '14px 16px',
-            border: `1px solid ${isHigh ? 'rgba(16,185,129,0.3)' : C.border}`,
-            boxShadow: isHigh ? '0 2px 12px rgba(16,185,129,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
-          }}>
+          <div key={sale.number || i}
+            onClick={() => onSelect(sale)}
+            style={{
+              background: C.card, borderRadius: 14, padding: '14px 16px',
+              border: `1px solid ${isHigh ? 'rgba(16,185,129,0.3)' : C.border}`,
+              boxShadow: isHigh ? '0 2px 12px rgba(16,185,129,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
+              cursor: 'pointer', activeOpacity: 0.8,
+            }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 {isHigh && <span>🔥</span>}
                 <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{emp}</span>
               </div>
-              <span style={{ fontSize: 18, fontWeight: 900, color: isHigh ? C.green : C.text }}>{fmt$(sale.total)}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: isHigh ? C.green : C.text }}>{fmt$(sale.total)}</span>
+                <span style={{ fontSize: 14, color: C.dim }}>›</span>
+              </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 12, color: C.muted }}>
@@ -537,12 +663,13 @@ const TABS = [
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [authed,   setAuthed]   = useState(isAuthed)
-  const [tab,      setTab]      = useState('today')
-  const [data,     setData]     = useState(null)
-  const [loading,  setLoading]  = useState(false)
-  const [fetchedAt,setFetchedAt]= useState(null)
-  const [, setTick]             = useState(0)
+  const [authed,      setAuthed]      = useState(isAuthed)
+  const [tab,         setTab]         = useState('today')
+  const [data,        setData]        = useState(null)
+  const [loading,     setLoading]     = useState(false)
+  const [fetchedAt,   setFetchedAt]   = useState(null)
+  const [selectedSale,setSelectedSale]= useState(null)
+  const [, setTick]                   = useState(0)
 
   // Date range state
   const [preset, setPreset]       = useState('today')
@@ -585,7 +712,7 @@ export default function Dashboard() {
   const content = (() => {
     switch (tab) {
       case 'today':    return <TodayTab    current={data?.current}    comparison={data?.comparison} />
-      case 'feed':     return <FeedTab     feed={data?.feed} />
+      case 'feed':     return <FeedTab     feed={data?.feed} onSelect={setSelectedSale} />
       case 'sellers':  return <SellersTab  current={data?.current} />
       case 'payments': return <PaymentsTab current={data?.current} />
       default:         return null
@@ -599,6 +726,10 @@ export default function Dashboard() {
         * { box-sizing: border-box; }
         input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; }
       `}</style>
+
+      {selectedSale && (
+        <SaleDetailModal sale={selectedSale} onClose={() => setSelectedSale(null)} />
+      )}
 
       {/* Full-height flex column — owns its own scroll so body overflow:hidden doesn't matter */}
       <div style={{
