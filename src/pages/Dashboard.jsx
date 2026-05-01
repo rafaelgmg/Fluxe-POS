@@ -294,7 +294,7 @@ function Empty({ message, icon }) {
 function TodayTab({ current, comparison }) {
   if (!current) return <Skeleton />
 
-  const { total, count, avgTicket, byEmployee, byLocation, peakHour, topProduct } = current
+  const { total, subtotal, totalTax, count, avgTicket, byEmployee, byLocation, peakHour, topProduct } = current
   const compTotal = comparison?.total || 0
   const diff      = compTotal > 0 ? ((total - compTotal) / compTotal * 100) : null
   const topSeller = byEmployee[0]
@@ -307,8 +307,25 @@ function TodayTab({ current, comparison }) {
         borderRadius: 20, padding: '22px 20px',
         boxShadow: '0 4px 20px rgba(37,99,235,0.22)',
       }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: 1, marginBottom: 6 }}>REVENUE</div>
-        <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 8 }}>{fmt$(total)}</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: 1, marginBottom: 4 }}>TOTAL REVENUE</div>
+        <div style={{ fontSize: 40, fontWeight: 900, color: '#fff', lineHeight: 1, marginBottom: 10 }}>{fmt$(total)}</div>
+
+        {/* Subtotal + Tax breakdown */}
+        <div style={{
+          display: 'flex', gap: 0,
+          background: 'rgba(255,255,255,0.12)', borderRadius: 12,
+          overflow: 'hidden', marginBottom: diff != null ? 10 : 0,
+        }}>
+          <div style={{ flex: 1, padding: '10px 14px', borderRight: '1px solid rgba(255,255,255,0.15)' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: 0.8, marginBottom: 2 }}>SUBTOTAL</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{fmt$(subtotal)}</div>
+          </div>
+          <div style={{ flex: 1, padding: '10px 14px' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: 0.8, marginBottom: 2 }}>TAX</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.85)' }}>{fmt$(totalTax)}</div>
+          </div>
+        </div>
+
         {diff != null && (
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -618,32 +635,34 @@ export default function Dashboard() {
           onPreset={handlePreset} onCustom={handleCustom}
         />
 
-        {/* Tab nav */}
+        {/* Scrollable content — this is the only thing that scrolls */}
+        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ padding: '14px 16px 24px' }}>
+            {content}
+          </div>
+        </div>
+
+        {/* Bottom tab bar */}
         <div style={{
-          display: 'flex', background: C.card,
-          borderBottom: `1px solid ${C.border}`, flexShrink: 0,
+          display: 'flex', background: C.card, flexShrink: 0,
+          borderTop: `1px solid ${C.border}`,
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          boxShadow: '0 -1px 8px rgba(0,0,0,0.06)',
         }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
-              flex: 1, padding: '10px 4px', background: 'none', border: 'none',
-              borderBottom: `2px solid ${tab === t.id ? C.blue : 'transparent'}`,
+              flex: 1, padding: '10px 4px 8px', background: 'none', border: 'none',
+              borderTop: `2px solid ${tab === t.id ? C.blue : 'transparent'}`,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
               cursor: 'pointer', transition: 'border-color 0.15s',
             }}>
-              <span style={{ fontSize: 18 }}>{t.icon}</span>
+              <span style={{ fontSize: 20 }}>{t.icon}</span>
               <span style={{
                 fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
                 color: tab === t.id ? C.blue : C.dim,
               }}>{t.label.toUpperCase()}</span>
             </button>
           ))}
-        </div>
-
-        {/* Scrollable content — this is the only thing that scrolls */}
-        <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <div style={{ padding: '14px 16px 32px' }}>
-            {content}
-          </div>
         </div>
 
       </div>

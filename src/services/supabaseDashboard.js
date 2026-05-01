@@ -40,13 +40,14 @@ export async function fetchDashboardData(startDate, endDate) {
 
 export function computeMetrics(sales) {
   const empty = {
-    total: 0, count: 0, avgTicket: 0,
+    total: 0, subtotal: 0, totalTax: 0, count: 0, avgTicket: 0,
     byEmployee: [], byLocation: [], byPayment: [],
     byHour: Array(24).fill(0), peakHour: -1, topProduct: null,
   }
   if (!sales.length) return empty
 
-  let total = 0
+  let total    = 0
+  let totalTax = 0
   const empMap  = {}
   const locMap  = {}
   const payMap  = {}
@@ -55,7 +56,8 @@ export function computeMetrics(sales) {
 
   for (const s of sales) {
     const amt = s.total || 0
-    total += amt
+    total    += amt
+    totalTax += s.tax || 0
 
     const emp = s.employee || s.employeeName || (s.employees?.[0]?.name) || 'Unknown'
     if (!empMap[emp]) empMap[emp] = { name: emp, total: 0, count: 0 }
@@ -94,7 +96,7 @@ export function computeMetrics(sales) {
   const topProduct = Object.values(prodMap).sort((a, b) => b.total - a.total)[0] || null
   const count      = sales.length
 
-  return { total, count, avgTicket: count > 0 ? total / count : 0, byEmployee, byLocation, byPayment, byHour, peakHour, topProduct }
+  return { total, subtotal: total - totalTax, totalTax, count, avgTicket: count > 0 ? total / count : 0, byEmployee, byLocation, byPayment, byHour, peakHour, topProduct }
 }
 
 function normalizeMethod(m) {
