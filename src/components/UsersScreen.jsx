@@ -80,8 +80,12 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
   const validate = () => {
     const e = {}
     if (!form.firstName.trim()) e.firstName = 'Required'
-    if (!form.pin.trim())       e.pin       = 'Required'
-    else if (form.pin.length < 4 || isNaN(form.pin)) e.pin = '4-digit number'
+    if (isNew) {
+      if (!form.pin.trim())                             e.pin = 'Required'
+      else if (form.pin.length < 4 || isNaN(form.pin)) e.pin = '4-digit number'
+    } else if (form.pin.trim()) {
+      if (form.pin.length < 4 || isNaN(form.pin))      e.pin = '4-digit number'
+    }
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -389,12 +393,15 @@ export default function UsersScreen({ onBack }) {
   }
 
   const handleUpdate = (form) => {
+    const existing   = users.find(u => u.id === editingUser.id)
+    const normalized = normalizeForm(form)
+    // Keep existing PIN when field was left empty during edit
+    if (!normalized.pin) normalized.pin = existing?.pin || ''
     const updated = users.map(u =>
-      u.id === editingUser.id ? { ...u, ...normalizeForm(form), updatedAt: new Date().toISOString() } : u
+      u.id === editingUser.id ? { ...u, ...normalized, updatedAt: new Date().toISOString() } : u
     )
     persist(updated)
     setEditingUser(null)
-    // Sync to Supabase
     const target = updated.find(u => u.id === editingUser.id)
     if (target) upsertUserToSupabase(target).catch(() => {})
   }
