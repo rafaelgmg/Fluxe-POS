@@ -956,7 +956,7 @@ export default function App() {
       )}
 
       {showDashboard   && <Dashboard       onClose={() => setShowDashboard(false)}  sales={sales} />}
-      {showEndOfDay    && <EndOfDayReport onClose={() => setShowEndOfDay(false)}   sales={sales} posSession={posSession} adminMode={isAdmin} />}
+      {showEndOfDay    && <EndOfDayReport onClose={() => setShowEndOfDay(false)}   sales={sales} posSession={posSession} />}
       {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} />}
       {showCompetition && <Competition   onClose={() => setShowCompetition(false)} sales={sales} posSession={posSession} />}
       {showAssist && (

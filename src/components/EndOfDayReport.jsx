@@ -88,6 +88,11 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
   const taxLabel   = locCfg?.taxDisplayAs || 'TAX'
   const isToday    = selectedDate === dateToInput(new Date())
 
+  // ── POS mode: always lock to today regardless of any prop manipulation ────────
+  useEffect(() => {
+    if (!adminMode) setSelectedDate(dateToInput(new Date()))
+  }, [adminMode])
+
   // ── Fetch fresh data from Supabase on open and on date change ────────────────
   // Immediately shows local-prop data while fetching (no blank loading screen).
   // On success: replaces with Supabase data (accurate, location-filtered).
