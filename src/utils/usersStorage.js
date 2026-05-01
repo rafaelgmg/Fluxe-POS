@@ -127,7 +127,7 @@ export async function loadUsersAsync() {
         `${l.firstName} ${l.lastName}`.trim().toLowerCase() ===
         `${r.firstName} ${r.lastName}`.trim().toLowerCase()
       )
-      return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '' }
+      return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '', photo: match?.photo ?? null }
     })
     saveUsers(merged)
     return merged
