@@ -84,9 +84,9 @@ function fmtValue(v, mode, tab = 'sales') {
 }
 
 const MEDALS = {
-  0: { label: '1st', bg: `linear-gradient(135deg, ${GOLD}, #d97706)`, height: 200, medal: '🥇' },
-  1: { label: '2nd', bg: 'linear-gradient(135deg, #9ca3af, #6b7280)',  height: 160, medal: '🥈' },
-  2: { label: '3rd', bg: 'linear-gradient(135deg, #b45309, #92400e)',  height: 130, medal: '🥉' },
+  0: { label: '1st', bg: `linear-gradient(135deg, ${GOLD}, #d97706)`, height: 260, medal: '🥇' },
+  1: { label: '2nd', bg: 'linear-gradient(135deg, #9ca3af, #6b7280)',  height: 210, medal: '🥈' },
+  2: { label: '3rd', bg: 'linear-gradient(135deg, #b45309, #92400e)',  height: 170, medal: '🥉' },
 }
 
 // ── Secondary metrics row ─────────────────────────────────────────────────────
@@ -436,17 +436,22 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
       {/* ── PODIUM VIEW ── */}
       {!rankOnly && standings.length > 0 && (
         <>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, marginBottom: 32 }}>
             {[second, first, third].map((person, visualIdx) => {
-              if (!person) return <div key={visualIdx} style={{ width: 160 }} />
+              if (!person) return <div key={visualIdx} style={{ width: 185 }} />
               const rank     = standings.indexOf(person)
               const m        = MEDALS[rank] || MEDALS[2]
               const isCenter = visualIdx === 1
 
+              const avatarSize  = isCenter ? 114 : 90
+              const avatarGlow  = isCenter
+                ? `0 0 0 3px ${person.color}55, 0 0 40px ${person.color}77, 0 0 80px ${person.color}33`
+                : `0 0 0 2px ${person.color}33`
+
               return (
                 <div key={person.name} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  width: isCenter ? 170 : 150,
+                  width: isCenter ? 210 : 185,
                 }}>
                   {/* Top Seller badge */}
                   {isCenter && (
@@ -455,41 +460,43 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                       border: '1px solid rgba(245,158,11,0.4)',
                       borderRadius: 12, padding: '3px 12px',
                       color: GOLD, fontSize: 10, fontWeight: 800,
-                      letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase',
+                      letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase',
                     }}>
                       ⭐ Top Seller
                     </div>
                   )}
 
-                  {/* Avatar */}
+                  {/* Avatar — explicit size, no transform transition to prevent blur */}
                   {person.photo
                     ? <img src={person.photo} alt={person.initials} style={{
-                        width: isCenter ? 90 : 72, height: isCenter ? 90 : 72,
+                        width: avatarSize, height: avatarSize,
                         borderRadius: '50%', objectFit: 'cover',
                         border: `3px solid ${person.color}`,
-                        boxShadow: isCenter ? `0 0 30px ${person.color}66, 0 0 60px ${person.color}22` : 'none',
-                        marginBottom: 8, transition: 'all 0.4s ease', flexShrink: 0,
+                        boxShadow: avatarGlow,
+                        marginBottom: 10, flexShrink: 0,
+                        transition: 'box-shadow 0.4s ease',
                       }} />
                     : <div style={{
-                        width: isCenter ? 90 : 72, height: isCenter ? 90 : 72,
+                        width: avatarSize, height: avatarSize,
                         borderRadius: '50%',
                         background: `linear-gradient(135deg, ${person.color}, ${person.color}88)`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: isCenter ? 30 : 24, fontWeight: 800, color: '#fff',
+                        fontSize: isCenter ? 38 : 30, fontWeight: 800, color: '#fff',
                         border: `3px solid ${person.color}`,
-                        boxShadow: isCenter ? `0 0 30px ${person.color}66, 0 0 60px ${person.color}22` : 'none',
-                        marginBottom: 8, transition: 'all 0.4s ease',
+                        boxShadow: avatarGlow,
+                        marginBottom: 10, flexShrink: 0,
+                        transition: 'box-shadow 0.4s ease',
                       }}>
                         {person.initials}
                       </div>
                   }
 
-                  <p style={{ color: '#fff', fontSize: isCenter ? 16 : 13, fontWeight: 700, marginBottom: 2, textAlign: 'center' }}>
+                  <p style={{ color: '#fff', fontSize: isCenter ? 17 : 14, fontWeight: 700, marginBottom: 3, textAlign: 'center' }}>
                     {person.name}
                   </p>
                   <p style={{
-                    color: person.color, fontSize: isCenter ? 22 : 15,
-                    fontWeight: 800, marginBottom: 4,
+                    color: person.color, fontSize: isCenter ? 24 : 16,
+                    fontWeight: 800, marginBottom: 5,
                     textShadow: pulse && isCenter ? `0 0 20px ${person.color}` : 'none',
                     transition: 'text-shadow 0.3s',
                   }}>
@@ -508,14 +515,14 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
 
                   {/* Podium block */}
                   <div style={{
-                    width: isCenter ? 160 : 140, height: m.height, background: m.bg,
-                    borderRadius: '8px 8px 0 0', marginTop: 10,
+                    width: isCenter ? 200 : 175, height: m.height, background: m.bg,
+                    borderRadius: '8px 8px 0 0', marginTop: 12,
                     display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', gap: 6,
-                    boxShadow: isCenter ? '0 -4px 30px rgba(245,158,11,0.35)' : 'none',
+                    alignItems: 'center', justifyContent: 'center', gap: 8,
+                    boxShadow: isCenter ? '0 -6px 40px rgba(245,158,11,0.4)' : 'none',
                   }}>
-                    <span style={{ fontSize: 32 }}>{m.medal}</span>
-                    <span style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>{m.label}</span>
+                    <span style={{ fontSize: 36 }}>{m.medal}</span>
+                    <span style={{ color: '#fff', fontSize: 24, fontWeight: 800 }}>{m.label}</span>
                   </div>
                 </div>
               )
@@ -587,20 +594,20 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                 {/* Avatar */}
                 {person.photo
                   ? <img src={person.photo} alt={person.initials} style={{
-                      width: isFirst ? 52 : 44, height: isFirst ? 52 : 44,
+                      width: isFirst ? 56 : 46, height: isFirst ? 56 : 46,
                       borderRadius: '50%', objectFit: 'cover',
                       border: `2px solid ${person.color}`,
-                      boxShadow: isFirst ? `0 0 16px ${person.color}55` : 'none',
+                      boxShadow: isFirst ? `0 0 0 2px ${person.color}44, 0 0 20px ${person.color}66` : 'none',
                       flexShrink: 0,
                     }} />
                   : <div style={{
-                      width: isFirst ? 52 : 44, height: isFirst ? 52 : 44,
+                      width: isFirst ? 56 : 46, height: isFirst ? 56 : 46,
                       borderRadius: '50%',
                       background: `linear-gradient(135deg, ${person.color}, ${person.color}88)`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: isFirst ? 18 : 15, fontWeight: 800, color: '#fff',
+                      fontSize: isFirst ? 20 : 16, fontWeight: 800, color: '#fff',
                       border: `2px solid ${person.color}`,
-                      boxShadow: isFirst ? `0 0 16px ${person.color}55` : 'none',
+                      boxShadow: isFirst ? `0 0 0 2px ${person.color}44, 0 0 20px ${person.color}66` : 'none',
                       flexShrink: 0,
                     }}>
                       {person.initials}
