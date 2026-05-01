@@ -1,0 +1,17 @@
+{
+  "name": "Fluxe Dashboard",
+  "short_name": "Fluxe",
+  "description": "Perfume Passage — owner dashboard",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
