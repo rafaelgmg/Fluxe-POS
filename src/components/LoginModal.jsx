@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin } from '../services/supabaseAuth'
-import ChangePinModal from './ChangePinModal'
 
 export default function LoginModal({ onLogin, onCancel, requiredRole = null, title = 'Employee Sign In', subtitle = 'Enter your PIN to continue', filterRoles = null }) {
   const employees = filterRoles
@@ -11,7 +10,6 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
   const [pin,       setPin]       = useState('')
   const [error,     setError]     = useState('')
   const [verifying, setVerifying] = useState(false)
-  const [changingPin, setChangingPin] = useState(false)
 
   const handleKey = (val) => {
     if (verifying) return
@@ -190,30 +188,7 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
           </button>
         </div>
 
-        {/* Change PIN link */}
-        <div style={{ textAlign: 'center', marginTop: 14 }}>
-          <button
-            onClick={() => setChangingPin(true)}
-            style={{
-              background: 'none', border: 'none', padding: 0,
-              color: 'var(--c-text-muted)', fontSize: 12, cursor: 'pointer',
-              textDecoration: 'underline', textUnderlineOffset: 3,
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--c-text-sub)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--c-text-muted)' }}
-          >
-            Change PIN
-          </button>
-        </div>
       </div>
-
-      {changingPin && (
-        <ChangePinModal
-          preselectedName={selectedEmployee}
-          onClose={() => setChangingPin(false)}
-        />
-      )}
     </div>
   )
 }
