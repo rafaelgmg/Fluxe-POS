@@ -12,7 +12,7 @@
  */
 export function optimizeAvatarImage(file, {
   size       = 512,
-  quality    = 0.85,
+  quality    = 0.92,
   outputType = 'image/webp',
 } = {}) {
   return new Promise((resolve, reject) => {
@@ -37,6 +37,8 @@ export function optimizeAvatarImage(file, {
         canvas.height = size
 
         const ctx = canvas.getContext('2d')
+        ctx.imageSmoothingEnabled  = true
+        ctx.imageSmoothingQuality  = 'high'
         ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size)
 
         canvas.toBlob(
