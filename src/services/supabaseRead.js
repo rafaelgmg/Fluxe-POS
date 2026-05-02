@@ -180,6 +180,9 @@ function fromSupabaseSaleItem(row) {
 
 function fromSupabaseSale(row) {
   if (!row) return row
+  // Prefer the live join; fall back to the JSONB snapshot when RLS blocks the join
+  const joinedPayments   = (row.payments          || []).map(fromSupabasePayment)
+  const snapshotPayments = Array.isArray(row.payments_snapshot) ? row.payments_snapshot : []
   return {
     ...row,
     // Field renames: Supabase → frontend canonical shape
@@ -190,7 +193,7 @@ function fromSupabaseSale(row) {
     paymentMethod: row.payment_method  || '',
     // Flatten nested relations for normalizeSale
     items:    (row.sale_items || []).map(fromSupabaseSaleItem),
-    payments: (row.payments   || []).map(fromSupabasePayment),
+    payments: joinedPayments.length > 0 ? joinedPayments : snapshotPayments,
   }
 }
 

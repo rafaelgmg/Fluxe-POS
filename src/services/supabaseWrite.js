@@ -242,7 +242,9 @@ export function toSupabaseSaleRow(invoice, orgId) {
     total_spare:        invoice.totalSpare          ?? 0,
     notes:              invoice.notes               ?? '',
     linked_customer_id: invoice.linkedCustomerId    ?? null,
-    payment_method:     invoice.paymentMethod       || '',
+    payment_method:      invoice.paymentMethod       || '',
+    // Snapshot of per-method amounts — used by EOD when payments(*) join is unavailable
+    payments_snapshot:   (invoice.payments || []).map(p => ({ method: p.method, amount: p.amount })),
     // commissionSnapshot stored in a JSONB column — Phase 5 decision
   }
 }
