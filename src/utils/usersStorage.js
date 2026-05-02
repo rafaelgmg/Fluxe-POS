@@ -9,6 +9,7 @@
 
 const STORAGE_KEY    = 'fluxe-users-v1'
 const BACKUP_KEY     = 'fluxe-users-v1-corrupted-backup'
+const PHOTO_KEY      = 'fluxe-user-photos-v1'
 const SCHEMA_VERSION = 1
 
 // ─── Module-level error flag (read by UsersScreen to show warning) ────────────
@@ -38,29 +39,47 @@ function migrateUser(u) {
   }
 }
 
+// ─── Photo store (separate key — immune to Supabase sync overwrites) ─────────
+
+export function saveUserPhoto(userId, photoDataUrl) {
+  try {
+    const map = JSON.parse(localStorage.getItem(PHOTO_KEY) || '{}')
+    if (photoDataUrl) map[String(userId)] = photoDataUrl
+    else delete map[String(userId)]
+    localStorage.setItem(PHOTO_KEY, JSON.stringify(map))
+  } catch {}
+}
+
+function loadPhotoMap() {
+  try { return JSON.parse(localStorage.getItem(PHOTO_KEY) || '{}') }
+  catch { return {} }
+}
+
 // ─── Core persistence ─────────────────────────────────────────────────────────
 
 export function loadUsers() {
   _corrupted = false
-  const raw = localStorage.getItem(STORAGE_KEY)
+  const raw      = localStorage.getItem(STORAGE_KEY)
+  const photoMap = loadPhotoMap()
+  const applyPhotos = (list) =>
+    list.map(u => ({ ...u, photo: u.photo || photoMap[String(u.id)] || null }))
 
   // Nothing saved yet — use seed
-  if (!raw) return DEFAULT_USERS
+  if (!raw) return applyPhotos(DEFAULT_USERS)
 
   try {
     const parsed = JSON.parse(raw)
 
     // New format: { v: N, users: [...] }
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Array.isArray(parsed.users)) {
-      return parsed.users.map(migrateUser)
+      return applyPhotos(parsed.users.map(migrateUser))
     }
 
     // Legacy format: plain array — migrate transparently
     if (Array.isArray(parsed)) {
       const migrated = parsed.map(migrateUser)
-      // Upgrade storage to new format in-place
       saveUsers(migrated)
-      return migrated
+      return applyPhotos(migrated)
     }
 
     // Unrecognized format — treat as corrupt
@@ -69,7 +88,7 @@ export function loadUsers() {
     _corrupted = true
     // Preserve corrupted data for manual recovery — never silently discard
     try { localStorage.setItem(BACKUP_KEY, raw) } catch {}
-    return DEFAULT_USERS
+    return applyPhotos(DEFAULT_USERS)
   }
 }
 
@@ -127,7 +146,9 @@ export async function loadUsersAsync() {
         `${l.firstName} ${l.lastName}`.trim().toLowerCase() ===
         `${r.firstName} ${r.lastName}`.trim().toLowerCase()
       )
-      return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '', photo: match?.photo ?? null }
+      // r.photo comes from Supabase avatar_url (source of truth).
+      // Fall back to local photo only during migration from old localStorage system.
+      return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '', photo: r.photo ?? match?.photo ?? null }
     })
     saveUsers(merged)
     return merged

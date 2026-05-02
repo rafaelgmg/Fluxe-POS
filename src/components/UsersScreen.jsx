@@ -1,6 +1,6 @@
 ﻿import { useState, useMemo, useRef, useEffect } from 'react'
-import { loadUsers, saveUsers, hadStorageError } from '../utils/usersStorage'
-import { upsertUserToSupabase } from '../services/supabaseWrite'
+import { loadUsers, saveUsers, hadStorageError, saveUserPhoto } from '../utils/usersStorage'
+import { upsertUserToSupabase, uploadUserAvatar, deleteUserAvatar } from '../services/supabaseWrite'
 import { optimizeAvatarImage } from '../utils/imageOptimization'
 
 const POSITIONS = ['Sales', 'Manager', 'Admin']
@@ -70,9 +70,10 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
     photo:     user.photo     || null,
   } : { ...EMPTY_FORM })
 
-  const [errors,        setErrors]        = useState({})
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [optimizing,    setOptimizing]    = useState(false)
+  const [errors,           setErrors]           = useState({})
+  const [confirmDelete,    setConfirmDelete]    = useState(false)
+  const [optimizing,       setOptimizing]       = useState(false)
+  const [pendingPhotoFile, setPendingPhotoFile] = useState(null)
   const fileRef = useRef()
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -92,7 +93,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
 
   const handleSave = () => {
     if (!validate()) return
-    onSave(form)
+    onSave(form, pendingPhotoFile)
   }
 
   const handlePhoto = async (e) => {
@@ -101,6 +102,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
     setOptimizing(true)
     try {
       const optimized = await optimizeAvatarImage(file)
+      setPendingPhotoFile(optimized)
       const reader = new FileReader()
       reader.onload  = (ev) => { set('photo', ev.target.result); setOptimizing(false) }
       reader.onerror = ()   => setOptimizing(false)
@@ -197,7 +199,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
               {optimizing ? 'Processing…' : form.photo ? 'Change Photo' : 'Upload Photo'}
             </button>
             {form.photo && (
-              <button onClick={() => set('photo', null)} style={{
+              <button onClick={() => { set('photo', null); setPendingPhotoFile(null) }} style={{
                 marginTop: 4, marginLeft: 6, padding: '4px 10px', background: 'transparent',
                 border: '1px solid #253349', borderRadius: 4,
                 color: '#94a3b8', fontSize: 11, cursor: 'pointer',
@@ -343,7 +345,9 @@ export default function UsersScreen({ onBack }) {
             `${l.firstName} ${l.lastName}`.trim().toLowerCase() ===
             `${r.firstName} ${r.lastName}`.trim().toLowerCase()
           )
-          return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '', photo: match?.photo ?? null }
+          // r.photo comes from Supabase avatar_url (source of truth).
+          // Fall back to local photo only during migration from old localStorage system.
+          return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '', photo: r.photo ?? match?.photo ?? null }
         })
         saveUsers(merged)
         setUsers(merged)
@@ -374,44 +378,74 @@ export default function UsersScreen({ onBack }) {
     phone:     form.phone.trim(),
   })
 
-  const handleAdd = (form) => {
+  const handleAdd = (form, pendingFile) => {
     const numericIds = users.map(u => (typeof u.id === 'number' ? u.id : 0))
-    const newId = Math.max(0, ...numericIds) + 1
-    const newUser = { ...normalizeForm(form), id: newId, createdAt: new Date().toISOString() }
+    const newId   = Math.max(0, ...numericIds) + 1
+    const newUser = { ...normalizeForm(form), id: newId, photo: null, createdAt: new Date().toISOString() }
     persist([...users, newUser])
     setIsNew(false)
     setEditingUser(null)
-    // Sync to Supabase — store returned UUID as supabaseId
-    upsertUserToSupabase(newUser).then(supabaseId => {
+    // Upsert to get supabaseId, then upload avatar if selected
+    upsertUserToSupabase(newUser).then(async supabaseId => {
       if (!supabaseId) return
+      let photo = null
+      if (pendingFile) {
+        photo = await uploadUserAvatar(supabaseId, pendingFile).catch(() => null)
+      }
       setUsers(prev => {
-        const updated = prev.map(u => u.id === newId ? { ...u, supabaseId } : u)
+        const updated = prev.map(u => u.id === newId ? { ...u, supabaseId, photo } : u)
         saveUsers(updated)
+        if (photo) saveUserPhoto(newId, photo)
         return updated
       })
     }).catch(() => {})
   }
 
-  const handleUpdate = (form) => {
+  const handleUpdate = (form, pendingFile) => {
     const existing   = users.find(u => u.id === editingUser.id)
     const normalized = normalizeForm(form)
     // Keep existing PIN when field was left empty during edit
     if (!normalized.pin) normalized.pin = existing?.pin || ''
+    const isRemovingPhoto = form.photo === null && Boolean(existing?.photo)
     const updated = users.map(u =>
       u.id === editingUser.id ? { ...u, ...normalized, updatedAt: new Date().toISOString() } : u
     )
     persist(updated)
     setEditingUser(null)
-    const target = updated.find(u => u.id === editingUser.id)
-    if (target) upsertUserToSupabase(target).catch(() => {})
+    const target     = updated.find(u => u.id === editingUser.id)
+    const supabaseId = target?.supabaseId
+    if (pendingFile && supabaseId) {
+      // New photo selected → upload, then patch local state with the returned URL
+      uploadUserAvatar(supabaseId, pendingFile).then(photoUrl => {
+        if (!photoUrl) return
+        setUsers(prev => {
+          const u2 = prev.map(u => u.id === target.id ? { ...u, photo: photoUrl } : u)
+          saveUsers(u2)
+          saveUserPhoto(target.id, photoUrl)
+          return u2
+        })
+      }).catch(() => {})
+      if (target) upsertUserToSupabase(target).catch(() => {})
+    } else if (isRemovingPhoto && supabaseId) {
+      // User clicked Remove Photo → delete from Storage + clear DB field
+      deleteUserAvatar(supabaseId).catch(() => {})
+      saveUserPhoto(editingUser.id, null)
+      if (target) upsertUserToSupabase({ ...target, photo: null }).catch(() => {})
+    } else {
+      if (target) upsertUserToSupabase(target).catch(() => {})
+    }
   }
 
   const handleDelete = (id) => {
     const target = users.find(u => u.id === id)
     persist(users.filter(u => u.id !== id))
+    saveUserPhoto(id, null)
     setEditingUser(null)
-    // Soft-delete in Supabase if linked
-    if (target?.supabaseId) upsertUserToSupabase({ ...target, status: 'inactive' }).catch(() => {})
+    if (target?.supabaseId) {
+      // Delete avatar from Storage before soft-deleting the record
+      deleteUserAvatar(target.supabaseId).catch(() => {})
+      upsertUserToSupabase({ ...target, status: 'inactive' }).catch(() => {})
+    }
   }
 
   const openNew  = () => { setEditingUser(null); setIsNew(true) }

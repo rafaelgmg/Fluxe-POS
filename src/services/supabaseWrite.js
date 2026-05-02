@@ -242,6 +242,7 @@ export function toSupabaseSaleRow(invoice, orgId) {
     total_spare:        invoice.totalSpare          ?? 0,
     notes:              invoice.notes               ?? '',
     linked_customer_id: invoice.linkedCustomerId    ?? null,
+    payment_method:     invoice.paymentMethod       || '',
     // commissionSnapshot stored in a JSONB column — Phase 5 decision
   }
 }
@@ -815,6 +816,69 @@ export async function updateProductInSupabase(product) {
 // ── User CRUD ─────────────────────────────────────────────────────────────────
 
 /**
+ * Upload an optimized avatar File to Supabase Storage and update the user record.
+ * Path: avatars/{orgId}/{supabaseUserId}.webp  (stable — PUT replaces in-place)
+ * Appends ?v=timestamp to bust browser cache after re-upload.
+ *
+ * @param {string} supabaseUserId  User UUID in Supabase
+ * @param {File}   file            Optimized WebP File from optimizeAvatarImage()
+ * @returns {Promise<string|null>} Public URL with cache-buster, or null on failure
+ */
+export async function uploadUserAvatar(supabaseUserId, file) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    await awaitOrgSession().catch(() => null)
+    const orgId = await getOrgId()
+    const path  = `${orgId}/${supabaseUserId}.webp`
+    const res   = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
+      method:  'PUT',
+      headers: {
+        apikey:         SUPABASE_KEY,
+        Authorization:  `Bearer ${authBearer()}`,
+        'Content-Type': 'image/webp',
+        'x-upsert':     'true',
+      },
+      body: file,
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(`Storage PUT ${res.status}: ${text}`)
+    }
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}?v=${Date.now()}`
+    await sbPatch(`/users?id=eq.${supabaseUserId}`, { avatar_url: publicUrl })
+    return publicUrl
+  } catch (err) {
+    console.warn('[Fluxe] uploadUserAvatar failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Delete a user's avatar from Supabase Storage and clear avatar_url in the DB.
+ * @param {string} supabaseUserId
+ */
+export async function deleteUserAvatar(supabaseUserId) {
+  if (!isSupabaseConfigured()) return
+  try {
+    await awaitOrgSession().catch(() => null)
+    const orgId = await getOrgId()
+    const path  = `${orgId}/${supabaseUserId}.webp`
+    await fetch(`${SUPABASE_URL}/storage/v1/object/avatars`, {
+      method:  'DELETE',
+      headers: {
+        apikey:         SUPABASE_KEY,
+        Authorization:  `Bearer ${authBearer()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prefixes: [path] }),
+    })
+    await sbPatch(`/users?id=eq.${supabaseUserId}`, { avatar_url: null })
+  } catch (err) {
+    console.warn('[Fluxe] deleteUserAvatar failed:', err.message)
+  }
+}
+
+/**
  * Create or update a user in Supabase.
  * - New user (no supabaseId): POST → returns Supabase UUID to store locally
  * - Existing user (has supabaseId): PATCH by UUID → returns existing UUID
@@ -834,6 +898,12 @@ export async function upsertUserToSupabase(user) {
       phone:           user.phone      || '',
       status:          user.status     || 'active',
       hourly_rate:     user.hourlyRate || 0,
+    }
+    // Sync avatar_url only when it's a real URL or an explicit removal (null).
+    // Base64 data URLs from the old localStorage system are never written to the DB.
+    const isRealUrl = typeof user.photo === 'string' && user.photo.startsWith('http')
+    if (user.photo === null || isRealUrl) {
+      row.avatar_url = user.photo || null
     }
     let supabaseId
     if (user.supabaseId) {

@@ -183,10 +183,11 @@ function fromSupabaseSale(row) {
   return {
     ...row,
     // Field renames: Supabase → frontend canonical shape
-    timestamp:  row.sold_at,
-    location:   row.location_name   || '',
-    employee:   row.employee_name   || '',
-    totalSpare: row.total_spare     ?? 0,
+    timestamp:     row.sold_at,
+    location:      row.location_name   || '',
+    employee:      row.employee_name   || '',
+    totalSpare:    row.total_spare     ?? 0,
+    paymentMethod: row.payment_method  || '',
     // Flatten nested relations for normalizeSale
     items:    (row.sale_items || []).map(fromSupabaseSaleItem),
     payments: (row.payments   || []).map(fromSupabasePayment),
@@ -229,6 +230,7 @@ function fromSupabaseUser(row) {
     firstName:  row.first_name  || '',
     lastName:   row.last_name   || '',
     hourlyRate: row.hourly_rate ?? 0,
+    photo:      row.avatar_url  || null,
     createdAt:  row.created_at,
   }
 }
