@@ -43,13 +43,21 @@ export async function fetchLeadsInRange(startDate, endDate) {
     const startISO = startDate.toISOString()
     const endISO   = endDate.toISOString()
 
+    const start = startDate
+    const end   = endDate
+
     const [customers, users, locations] = await Promise.all([
+      // Fetch using captured_at range — the real capture date.
+      // Also fetch rows where captured_at is null and fall back to created_at filter in JS
+      // (covers records synced before this fix was applied).
       sbFetch(
         `/customers?organization_id=eq.${orgId}` +
-        `&created_at=gte.${encodeURIComponent(startISO)}` +
-        `&created_at=lt.${encodeURIComponent(endISO)}` +
+        `&or=(` +
+          `and(captured_at.gte.${encodeURIComponent(startISO)},captured_at.lt.${encodeURIComponent(endISO)}),` +
+          `and(captured_at.is.null,created_at.gte.${encodeURIComponent(startISO)},created_at.lt.${encodeURIComponent(endISO)})` +
+        `)` +
         `&archived=eq.false` +
-        `&order=created_at.desc&limit=500`
+        `&order=captured_at.desc.nullslast&limit=500`
       ),
       sbFetch(`/v_users?select=id,first_name,last_name&organization_id=eq.${orgId}`).catch(() => []),
       sbFetch(`/locations?select=id,name&organization_id=eq.${orgId}`).catch(() => []),

@@ -123,6 +123,10 @@ function toPayload(local, orgId, userId, locationId) {
   }
   if (userId)     payload.captured_by_user_id  = userId
   if (locationId) payload.captured_location_id = locationId
+  // Preserve the original capture timestamp so dashboard filters work correctly.
+  // Without this, PostgreSQL sets captured_at = NOW() on sync, making old leads look new.
+  const capturedAt = local.capturedAt || local.createdAt || null
+  if (capturedAt) payload.captured_at = capturedAt
   return payload
 }
 
