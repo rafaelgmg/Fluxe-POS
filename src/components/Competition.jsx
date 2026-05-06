@@ -152,8 +152,15 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
     return () => clearInterval(id)
   }, [poll])
 
-  // Active sales: prefer cross-kiosk Supabase data; fall back to local prop
-  const activeSales = remoteSales ?? sales
+  // Active sales: Supabase is primary (cross-kiosk), but local sales not yet
+  // synced must still appear — otherwise a sale disappears while writeSaleToSupabase
+  // is in-flight between the POS and the next 30s poll.
+  const activeSales = useMemo(() => {
+    if (!remoteSales) return sales
+    const remoteNumbers = new Set(remoteSales.map(s => s.number))
+    const pendingLocal  = sales.filter(s => !remoteNumbers.has(s.number))
+    return pendingLocal.length > 0 ? [...remoteSales, ...pendingLocal] : remoteSales
+  }, [remoteSales, sales])
 
   // ── Day rollover detection ────────────────────────────────────────────────
   const [today, setToday] = useState(() => localDateStr())
