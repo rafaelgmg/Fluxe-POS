@@ -2,8 +2,81 @@
  * supabaseDashboard.js — Data layer for the /dashboard page.
  */
 
-import { fetchSales }     from './supabaseRead'
+import { fetchSales, getOrgId, isSupabaseConfigured } from './supabaseRead'
 import { initOrgSession } from './supabaseAuth'
+import { getAccessToken }  from './supabaseSession'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL      || ''
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+function authBearer() { return getAccessToken() || SUPABASE_KEY }
+
+async function sbFetch(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+    headers: {
+      apikey:         SUPABASE_KEY,
+      Authorization:  `Bearer ${authBearer()}`,
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Supabase ${res.status} at ${path}: ${body}`)
+  }
+  return res.json()
+}
+
+// ── Leads fetch ───────────────────────────────────────────────────────────────
+
+/**
+ * Fetch customers created (new leads) within a date range.
+ * Resolves seller name and location name from the org's users/locations.
+ *
+ * @param {Date} startDate
+ * @param {Date} endDate
+ * @returns {Promise<Array>}
+ */
+export async function fetchLeadsInRange(startDate, endDate) {
+  if (!isSupabaseConfigured()) return []
+  try {
+    const orgId    = await getOrgId()
+    const startISO = startDate.toISOString()
+    const endISO   = endDate.toISOString()
+
+    const [customers, users, locations] = await Promise.all([
+      sbFetch(
+        `/customers?organization_id=eq.${orgId}` +
+        `&created_at=gte.${encodeURIComponent(startISO)}` +
+        `&created_at=lt.${encodeURIComponent(endISO)}` +
+        `&archived=eq.false` +
+        `&order=created_at.desc&limit=500`
+      ),
+      sbFetch(`/v_users?select=id,first_name,last_name&organization_id=eq.${orgId}`).catch(() => []),
+      sbFetch(`/locations?select=id,name&organization_id=eq.${orgId}`).catch(() => []),
+    ])
+
+    const userMap = {}
+    for (const u of users) {
+      userMap[u.id] = `${u.first_name || ''} ${u.last_name || ''}`.trim() || null
+    }
+    const locMap = {}
+    for (const l of locations) locMap[l.id] = l.name
+
+    return customers.map(r => ({
+      id:           r.id,
+      firstName:    r.first_name  || '',
+      lastName:     r.last_name   || '',
+      phone:        r.phone       || '',
+      email:        r.email       || '',
+      capturedAt:   r.captured_at || r.created_at,
+      capturedBy:   userMap[r.captured_by_user_id] || null,
+      locationName: locMap[r.captured_location_id] || null,
+    }))
+  } catch (err) {
+    console.warn('[Fluxe] fetchLeadsInRange failed:', err.message)
+    return []
+  }
+}
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 
@@ -14,7 +87,10 @@ import { initOrgSession } from './supabaseAuth'
 export async function fetchDashboardData(startDate, endDate) {
   try { await initOrgSession() } catch {}
 
-  const sales = await fetchSales()
+  const [sales, leads] = await Promise.all([
+    fetchSales(),
+    fetchLeadsInRange(startDate, endDate),
+  ])
   if (!sales) return null
 
   const active  = s => s.status !== 'voided'
@@ -23,15 +99,16 @@ export async function fetchDashboardData(startDate, endDate) {
   const selected   = sales.filter(s => active(s) && inRange(s, startDate, endDate))
 
   // Comparison period: same duration immediately before the selected range
-  const duration    = endDate.getTime() - startDate.getTime()
-  const compareEnd  = startDate
+  const duration     = endDate.getTime() - startDate.getTime()
+  const compareEnd   = startDate
   const compareStart = new Date(startDate.getTime() - duration)
-  const comparison  = sales.filter(s => active(s) && inRange(s, compareStart, compareEnd))
+  const comparison   = sales.filter(s => active(s) && inRange(s, compareStart, compareEnd))
 
   return {
     current:    computeMetrics(selected),
     comparison: computeMetrics(comparison),
     feed:       selected.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 60),
+    leads,
     fetchedAt:  new Date(),
   }
 }

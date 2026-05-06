@@ -6,7 +6,7 @@
  * (set by the POS global CSS) doesn't break scrolling here.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { fetchDashboardData } from '../services/supabaseDashboard'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -410,8 +410,135 @@ function SaleDetailModal({ sale, onClose }) {
   )
 }
 
+// ── LEADS MODAL ───────────────────────────────────────────────────────────────
+function LeadsModal({ leads, onClose }) {
+  const [locFilter, setLocFilter] = useState('all')
+
+  const locations = useMemo(() => {
+    const names = [...new Set(leads.map(l => l.locationName).filter(Boolean))].sort()
+    return names
+  }, [leads])
+
+  const filtered = locFilter === 'all' ? leads : leads.filter(l => l.locationName === locFilter)
+
+  const fmtDate = ts => {
+    if (!ts) return '—'
+    const d = new Date(ts)
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.55)', display: 'flex',
+        flexDirection: 'column', justifyContent: 'flex-end',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: C.card, borderRadius: '22px 22px 0 0',
+          padding: '0 0 env(safe-area-inset-bottom, 16px)',
+          maxHeight: '88vh', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 -4px 30px rgba(0,0,0,0.18)',
+        }}
+      >
+        {/* drag handle */}
+        <div style={{ padding: '14px 0 0', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2 }} />
+        </div>
+
+        {/* header */}
+        <div style={{
+          padding: '12px 20px 12px',
+          borderBottom: `1px solid ${C.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>Leads Captured</div>
+            <div style={{ fontSize: 12, color: C.muted }}>{leads.length} total · {filtered.length} shown</div>
+          </div>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: `${C.green}18`, fontSize: 18,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>👤</div>
+        </div>
+
+        {/* location filter */}
+        {locations.length > 1 && (
+          <div style={{ padding: '10px 16px 0', display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {['all', ...locations].map(loc => {
+              const active = locFilter === loc
+              return (
+                <button key={loc} onClick={() => setLocFilter(loc)} style={{
+                  flexShrink: 0, padding: '5px 12px', borderRadius: 16, fontSize: 12, fontWeight: 600,
+                  background: active ? C.green : C.bg,
+                  color: active ? '#fff' : C.muted,
+                  border: `1.5px solid ${active ? C.green : C.border}`,
+                  cursor: 'pointer', whiteSpace: 'nowrap',
+                }}>{loc === 'all' ? 'All Locations' : loc}</button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 16px' }}>
+          {filtered.length === 0
+            ? <div style={{ textAlign: 'center', padding: '50px 0', color: C.muted, fontSize: 14 }}>
+                No leads captured in this period.
+              </div>
+            : filtered.map(lead => (
+              <div key={lead.id} style={{
+                background: C.bg, borderRadius: 12, padding: '12px 14px',
+                marginBottom: 8, border: `1px solid ${C.border}`,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
+                    {`${lead.firstName} ${lead.lastName}`.trim() || '—'}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.dim, flexShrink: 0, marginLeft: 8 }}>
+                    {fmtDate(lead.capturedAt)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                  {lead.phone && (
+                    <span style={{ fontSize: 12, color: C.muted }}>📞 {lead.phone}</span>
+                  )}
+                  {lead.email && (
+                    <span style={{ fontSize: 12, color: C.muted }}>✉ {lead.email}</span>
+                  )}
+                  {lead.capturedBy && (
+                    <span style={{ fontSize: 12, color: C.muted }}>👤 {lead.capturedBy}</span>
+                  )}
+                  {lead.locationName && (
+                    <span style={{ fontSize: 12, color: C.muted }}>📍 {lead.locationName}</span>
+                  )}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        {/* close button */}
+        <div style={{ padding: '4px 16px 8px' }}>
+          <button onClick={onClose} style={{
+            width: '100%', padding: '14px 0', borderRadius: 14,
+            border: `1.5px solid ${C.border}`,
+            background: C.bg, color: C.text,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer',
+          }}>Close</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── TODAY tab ─────────────────────────────────────────────────────────────────
-function TodayTab({ current, comparison }) {
+function TodayTab({ current, comparison, leads, onLeadsClick }) {
   if (!current) return <Skeleton />
 
   const { total, subtotal, totalTax, count, avgTicket, byEmployee, byLocation, peakHour, topProduct } = current
@@ -461,6 +588,32 @@ function TodayTab({ current, comparison }) {
         <StatCard label="Transactions" value={count}          icon="🧾" accent={C.blue}   />
         <StatCard label="Avg Ticket"   value={fmt$(avgTicket)} icon="🎯" accent={C.purple} />
       </div>
+
+      {/* Leads Captured card */}
+      {leads != null && (
+        <div
+          onClick={onLeadsClick}
+          style={{
+            background: C.card, borderRadius: 16, padding: '14px 16px',
+            border: `1px solid ${C.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            display: 'flex', alignItems: 'center', gap: 12,
+            cursor: 'pointer', transition: 'border-color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = C.green}
+          onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+        >
+          <div style={{
+            width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+            background: `${C.green}18`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+          }}>👤</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 0.8 }}>LEADS CAPTURED</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: C.green, lineHeight: 1.1 }}>{leads.length}</div>
+          </div>
+          <div style={{ fontSize: 16, color: C.dim }}>›</div>
+        </div>
+      )}
 
       {/* Top seller */}
       {topSeller && (
@@ -752,13 +905,14 @@ const TABS = [
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [authed,      setAuthed]      = useState(isAuthed)
-  const [tab,         setTab]         = useState('today')
-  const [data,        setData]        = useState(null)
-  const [loading,     setLoading]     = useState(false)
-  const [fetchedAt,   setFetchedAt]   = useState(null)
-  const [selectedSale,setSelectedSale]= useState(null)
-  const [, setTick]                   = useState(0)
+  const [authed,       setAuthed]       = useState(isAuthed)
+  const [tab,          setTab]          = useState('today')
+  const [data,         setData]         = useState(null)
+  const [loading,      setLoading]      = useState(false)
+  const [fetchedAt,    setFetchedAt]    = useState(null)
+  const [selectedSale, setSelectedSale] = useState(null)
+  const [showLeads,    setShowLeads]    = useState(false)
+  const [, setTick]                     = useState(0)
 
   // Date range state
   const [preset, setPreset]       = useState('today')
@@ -800,7 +954,7 @@ export default function Dashboard() {
 
   const content = (() => {
     switch (tab) {
-      case 'today':    return <TodayTab    current={data?.current}    comparison={data?.comparison} />
+      case 'today':    return <TodayTab    current={data?.current} comparison={data?.comparison} leads={data?.leads} onLeadsClick={() => setShowLeads(true)} />
       case 'feed':     return <FeedTab     feed={data?.feed} onSelect={setSelectedSale} />
       case 'sellers':  return <SellersTab  current={data?.current} />
       case 'payments': return <PaymentsTab current={data?.current} />
@@ -819,6 +973,10 @@ export default function Dashboard() {
 
       {selectedSale && (
         <SaleDetailModal sale={selectedSale} onClose={() => setSelectedSale(null)} />
+      )}
+
+      {showLeads && data?.leads && (
+        <LeadsModal leads={data.leads} onClose={() => setShowLeads(false)} />
       )}
 
       {/* Full-height flex column — owns its own scroll so body overflow:hidden doesn't matter */}
