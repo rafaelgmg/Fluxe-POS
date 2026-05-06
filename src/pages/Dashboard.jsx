@@ -653,12 +653,101 @@ function PaymentsTab({ current }) {
   )
 }
 
+// ── PRODUCTS tab ──────────────────────────────────────────────────────────────
+function ProductsTab({ current }) {
+  const [sortBy, setSortBy] = useState('revenue')
+  if (!current) return <Skeleton />
+  const { byProduct, total } = current
+  if (!byProduct || !byProduct.length) return <Empty message="No products sold in this period" icon="🧴" />
+
+  const sorted = sortBy === 'qty'
+    ? [...byProduct].sort((a, b) => b.qty - a.qty)
+    : byProduct
+
+  const maxRevenue = sorted[0]?.total || 1
+  const maxQty     = [...byProduct].sort((a, b) => b.qty - a.qty)[0]?.qty || 1
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Summary card */}
+      <div style={{
+        background: C.card, borderRadius: 16, padding: '16px 18px',
+        border: `1px solid ${C.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 0.8, marginBottom: 2 }}>UNIQUE PRODUCTS</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: C.purple }}>{byProduct.length}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 0.8, marginBottom: 2 }}>UNITS SOLD</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: C.blue }}>
+            {byProduct.reduce((s, p) => s + p.qty, 0)}
+          </div>
+        </div>
+      </div>
+
+      {/* Sort toggle */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        {[{ id: 'revenue', label: 'By Revenue' }, { id: 'qty', label: 'By Qty Sold' }].map(opt => (
+          <button key={opt.id} onClick={() => setSortBy(opt.id)} style={{
+            flex: 1, padding: '8px 0', borderRadius: 20, fontSize: 12, fontWeight: 700,
+            background: sortBy === opt.id ? C.purple : C.bg,
+            color: sortBy === opt.id ? '#fff' : C.muted,
+            border: `1.5px solid ${sortBy === opt.id ? C.purple : C.border}`,
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}>{opt.label}</button>
+        ))}
+      </div>
+
+      {/* Product list */}
+      {sorted.map((prod, i) => {
+        const barValue = sortBy === 'qty' ? prod.qty : prod.total
+        const barMax   = sortBy === 'qty' ? maxQty : maxRevenue
+        const pct      = barMax > 0 ? Math.min(100, barValue / barMax * 100) : 0
+        return (
+          <div key={prod.name} style={{
+            background: C.card, borderRadius: 14, padding: '14px 16px',
+            border: `1px solid ${i === 0 ? 'rgba(139,92,246,0.3)' : C.border}`,
+            boxShadow: i === 0 ? '0 2px 12px rgba(139,92,246,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <span style={{
+                fontSize: i < 3 ? 18 : 13, width: 26, textAlign: 'center',
+                flexShrink: 0, color: C.muted, fontWeight: 700,
+              }}>
+                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {prod.name}
+                </div>
+                <div style={{ fontSize: 11, color: C.muted }}>{prod.qty} unit{prod.qty !== 1 ? 's' : ''} sold</div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 900, color: i === 0 ? C.purple : C.text }}>{fmt$(prod.total)}</div>
+              </div>
+            </div>
+            <div style={{ height: 5, background: C.border, borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 3, width: `${pct}%`, transition: 'width 0.5s',
+                background: i === 0 ? C.purple : C.blue,
+              }} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Tab bar ───────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'today',    label: 'Today',    icon: '📊' },
   { id: 'feed',     label: 'Feed',     icon: '⚡' },
   { id: 'sellers',  label: 'Sellers',  icon: '👥' },
   { id: 'payments', label: 'Payments', icon: '💳' },
+  { id: 'products', label: 'Products', icon: '🧴' },
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -715,6 +804,7 @@ export default function Dashboard() {
       case 'feed':     return <FeedTab     feed={data?.feed} onSelect={setSelectedSale} />
       case 'sellers':  return <SellersTab  current={data?.current} />
       case 'payments': return <PaymentsTab current={data?.current} />
+      case 'products': return <ProductsTab current={data?.current} />
       default:         return null
     }
   })()

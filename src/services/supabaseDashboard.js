@@ -92,11 +92,12 @@ export function computeMetrics(sales) {
   const byPayment  = Object.entries(payMap)
     .map(([method, total]) => ({ method, total }))
     .sort((a, b) => b.total - a.total)
+  const byProduct  = Object.values(prodMap).sort((a, b) => b.total - a.total)
   const peakHour   = byHour.indexOf(Math.max(...byHour))
-  const topProduct = Object.values(prodMap).sort((a, b) => b.total - a.total)[0] || null
+  const topProduct = byProduct[0] || null
   const count      = sales.length
 
-  return { total, subtotal: total - totalTax, totalTax, count, avgTicket: count > 0 ? total / count : 0, byEmployee, byLocation, byPayment, byHour, peakHour, topProduct }
+  return { total, subtotal: total - totalTax, totalTax, count, avgTicket: count > 0 ? total / count : 0, byEmployee, byLocation, byPayment, byProduct, byHour, peakHour, topProduct }
 }
 
 function normalizeMethod(m) {
