@@ -11,9 +11,20 @@ import AdminPanel from './AdminPanel'
 import ChangePinModal from './ChangePinModal'
 
 const LOCATION_PASSWORD = LOGIN_PASSWORD
-const LOC_KEY = 'fluxe-locations-v1'
+const LOC_KEY      = 'fluxe-locations-v1'
+const REMEMBER_KEY = 'fluxe-remembered-location-v1'
 
 const BLUE = '#3b82f6'
+
+function loadRememberedLocation() {
+  try { return JSON.parse(localStorage.getItem(REMEMBER_KEY) || 'null') } catch { return null }
+}
+function saveRememberedLocation(data) {
+  localStorage.setItem(REMEMBER_KEY, JSON.stringify(data))
+}
+function clearRememberedLocation() {
+  localStorage.removeItem(REMEMBER_KEY)
+}
 
 // Returns active location names for a region, merging saved settings with branding config
 function loadActiveLocationNames(region) {
@@ -50,15 +61,16 @@ function Clock() {
 }
 
 export default function LoginScreen({ onLogin, onBack }) {
-  const [account,   setAccount]   = useState(ACCOUNTS[0])
-  const [region,    setRegion]    = useState(REGIONS[0])
-  const [location,  setLocation]  = useState(LOCATION_MAP[REGIONS[0]][0])
-  const [password,  setPassword]  = useState('')
-  const [onlyThis,  setOnlyThis]  = useState(false)
-  const [error,     setError]     = useState('')
-  const [loading,   setLoading]   = useState(false)
-  const [pwVisible, setPwVisible] = useState(false)
-  const [version]                 = useState('1.0.0')
+  const [account,          setAccount]          = useState(ACCOUNTS[0])
+  const [region,           setRegion]           = useState(REGIONS[0])
+  const [location,         setLocation]         = useState(LOCATION_MAP[REGIONS[0]][0])
+  const [password,         setPassword]         = useState('')
+  const [onlyThis,         setOnlyThis]         = useState(() => loadRememberedLocation()?.rememberLocation === true)
+  const [locationRestored, setLocationRestored] = useState(false)
+  const [error,            setError]            = useState('')
+  const [loading,          setLoading]          = useState(false)
+  const [pwVisible,        setPwVisible]        = useState(false)
+  const [version]                               = useState('1.0.0')
   const [showAdminAuth, setShowAdminAuth] = useState(false)
   const [adminUser,     setAdminUser]     = useState(null)
 
@@ -72,11 +84,26 @@ export default function LoginScreen({ onLogin, onBack }) {
   const [verifying,       setVerifying]       = useState(false)
   const [changingPin,     setChangingPin]     = useState(false)
 
+  // Restore remembered location on mount
+  useEffect(() => {
+    const saved = loadRememberedLocation()
+    if (!saved?.rememberLocation) return
+    if (!REGIONS.includes(saved.region)) return
+    const locs = loadActiveLocationNames(saved.region)
+    if (!locs.includes(saved.location)) return
+    setAccount(saved.account || ACCOUNTS[0])
+    setRegion(saved.region)
+    setLocation(saved.location)
+    setOnlyThis(true)
+    setLocationRestored(true)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const locationList = loadActiveLocationNames(region)
 
   const handleRegionChange = (r) => {
     setRegion(r)
     setLocation(loadActiveLocationNames(r)[0] || '')
+    setLocationRestored(false)
   }
 
   const handleLocationLogin = async () => {
@@ -123,6 +150,17 @@ export default function LoginScreen({ onLogin, onBack }) {
         const result = await verifyEmployeePin(selectedEmp, next)
         if (cancelled) return
         if (result) {
+          if (onlyThis) {
+            saveRememberedLocation({
+              account:        pendingSession.account,
+              region:         pendingSession.region,
+              location:       pendingSession.location,
+              locationId:     pendingSession.locationId,
+              rememberLocation: true,
+            })
+          } else {
+            clearRememberedLocation()
+          }
           setPinError('')
           setVerifying(false)
           onLogin(pendingSession, result)
@@ -441,20 +479,31 @@ export default function LoginScreen({ onLogin, onBack }) {
             </div>
 
             {/* Checkbox */}
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              cursor: 'pointer', userSelect: 'none', marginTop: 2,
-            }}>
-              <input
-                type="checkbox"
-                checked={onlyThis}
-                onChange={e => setOnlyThis(e.target.checked)}
-                style={{ accentColor: BLUE, cursor: 'pointer', width: 14, height: 14 }}
-              />
-              <span style={{ color: 'var(--c-text-muted)', fontSize: 12 }}>
-                Remember this location
-              </span>
-            </label>
+            <div style={{ marginTop: 2 }}>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                cursor: 'pointer', userSelect: 'none',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={onlyThis}
+                  onChange={e => {
+                    setOnlyThis(e.target.checked)
+                    if (!e.target.checked) { setLocationRestored(false); clearRememberedLocation() }
+                  }}
+                  style={{ accentColor: BLUE, cursor: 'pointer', width: 14, height: 14 }}
+                />
+                <span style={{ color: 'var(--c-text-muted)', fontSize: 12 }}>
+                  Remember this location
+                </span>
+              </label>
+              {locationRestored && (
+                <div style={{ marginTop: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ fontSize: 11 }}>📍</span>
+                  <span style={{ fontSize: 11, color: BLUE }}>Location remembered on this device</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Buttons */}
