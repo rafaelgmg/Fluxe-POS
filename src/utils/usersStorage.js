@@ -146,12 +146,18 @@ export async function loadUsersAsync() {
         `${l.firstName} ${l.lastName}`.trim().toLowerCase() ===
         `${r.firstName} ${r.lastName}`.trim().toLowerCase()
       )
-      // r.photo comes from Supabase avatar_url (source of truth).
-      // Fall back to local photo only during migration from old localStorage system.
       return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '', photo: r.photo ?? match?.photo ?? null }
     })
-    saveUsers(merged)
-    return merged
+    // Preserve local-only users (not yet synced to Supabase — added while offline or sync failed).
+    // Without this, a successful sync permanently deletes them from localStorage.
+    const remoteNames = new Set(remote.map(r => `${r.firstName} ${r.lastName}`.trim().toLowerCase()))
+    const localOnly = local.filter(l =>
+      !l.supabaseId &&
+      !remoteNames.has(`${l.firstName} ${l.lastName}`.trim().toLowerCase())
+    )
+    const final = [...merged, ...localOnly]
+    saveUsers(final)
+    return final
   } catch {}
   return loadUsers()
 }

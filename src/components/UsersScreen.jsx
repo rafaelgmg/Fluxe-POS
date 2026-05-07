@@ -345,12 +345,18 @@ export default function UsersScreen({ onBack }) {
             `${l.firstName} ${l.lastName}`.trim().toLowerCase() ===
             `${r.firstName} ${r.lastName}`.trim().toLowerCase()
           )
-          // r.photo comes from Supabase avatar_url (source of truth).
-          // Fall back to local photo only during migration from old localStorage system.
           return { ...r, id: match?.id ?? r.id, supabaseId: r.id, pin: match?.pin || '', photo: r.photo ?? match?.photo ?? null }
         })
-        saveUsers(merged)
-        setUsers(merged)
+        // Preserve local-only users (not yet synced to Supabase — e.g. added while offline).
+        // Without this, a successful sync after offline usage permanently deletes them.
+        const remoteNames = new Set(remote.map(r => `${r.firstName} ${r.lastName}`.trim().toLowerCase()))
+        const localOnly = local.filter(l =>
+          !l.supabaseId &&
+          !remoteNames.has(`${l.firstName} ${l.lastName}`.trim().toLowerCase())
+        )
+        const final = [...merged, ...localOnly]
+        saveUsers(final)
+        setUsers(final)
       }).catch(() => {})
     )
   }, [])
@@ -438,11 +444,15 @@ export default function UsersScreen({ onBack }) {
 
   const handleDelete = (id) => {
     const target = users.find(u => u.id === id)
-    persist(users.filter(u => u.id !== id))
+    // Soft-delete locally: mark inactive instead of removing.
+    // Removing from localStorage causes the user to reappear on the next Supabase sync
+    // (Supabase keeps them as inactive and the sync re-imports them).
+    // Keeping them locally as inactive stays consistent with the Supabase state.
+    const updated = users.map(u => u.id === id ? { ...u, status: 'inactive' } : u)
+    persist(updated)
     saveUserPhoto(id, null)
     setEditingUser(null)
     if (target?.supabaseId) {
-      // Delete avatar from Storage before soft-deleting the record
       deleteUserAvatar(target.supabaseId).catch(() => {})
       upsertUserToSupabase({ ...target, status: 'inactive' }).catch(() => {})
     }
