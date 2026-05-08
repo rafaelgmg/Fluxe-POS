@@ -4,7 +4,7 @@ import {
   BUSINESS, BUSINESS_SHORT, SYSTEM_NAME, SYSTEM_TAG, CREATOR,
   LOCATIONS_CFG,
 } from '../config/branding'
-import { loadActiveEmployees } from '../utils/usersStorage'
+import { loadActiveEmployees, loadUsersAsync } from '../utils/usersStorage'
 import { verifyEmployeePin, resolveSessionContext } from '../services/supabaseAuth'
 import LoginModal from './LoginModal'
 import AdminPanel from './AdminPanel'
@@ -77,7 +77,7 @@ export default function LoginScreen({ onLogin, onBack }) {
   // PIN step
   const [step,            setStep]            = useState('location') // 'location' | 'pin'
   const [pendingSession,  setPendingSession]  = useState(null)
-  const [employees]                           = useState(() => loadActiveEmployees())
+  const [employees,       setEmployees]       = useState(() => loadActiveEmployees())
   const [selectedEmp,     setSelectedEmp]     = useState(employees[0]?.name ?? '')
   const [pin,             setPin]             = useState('')
   const [pinError,        setPinError]        = useState('')
@@ -96,6 +96,17 @@ export default function LoginScreen({ onLogin, onBack }) {
     setLocation(saved.location)
     setOnlyThis(true)
     setLocationRestored(true)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync employees from Supabase on mount so new staff appear on any device without
+  // requiring manual admin sync. Falls back silently to whatever is in localStorage.
+  useEffect(() => {
+    loadUsersAsync().then(() => {
+      const fresh = loadActiveEmployees()
+      if (fresh.length === 0) return
+      setEmployees(fresh)
+      setSelectedEmp(prev => fresh.find(e => e.name === prev) ? prev : fresh[0].name)
+    }).catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const locationList = loadActiveLocationNames(region)

@@ -219,7 +219,10 @@ export async function verifyEmployeePin(employeeName, pin) {
   const employees = loadActiveEmployees()
   const emp = employees.find(e => e.name === employeeName)
   if (emp && emp.pin === pin) {
-    return { id: emp.id, name: emp.name, role: emp.role, photo: emp.photo }
+    // Use id: null in offline fallback — emp.id may be a stale localStorage UUID that no longer
+    // exists in users, which would cause a 23503 FK violation on the next sale insert.
+    // employee_name is preserved in the sale row as a reliable display snapshot.
+    return { id: null, name: emp.name, role: emp.role, photo: emp.photo }
   }
   return null
 }

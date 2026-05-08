@@ -903,11 +903,13 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
   const setProducts = setAppProducts
     ? (updater) => {
         if (typeof updater === 'function') {
-          setLocalProducts(prev => {
-            const next = updater(prev)
-            setAppProducts(next)
-            return next
-          })
+          // Compute next from liveProducts (the ground truth), not localProducts (may lag by one render).
+          // Call both setters with the same value — avoids calling setAppProducts inside a
+          // setLocalProducts updater (nested setState anti-pattern that fires twice in Strict Mode).
+          const prev = liveProducts && liveProducts.length > 0 ? liveProducts : localProducts
+          const next = updater(prev)
+          setLocalProducts(next)
+          setAppProducts(next)
         } else {
           setLocalProducts(updater)
           setAppProducts(updater)

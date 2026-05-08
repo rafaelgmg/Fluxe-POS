@@ -945,10 +945,23 @@ export default function InventoryAdmin({ onClose, defaultView = 'management' }) 
   const [sales]                   = useState(loadAllSales)   // read-only — for DeactivateModal stats
   const [historyProductFilter, setHistoryProductFilter] = useState(null)
 
-  // Phase 4: hydrate from Supabase (localStorage is already rendered above)
+  // Phase 4: hydrate from Supabase (localStorage is already rendered above).
+  // Uses barcode-keyed merge (same as useProducts) to avoid duplicates when a product
+  // was added locally between mount and fetch completion.
   useEffect(() => {
-    fetchProducts().then(remote => { if (remote) setProducts(remote) })
-    fetchInventoryMovements().then(remote => { if (remote) setHistory(remote) })
+    let cancelled = false
+    fetchProducts().then(remote => {
+      if (!remote || cancelled) return
+      setProducts(current => {
+        const localMap  = Object.fromEntries(current.map(p => [p.barcode, p]))
+        const merged    = remote.map(p => ({ ...p, category: localMap[p.barcode]?.category || p.category || '' }))
+        const remoteSet = new Set(remote.map(p => p.barcode))
+        current.forEach(p => { if (!remoteSet.has(p.barcode)) merged.push(p) })
+        return merged
+      })
+    })
+    fetchInventoryMovements().then(remote => { if (!cancelled && remote) setHistory(remote) })
+    return () => { cancelled = true }
   }, [])
 
   const goToHistory = (productId) => {

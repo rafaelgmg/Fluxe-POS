@@ -351,8 +351,9 @@ export function prepareInvoicePayload(invoice, orgId) {
  */
 export async function writeSaleToSupabase(serialized) {
   if (!isSupabaseConfigured()) return { saleId: null, serverNumber: null }
+  let orgId
   try {
-    const orgId = await getOrgId()
+    orgId = await getOrgId()
     const { saleRow, withSaleId } = prepareInvoicePayload(serialized, orgId)
 
     // Step 1: INSERT sale — blocks until we have the UUID and server number
@@ -370,6 +371,22 @@ export async function writeSaleToSupabase(serialized) {
 
     return { saleId, serverNumber }
   } catch (err) {
+    // FK violation on employee_id: local fallback returned a stale UUID not present in users.
+    // Retry with employee_id = null — employee_name snapshot is preserved for all reports.
+    if (orgId && err.message.includes('23503') && err.message.includes('employee_id_fkey')) {
+      console.warn('[Fluxe] Sale has invalid employee_id UUID — retrying without FK link (name snapshot kept)')
+      try {
+        const { saleRow, withSaleId } = prepareInvoicePayload(serialized, orgId)
+        const inserted = await insertSale({ ...saleRow, employee_id: null })
+        if (!inserted?.id) throw new Error('Retry: INSERT sales returned no id')
+        const { id: saleId, number: serverNumber } = inserted
+        const { itemRows, paymentRows } = withSaleId(saleId)
+        await Promise.all([insertSaleItems(itemRows), insertPayments(paymentRows)])
+        return { saleId, serverNumber }
+      } catch (retryErr) {
+        console.warn('[Fluxe] Sale retry without employee_id also failed:', retryErr.message)
+      }
+    }
     console.warn('[Fluxe] Sale write to Supabase failed — local copy is source of truth:', err.message)
     return { saleId: null, serverNumber: null }
   }
