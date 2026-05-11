@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { useTheme } from './theme/ThemeContext'
+import { isDemoMode, seedDemoData, clearDemoData, DEMO_POS_SESSION } from './demo/demoSeed'
 import { loadActiveCategoryNames, ensureCategoriesSeeded, buildCategoryMap } from './utils/categoriesStorage'
 import { getTaxRate, getTaxRateById, loadLocationConfig, loadLocationConfigById, resolveSpareRateForDay, resolveSpareRateForDayById } from './utils/locationConfig'
 import { localId } from './domain/utils/ids'
@@ -42,6 +43,23 @@ import FluxeAssist from './components/FluxeAssist'
 import Dashboard from './components/Dashboard'
 
 
+// ── Demo mode URL activation ──────────────────────────────────────────────────
+// ?demo=true  → seeds fake data + reloads (demo banner shown after reload)
+// ?demo=clear → restores production data + reloads
+;(() => {
+  const params = new URLSearchParams(window.location.search)
+  const demoParam = params.get('demo')
+  if (demoParam === 'true') {
+    seedDemoData()
+    window.history.replaceState({}, '', window.location.pathname)
+    window.location.reload()
+  } else if (demoParam === 'clear') {
+    clearDemoData()
+    window.history.replaceState({}, '', window.location.pathname)
+    window.location.reload()
+  }
+})()
+
 // Seed categories on first run (no-op if already seeded)
 ensureCategoriesSeeded()
 
@@ -83,7 +101,16 @@ export default function App() {
       return saved ? JSON.parse(saved) : null
     } catch { return null }
   })
-  const [posSession, setPosSession]         = useState(null) // null = show location login
+  const [posSession, setPosSession]         = useState(() => {
+    // In demo mode, bypass LoginScreen automatically
+    if (isDemoMode()) {
+      try {
+        const saved = localStorage.getItem('fluxe-demo-pos-session')
+        return saved ? JSON.parse(saved) : DEMO_POS_SESSION
+      } catch { return DEMO_POS_SESSION }
+    }
+    return null
+  })
   const [showAdmin, setShowAdmin]           = useState(false)
   const [showAdminAuth, setShowAdminAuth]   = useState(false)
   const [showCRM, setShowCRM]               = useState(false)
@@ -499,6 +526,15 @@ export default function App() {
             color: '#60a5fa', fontSize: 11, fontWeight: 600,
           }}>{posSession?.location || DEFAULT_LOCATION}</span>
         </div>
+
+        {/* Demo mode badge */}
+        {isDemoMode() && (
+          <span style={{
+            padding: '2px 10px', borderRadius: 6,
+            background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)',
+            color: '#fbbf24', fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+          }}>DEMO</span>
+        )}
 
         {/* Nav icons — main modules */}
         {[
