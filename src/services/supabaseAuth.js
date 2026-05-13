@@ -27,7 +27,7 @@
 
 import { isSupabaseConfigured, getOrgId, setOrgIdCache } from './supabaseRead'
 import { setAccessToken, clearAccessToken, getAccessToken } from './supabaseSession'
-import { loadActiveEmployees } from '../utils/usersStorage'
+import { loadActiveEmployees, loadUsers, saveUsers } from '../utils/usersStorage'
 import { LOCATIONS_CFG } from '../config/branding'
 
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL          || ''
@@ -191,6 +191,21 @@ export async function verifyEmployeePin(employeeName, pin) {
         const u = rows[0]
         // Prefer local role — Supabase position can be null for legacy/seeded users
         const localEmp = loadActiveEmployees().find(e => e.name === employeeName)
+
+        // Auto-cache PIN in localStorage so offline fallback works on casino WiFi
+        // after first successful online login — no manual setup needed per device.
+        try {
+          const users = loadUsers()
+          const idx = users.findIndex(usr =>
+            usr.supabaseId === u.id ||
+            `${usr.firstName} ${usr.lastName}`.trim().toLowerCase() === employeeName.toLowerCase()
+          )
+          if (idx >= 0 && users[idx].pin !== pin) {
+            users[idx] = { ...users[idx], pin }
+            saveUsers(users)
+          }
+        } catch {}
+
         return {
           id:    u.id,
           name:  (`${u.first_name || ''} ${u.last_name || ''}`).replace(/\s+/g, ' ').trim() || employeeName,
