@@ -15,7 +15,8 @@ import BonusRulesScreen     from './BonusRulesScreen'
 import BarcodeModal, { BarcodeIconButton } from './BarcodeModal'
 import CustomersAdmin from './CustomersAdmin'
 import CRMSettings    from './CRMSettings'
-import AdminEODReport from './AdminEODReport'
+import AdminEODReport  from './AdminEODReport'
+import InvoicesAdmin   from './InvoicesAdmin'
 
 const PURPLE       = COLORS.admin
 const GOLD         = COLORS.accent
@@ -108,7 +109,7 @@ const MODULES = [
   {
     id: 'accounting', icon: '💰', label: 'Accounting', color: '#1abc9c',
     submenu: [
-      { id: 'acc-invoices',  label: 'Invoices'           },
+      { id: 'acc-invoices',  label: 'Invoices', screen: 'invoices' },
       { id: 'acc-payments',  label: 'Payments'           },
       { id: 'acc-credit',    label: 'Store Credit'       },
       { id: 'acc-refunds',   label: 'Refunds'            },
@@ -1029,6 +1030,18 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
           posSession={posSession}
         />
       </div>
+    )
+  }
+
+  if (activeScreen?.screen === 'invoices') {
+    return (
+      <InvoicesAdmin
+        sales={sales}
+        customers={customers}
+        posSession={posSession}
+        updateSale={updateSale}
+        onClose={goBack}
+      />
     )
   }
 

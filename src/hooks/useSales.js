@@ -3,6 +3,7 @@ import { loadCategories } from '../utils/categoriesStorage'
 import { loadAllSales, persistAllSales, nextInvoiceNumber as _nextInvoiceNumber } from '../utils/salesStorage'
 import { fetchSales, fetchCategories } from '../services/supabaseRead'
 import { writeSaleToSupabase, voidSaleInSupabase } from '../services/supabaseWrite'
+import { isDemoMode } from '../demo/demoSeed'
 
 // Status values aligned with Supabase schema enum (sale_status).
 // Translates any legacy localStorage value to the canonical backend value.
@@ -28,12 +29,15 @@ export function useSales() {
 
   // Hydrate sales from Supabase after initial localStorage render, then poll
   // every 30s so Competition stays current across both kiosks.
+  // Demo mode skips Supabase entirely — all sales are localStorage-only.
   useEffect(() => {
-    fetchSales().then(remote => { if (remote) setSales(remote) })
-    const id = setInterval(
-      () => fetchSales().then(remote => { if (remote) setSales(remote) }),
-      30_000
-    )
+    if (isDemoMode()) return
+    const hydrate = () =>
+      fetchSales().then(remote => {
+        if (remote) setSales(remote.filter(s => s.location !== 'Fluxe Demo Store'))
+      })
+    hydrate()
+    const id = setInterval(hydrate, 30_000)
     return () => clearInterval(id)
   }, [])
 
@@ -90,6 +94,8 @@ export function useSales() {
     })
 
     // ── Step 2: write to Supabase — fire-and-forget with fallback ─────────
+    // Demo mode: skip Supabase entirely — demo sales must never reach production DB.
+    if (isDemoMode()) return { saleId: null, serverNumber: serialized.number }
     // The sale is already safe in localStorage. Supabase failure never blocks the POS.
     const { saleId, serverNumber } = await writeSaleToSupabase(serialized)
 
