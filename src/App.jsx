@@ -71,7 +71,9 @@ awaitOrgSession()
 
 export default function App() {
   const { mode, tokens, toggle } = useTheme()
-  const [currentUser, setCurrentUser]   = useState(null)  // session user (LoginModal)
+  const [currentUser, setCurrentUser]   = useState(() =>
+    isDemoMode() ? { id: 101, name: 'Alex Morgan', role: 'manager', photo: null } : null
+  )
   const [saleEmployee, setSaleEmployee] = useState(null)  // seller confirmed for current sale
   const { products, setProducts, decrementStock } = useProducts()
   const [selectedCategory, setCategory] = useState('All')
