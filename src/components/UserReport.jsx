@@ -160,7 +160,7 @@ function ReportPinGate({ onUnlock, onClose }) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7, marginBottom: 18 }}>
-          {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, i) => (
+          {['7','8','9','4','5','6','1','2','3','','0','⌫'].map((k, i) => (
             <button key={i}
               onClick={() => {
                 if (!k) return

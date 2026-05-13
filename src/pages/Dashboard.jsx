@@ -162,7 +162,7 @@ function PinLogin({ onAuth }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, width: 240 }}>
-        {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, i) => (
+        {['7','8','9','4','5','6','1','2','3','','0','⌫'].map((k, i) => (
           <button key={i} onClick={() => k && press(k)} disabled={!k} style={{
             padding: '18px 0', borderRadius: 12,
             fontSize: k === '⌫' ? 18 : 22, fontWeight: 700,

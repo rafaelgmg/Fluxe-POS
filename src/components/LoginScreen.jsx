@@ -363,7 +363,7 @@ export default function LoginScreen({ onLogin, onBack }) {
 
               {/* Numpad */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 7 }}>
-                {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k, i) => (
+                {['7','8','9','4','5','6','1','2','3','','0','⌫'].map((k, i) => (
                   <button
                     key={i}
                     onClick={() => { if (k) pressPin(k) }}

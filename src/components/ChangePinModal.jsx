@@ -7,7 +7,7 @@ const BLUE  = '#3b82f6'
 const GREEN = '#22c55e'
 const RED   = '#ef4444'
 
-const NUM_KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫']
+const NUM_KEYS = ['7','8','9','4','5','6','1','2','3','','0','⌫']
 const MIN_PIN  = 4
 const MAX_PIN  = 6
 
