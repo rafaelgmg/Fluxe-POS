@@ -3,9 +3,10 @@ import { DEFAULT_LOCATION } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { loadCRM } from '../utils/crmStorage'
 import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
-import { upsertEODNotes } from '../services/supabaseWrite'
+import { upsertEODNotes, patchClockOut } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
 import { printEODReceipt } from '../utils/printEODReceipt'
+import { loadClockRecords, saveClockRecords } from '../utils/clockStorage'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG     = 'var(--c-bg)'
@@ -76,6 +77,7 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
   const [saved,       setSaved]       = useState(false)  // false | 'saving' | 'ok' | 'error'
   const [notesDirty,  setNotesDirty]  = useState(false)
   const [printStatus, setPrintStatus] = useState('idle') // 'idle' | 'printing' | 'done' | 'error'
+  const [autoClocked, setAutoClocked] = useState(0)     // # employees auto-clocked out on this print
   const [section, setSection]           = useState('overview')
   const [selectedDate, setSelectedDate] = useState(() => dateToInput(new Date()))
   const [rawSales, setRawSales]         = useState(null)    // null = not yet fetched
@@ -128,6 +130,14 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
       return () => clearTimeout(t)
     }
   }, [printStatus])
+
+  // ── Auto clock-out notification fades after 6s ────────────────────────────────
+  useEffect(() => {
+    if (autoClocked > 0) {
+      const t = setTimeout(() => setAutoClocked(0), 6000)
+      return () => clearTimeout(t)
+    }
+  }, [autoClocked])
 
   // ── Data source resolution ────────────────────────────────────────────────────
   // While rawSales is null (Supabase not yet answered), use local prop as preview.
@@ -287,6 +297,53 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
     ? { dot: GREEN, text: 'Live · Supabase' }
     : { dot: AMBER, text: 'Offline · Local' }
 
+  // ── Print handler: auto clock-out open shifts before printing today's EOD ────
+  const handlePrint = () => {
+    if (isToday && clockRecords) {
+      const openRecords = clockRecords.filter(r => !r.clockOut)
+      if (openRecords.length > 0) {
+        const ts = new Date().toISOString()
+        // 1. Update component state so employee hours immediately reflect clock-out
+        setClockRecords(prev => prev.map(r => r.clockOut ? r : { ...r, clockOut: ts }))
+        // 2. Persist to localStorage (offline-first)
+        const stored  = loadClockRecords()
+        const updated = stored.map(r => {
+          if (r.clockOut) return r
+          const isOpen = openRecords.some(o =>
+            (r.supabaseId && o.id === r.supabaseId) ||
+            (!r.supabaseId && o.employee === r.employee)
+          )
+          return isOpen ? { ...r, clockOut: ts } : r
+        })
+        saveClockRecords(updated)
+        // 3. Sync to Supabase (fire-and-forget)
+        openRecords.forEach(r => patchClockOut(r.id, ts))
+        setAutoClocked(openRecords.length)
+      }
+    }
+
+    printEODReceipt({
+      location,
+      dateLabel,
+      printedAt,
+      printedBy: posSession?.currentUser?.name || '',
+      netRevenue,
+      taxRevenue,
+      grossRevenue,
+      transactionCount: activeSales.length,
+      taxRatePct,
+      payMethodsDetailed,
+      employeeSummary: byEmployeeData,
+      productsSummary: topProducts.map(([name, qty]) => ({ name, qty })),
+      voidedCount: voidedSales.length,
+      refundAmount,
+      notes,
+      locCfg,
+      printMode: locCfg?.printMode || 'browser',
+      onStatus: setPrintStatus,
+    })
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div style={{
@@ -362,28 +419,19 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
             ))}
           </div>
 
+          {autoClocked > 0 && (
+            <span style={{
+              fontSize: 11, color: AMBER, background: 'rgba(245,158,11,0.12)',
+              border: '1px solid rgba(245,158,11,0.3)', borderRadius: 5,
+              padding: '3px 8px', flexShrink: 0,
+            }}>
+              {autoClocked === 1 ? '1 employee auto-clocked out' : `${autoClocked} employees auto-clocked out`}
+            </span>
+          )}
+
           <button
             disabled={printStatus === 'printing'}
-            onClick={() => printEODReceipt({
-              location,
-              dateLabel,
-              printedAt,
-              printedBy: posSession?.currentUser?.name || '',
-              netRevenue,
-              taxRevenue,
-              grossRevenue,
-              transactionCount: activeSales.length,
-              taxRatePct,
-              payMethodsDetailed,
-              employeeSummary: byEmployeeData,
-              productsSummary: topProducts.map(([name, qty]) => ({ name, qty })),
-              voidedCount: voidedSales.length,
-              refundAmount,
-              notes,
-              locCfg,
-              printMode: locCfg?.printMode || 'browser',
-              onStatus: setPrintStatus,
-            })}
+            onClick={handlePrint}
             style={{
               background: printStatus === 'done'  ? 'rgba(34,197,94,0.1)'
                         : printStatus === 'error' ? 'rgba(239,68,68,0.1)'
