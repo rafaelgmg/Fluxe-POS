@@ -6,10 +6,10 @@ import { optimizeAvatarImage } from '../utils/imageOptimization'
 const POSITIONS = ['Sales', 'Manager', 'Admin']
 
 const PURPLE = '#8b5cf6'
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
 
@@ -43,8 +43,8 @@ function StatusBadge({ status }) {
     <span style={{
       fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700,
       background: active ? 'rgba(34,197,94,0.1)' : 'rgba(100,116,139,0.1)',
-      border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : '#253349'}`,
-      color: active ? '#22c55e' : '#94a3b8',
+      border: `1px solid ${active ? 'rgba(34,197,94,0.3)' : 'var(--c-border)'}`,
+      color: active ? '#22c55e' : 'var(--c-text-muted)',
     }}>
       {active ? '● Active' : '○ Inactive'}
     </span>
@@ -120,7 +120,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
     style: {
       width: '100%', padding: '7px 10px', background: BG,
       border: `1px solid ${errors[key] ? '#ef4444' : BORDER}`,
-      borderRadius: 4, color: '#f1f5f9', fontSize: 13,
+      borderRadius: 4, color: 'var(--c-text)', fontSize: 13,
       boxSizing: 'border-box', outline: 'none',
       ...extra.style,
     },
@@ -130,8 +130,8 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
   })
 
   const lbl = (text, optional) => (
-    <label style={{ color: '#94a3b8', fontSize: 11, marginBottom: 3, display: 'block', letterSpacing: 0.4 }}>
-      {text}{optional && <span style={{ color: '#415569', marginLeft: 4, fontWeight: 400 }}>(optional)</span>}
+    <label style={{ color: 'var(--c-text-muted)', fontSize: 11, marginBottom: 3, display: 'block', letterSpacing: 0.4 }}>
+      {text}{optional && <span style={{ color: 'var(--c-text-dim)', marginLeft: 4, fontWeight: 400 }}>(optional)</span>}
     </label>
   )
   const err = (key) => errors[key] && (
@@ -154,7 +154,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
           {isNew ? '＋ New User' : '✏ Edit User'}
         </span>
         <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: '#94a3b8',
+          background: 'none', border: 'none', color: 'var(--c-text-muted)',
           fontSize: 20, cursor: 'pointer', lineHeight: 1,
         }}>×</button>
       </div>
@@ -178,7 +178,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
             onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
           >
             {optimizing
-              ? <span style={{ fontSize: 13, color: '#94a3b8' }}>⏳</span>
+              ? <span style={{ fontSize: 13, color: 'var(--c-text-muted)' }}>⏳</span>
               : form.photo
                 ? <img src={form.photo} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <span style={{ fontSize: 22 }}>📷</span>
@@ -186,23 +186,23 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
           </div>
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display: 'none' }} />
           <div>
-            <p style={{ color: '#cbd0e0', fontSize: 12, fontWeight: 600 }}>Profile Photo</p>
+            <p style={{ color: 'var(--c-text-sub)', fontSize: 12, fontWeight: 600 }}>Profile Photo</p>
             <button onClick={() => fileRef.current?.click()} style={{
               marginTop: 4, padding: '4px 10px', background: 'transparent',
               border: `1px solid ${BORDER}`, borderRadius: 4,
-              color: '#94a3b8', fontSize: 11, cursor: 'pointer',
+              color: 'var(--c-text-muted)', fontSize: 11, cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = PURPLE; e.currentTarget.style.color = '#c4b5fd' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = '#94a3b8' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = 'var(--c-text-muted)' }}
             >
               {optimizing ? 'Processing…' : form.photo ? 'Change Photo' : 'Upload Photo'}
             </button>
             {form.photo && (
               <button onClick={() => { set('photo', null); setPendingPhotoFile(null) }} style={{
                 marginTop: 4, marginLeft: 6, padding: '4px 10px', background: 'transparent',
-                border: '1px solid #253349', borderRadius: 4,
-                color: '#94a3b8', fontSize: 11, cursor: 'pointer',
+                border: '1px solid var(--c-border)', borderRadius: 4,
+                color: 'var(--c-text-muted)', fontSize: 11, cursor: 'pointer',
               }}>Remove</button>
             )}
           </div>
@@ -226,7 +226,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
           <select value={form.position} onChange={e => set('position', e.target.value)} style={{
             width: '100%', padding: '7px 10px', background: BG,
             border: `1px solid ${BORDER}`, borderRadius: 4,
-            color: '#f1f5f9', fontSize: 13, cursor: 'pointer', outline: 'none',
+            color: 'var(--c-text)', fontSize: 13, cursor: 'pointer', outline: 'none',
           }}>
             {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
@@ -265,9 +265,9 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
               <button key={s} onClick={() => set('status', s)} style={{
                 flex: 1, padding: '7px',
                 background: form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)') : BG,
-                border: `1px solid ${form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.4)' : '#94a3b8') : BORDER}`,
+                border: `1px solid ${form.status === s ? (s === 'active' ? 'rgba(34,197,94,0.4)' : 'var(--c-text-muted)') : BORDER}`,
                 borderRadius: 4,
-                color: form.status === s ? (s === 'active' ? '#22c55e' : '#cbd0e0') : '#94a3b8',
+                color: form.status === s ? (s === 'active' ? '#22c55e' : 'var(--c-text-sub)') : 'var(--c-text-muted)',
                 fontSize: 12, fontWeight: form.status === s ? 700 : 400,
                 cursor: 'pointer', transition: 'all 0.2s ease',
               }}>
@@ -304,7 +304,7 @@ function UserFormPanel({ user, onSave, onDelete, onClose, isNew, allUsers }) {
               }}>Yes, Delete</button>
               <button onClick={() => setConfirmDelete(false)} style={{
                 flex: 1, padding: '7px', background: 'transparent', border: `1px solid ${BORDER}`,
-                borderRadius: 4, color: '#94a3b8', fontSize: 12, cursor: 'pointer',
+                borderRadius: 4, color: 'var(--c-text-muted)', fontSize: 12, cursor: 'pointer',
               }}>Cancel</button>
             </div>
           </div>
@@ -488,11 +488,11 @@ export default function UsersScreen({ onBack }) {
         display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0,
       }}>
         <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: '#94a3b8',
+          background: 'none', border: 'none', color: 'var(--c-text-muted)',
           fontSize: 18, cursor: 'pointer', paddingRight: 4, lineHeight: 1,
         }}>←</button>
         <span style={{ color: PURPLE, fontWeight: 700, fontSize: 13 }}>👥 Users</span>
-        <span style={{ color: '#94a3b8', fontSize: 11 }}>Settings</span>
+        <span style={{ color: 'var(--c-text-muted)', fontSize: 11 }}>Settings</span>
         <div style={{ width: 1, height: 16, background: BORDER, margin: '0 4px' }} />
 
         <input
@@ -500,7 +500,7 @@ export default function UsersScreen({ onBack }) {
           placeholder="Search name, email, phone..."
           style={{
             padding: '6px 12px', background: BG, border: `1px solid ${BORDER}`,
-            borderRadius: 4, color: '#f1f5f9', fontSize: 13, width: 220, outline: 'none',
+            borderRadius: 4, color: 'var(--c-text)', fontSize: 13, width: 220, outline: 'none',
           }}
           onFocus={e => { e.target.style.borderColor = '#3b82f6' }}
           onBlur={e =>  { e.target.style.borderColor = BORDER }}
@@ -511,14 +511,14 @@ export default function UsersScreen({ onBack }) {
             padding: '5px 12px', fontSize: 11, cursor: 'pointer',
             background: filterStatus === s ? PURPLE + '22' : 'transparent',
             border: `1px solid ${filterStatus === s ? PURPLE : BORDER}`,
-            borderRadius: 4, color: filterStatus === s ? '#c4b5fd' : '#94a3b8',
+            borderRadius: 4, color: filterStatus === s ? '#c4b5fd' : 'var(--c-text-muted)',
             fontWeight: filterStatus === s ? 700 : 400, transition: 'all 0.2s ease',
           }}>
             {s === 'all' ? 'All' : s === 'active' ? '● Active' : '○ Inactive'}
           </button>
         ))}
 
-        <span style={{ color: '#94a3b8', fontSize: 12 }}>{filtered.length} user{filtered.length !== 1 ? 's' : ''}</span>
+        <span style={{ color: 'var(--c-text-muted)', fontSize: 12 }}>{filtered.length} user{filtered.length !== 1 ? 's' : ''}</span>
 
         <div style={{ marginLeft: 'auto' }}>
           <button onClick={openNew} style={{
@@ -540,7 +540,7 @@ export default function UsersScreen({ onBack }) {
               <tr>
                 {['', 'Name', 'Position', 'Email', 'Phone', 'Status', ''].map((h, i) => (
                   <th key={i} style={{
-                    padding: '8px 12px', textAlign: 'left', color: '#94a3b8',
+                    padding: '8px 12px', textAlign: 'left', color: 'var(--c-text-muted)',
                     fontWeight: 600, fontSize: 11, background: CARD,
                     borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap',
                   }}>{h}</th>
@@ -550,7 +550,7 @@ export default function UsersScreen({ onBack }) {
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: '#415569' }}>
+                  <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--c-text-dim)' }}>
                     No users found
                   </td>
                 </tr>
@@ -575,7 +575,7 @@ export default function UsersScreen({ onBack }) {
 
                     {/* Name */}
                     <td style={{ padding: '10px 12px' }}>
-                      <p style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>
+                      <p style={{ color: 'var(--c-text)', fontWeight: 600, fontSize: 13 }}>
                         {u.firstName} {u.lastName}
                       </p>
                     </td>
@@ -585,18 +585,18 @@ export default function UsersScreen({ onBack }) {
                       <span style={{
                         fontSize: 11, padding: '2px 8px', borderRadius: 4,
                         background: CARD, border: `1px solid ${BORDER}`,
-                        color: '#cbd0e0',
+                        color: 'var(--c-text-sub)',
                       }}>{u.position}</span>
                     </td>
 
                     {/* Email */}
-                    <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>
-                      {u.email || <span style={{ color: '#415569' }}>—</span>}
+                    <td style={{ padding: '10px 12px', color: 'var(--c-text-muted)', fontSize: 12 }}>
+                      {u.email || <span style={{ color: 'var(--c-text-dim)' }}>—</span>}
                     </td>
 
                     {/* Phone */}
-                    <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>
-                      {u.phone || <span style={{ color: '#415569' }}>—</span>}
+                    <td style={{ padding: '10px 12px', color: 'var(--c-text-muted)', fontSize: 12 }}>
+                      {u.phone || <span style={{ color: 'var(--c-text-dim)' }}>—</span>}
                     </td>
 
                     {/* Status */}

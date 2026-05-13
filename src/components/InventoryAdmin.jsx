@@ -18,24 +18,24 @@ function addEntry(setHistory, entry) {
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
-const MUTED  = '#94a3b8'
-const TEXT   = '#f1f5f9'
-const DIM    = '#cbd0e0'
+const MUTED  = 'var(--c-text-muted)'
+const TEXT   = 'var(--c-text)'
+const DIM    = 'var(--c-text-sub)'
 const GREEN_COLOR = '#22c55e'
 
 const fmt$   = (n) => `$${(n || 0).toFixed(2)}`
 const fmtTs  = (ts) => new Date(ts).toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })
 
 const TYPE_LABELS = { adjustment: 'Adjustment', transfer: 'Transfer', product_update: 'Product Update', removal: 'Removal', count_set: 'Count Set', status_change: 'Status Change' }
-const TYPE_COLORS = { adjustment: BLUE, transfer: '#8b5cf6', product_update: AMBER, removal: RED, count_set: GREEN_COLOR, status_change: '#94a3b8' }
+const TYPE_COLORS = { adjustment: BLUE, transfer: '#8b5cf6', product_update: AMBER, removal: RED, count_set: GREEN_COLOR, status_change: 'var(--c-text-muted)' }
 
 // ─── Adjust Stock Modal ───────────────────────────────────────────────────────
 // locId + locName come from parent (active location) — no location picker here
@@ -58,8 +58,8 @@ function AdjustStockModal({ product, locId, locName, onConfirm, onClose }) {
   const inp = { padding: '8px 10px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, backdropFilter: 'blur(3px)' }}>
-      <div style={{ background: `linear-gradient(160deg,#0d1829 0%,${PANEL} 100%)`, border: `1px solid ${BORDER}`, borderRadius: 10, width: 400, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--c-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, backdropFilter: 'blur(3px)' }}>
+      <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, width: 400, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
         <p style={{ color: TEXT, fontWeight: 800, fontSize: 15, marginBottom: 2 }}>Adjust Stock</p>
         <p style={{ color: MUTED, fontSize: 12, marginBottom: 4 }}>{product.name}</p>
         {/* Location indicator — read-only, set by active location selector */}
@@ -133,8 +133,8 @@ function SetCountModal({ product, locId, locName, onConfirm, onClose }) {
   const inp = { padding: '8px 10px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, backdropFilter: 'blur(3px)' }}>
-      <div style={{ background: `linear-gradient(160deg,#0d1829 0%,${PANEL} 100%)`, border: `1px solid ${BORDER}`, borderRadius: 10, width: 380, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--c-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, backdropFilter: 'blur(3px)' }}>
+      <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, width: 380, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
         <p style={{ color: TEXT, fontWeight: 800, fontSize: 15, marginBottom: 2 }}>Set Exact Count</p>
         <p style={{ color: MUTED, fontSize: 12, marginBottom: 4 }}>{product.name}</p>
         {/* Location indicator — read-only */}
@@ -180,8 +180,8 @@ function DeactivateModal({ product, sales = [], onConfirm, onClose }) {
   const lastSaleDate = lastSale ? new Date(lastSale.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1400, backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: `linear-gradient(160deg,#0d1829 0%,${PANEL} 100%)`, border: `1px solid rgba(239,68,68,0.3)`, borderRadius: 12, width: 420, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--c-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1400, backdropFilter: 'blur(4px)' }}>
+      <div style={{ background: PANEL, border: `1px solid rgba(239,68,68,0.3)`, borderRadius: 12, width: 420, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 20 }}>
@@ -227,7 +227,7 @@ function DeactivateModal({ product, sales = [], onConfirm, onClose }) {
         {/* Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, padding: '11px', background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, color: MUTED, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.color = TEXT }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--c-text-muted)'; e.currentTarget.style.color = TEXT }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED }}
           >Cancel</button>
           <button onClick={onConfirm} style={{ flex: 2, padding: '11px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 6, color: '#fca5a5', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}
@@ -429,8 +429,8 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       {/* Location selector bar */}
-      <div style={{ background: '#060d1a', borderBottom: `1px solid ${BORDER}`, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-        <span style={{ color: '#415569', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginRight: 4 }}>LOCATION</span>
+      <div style={{ background: CARD, borderBottom: `1px solid ${BORDER}`, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <span style={{ color: 'var(--c-text-dim)', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginRight: 4 }}>LOCATION</span>
         {LOCATIONS_CFG.map(loc => {
           const locQty = filtered.reduce((s, p) => s + (p.qtyByLoc?.[loc.id] ?? 0), 0)
           const isActive = activeLoc === loc.id
@@ -445,12 +445,12 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
               <span style={{
                 padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 700,
                 background: isActive ? 'rgba(37,99,235,0.15)' : 'rgba(30,41,59,0.5)',
-                color: isActive ? BLUE : '#94a3b8',
+                color: isActive ? BLUE : 'var(--c-text-muted)',
               }}>{locQty}</span>
             </button>
           )
         })}
-        <span style={{ marginLeft: 'auto', color: '#415569', fontSize: 10 }}>
+        <span style={{ marginLeft: 'auto', color: 'var(--c-text-dim)', fontSize: 10 }}>
           All locations · {products.reduce((s, p) => s + (p.qty || 0), 0)} total units
         </span>
       </div>
@@ -484,7 +484,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
             <button key={id} onClick={() => { setStatusFilter(id); setEditing(null) }} style={{
               padding: '4px 12px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
               background: statusFilter === id ? `${color}18` : 'transparent',
-              color: statusFilter === id ? color : '#94a3b8',
+              color: statusFilter === id ? color : 'var(--c-text-muted)',
               outline: statusFilter === id ? `1px solid ${color}40` : 'none',
             }}>
               {label} <span style={{ opacity: 0.7 }}>{counts[id]}</span>
@@ -518,7 +518,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#415569' }}>No products found</td></tr>
+                <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: 'var(--c-text-dim)' }}>No products found</td></tr>
               )}
               {filtered.map((p, i) => {
                 const isEditing = editing?.id === p.id
@@ -526,13 +526,13 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
                 const isLow = locQty <= 3
                 return (
                   <tr key={p.id}
-                    style={{ background: isEditing ? 'rgba(37,99,235,0.08)' : i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)', transition: 'background 0.15s', cursor: 'default' }}
+                    style={{ background: isEditing ? 'rgba(37,99,235,0.08)' : i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)', transition: 'background 0.15s', cursor: 'default' }}
                     onMouseEnter={e => { if (!isEditing) e.currentTarget.style.background = 'rgba(37,99,235,0.04)' }}
-                    onMouseLeave={e => { if (!isEditing) e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)' }}
+                    onMouseLeave={e => { if (!isEditing) e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)' }}
                   >
-                    <td style={tdS({ color: '#415569', fontSize: 11 })}>{i + 1}</td>
+                    <td style={tdS({ color: 'var(--c-text-dim)', fontSize: 11 })}>{i + 1}</td>
                     <td style={tdS({ fontSize: 11 })}><span style={{ padding: '2px 7px', borderRadius: 4, background: CARD, border: `1px solid ${BORDER}`, color: DIM, fontSize: 10 }}>{p.category}</span></td>
-                    <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#415569' })}>{p.barcode}</td>
+                    <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: 'var(--c-text-dim)' })}>{p.barcode}</td>
                     <td style={tdS({ maxWidth: 220 })}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                         <span style={{ color: p.status === 'inactive' ? MUTED : TEXT, fontWeight: 500, fontSize: 12 }}>{p.name}</span>
@@ -592,8 +592,8 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
 
       {/* Confirm remove */}
       {confirmRemove && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, backdropFilter: 'blur(3px)' }}>
-          <div style={{ background: `linear-gradient(160deg,#0d1829 0%,${PANEL} 100%)`, border: `1px solid ${BORDER}`, borderRadius: 10, width: 380, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--c-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, backdropFilter: 'blur(3px)' }}>
+          <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, width: 380, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
             <p style={{ color: TEXT, fontWeight: 700, fontSize: 15, marginBottom: 8 }}>Remove Product?</p>
             <p style={{ color: MUTED, fontSize: 13, marginBottom: 4 }}>{confirmRemove.name}</p>
             <p style={{ color: '#fca5a5', fontSize: 12, marginBottom: 20 }}>This will remove it from inventory. Sales history is preserved.</p>
@@ -819,7 +819,7 @@ function TransfersView({ products, setProducts }) {
                     color: t.status === 'received' ? GREEN : AMBER,
                     fontSize: 10, fontWeight: 600, marginRight: 8,
                   }}>{t.status}</span>
-                  <span style={{ color: '#415569', fontSize: 10 }}>{fmtTs(t.sent_at)}</span>
+                  <span style={{ color: 'var(--c-text-dim)', fontSize: 10 }}>{fmtTs(t.sent_at)}</span>
                 </div>
               ))}
             </div>
@@ -902,18 +902,18 @@ function HistoryView({ history, filterProductId, clearFilter }) {
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: '#415569' }}>No history entries</td></tr>
+              <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: 'var(--c-text-dim)' }}>No history entries</td></tr>
             )}
             {filtered.map((h, i) => {
               const color = TYPE_COLORS[h.type] || DIM
               return (
-                <tr key={h.id} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)' }}>
-                  <td style={tdS({ fontSize: 11, color: '#415569' })}>{fmtTs(h.timestamp)}</td>
+                <tr key={h.id} style={{ background: i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)' }}>
+                  <td style={tdS({ fontSize: 11, color: 'var(--c-text-dim)' })}>{fmtTs(h.timestamp)}</td>
                   <td style={tdS()}>
                     <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700, background: `${color}18`, border: `1px solid ${color}40`, color }}>{TYPE_LABELS[h.type] || h.type}</span>
                   </td>
                   <td style={tdS({ color: TEXT, fontWeight: 500 })}>{h.productName}</td>
-                  <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: '#415569' })}>{h.barcode || '—'}</td>
+                  <td style={tdS({ fontFamily: 'monospace', fontSize: 10, color: 'var(--c-text-dim)' })}>{h.barcode || '—'}</td>
                   <td style={tdS()}>{h.type === 'transfer' ? `${h.fromLocationName} → ${h.toLocationName}` : h.locationName}</td>
                   <td style={tdS({ textAlign: 'right' })}>{h.before ?? '—'}</td>
                   <td style={tdS({ textAlign: 'right' })}>{h.after ?? '—'}</td>
@@ -984,12 +984,12 @@ export default function InventoryAdmin({ onClose, defaultView = 'management' }) 
       {/* Header */}
       <div style={{ height: 48, background: PANEL, borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16, flexShrink: 0 }}>
         <button onClick={onClose} style={{ background: 'none', border: `1px solid ${BORDER}`, borderRadius: 4, color: MUTED, fontSize: 12, cursor: 'pointer', padding: '4px 10px', transition: 'all 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.color = TEXT; e.currentTarget.style.borderColor = '#94a3b8' }}
+          onMouseEnter={e => { e.currentTarget.style.color = TEXT; e.currentTarget.style.borderColor = 'var(--c-text-muted)' }}
           onMouseLeave={e => { e.currentTarget.style.color = MUTED; e.currentTarget.style.borderColor = BORDER }}
         >← Back</button>
         <span style={{ fontSize: 16 }}>📦</span>
         <span style={{ color: TEXT, fontWeight: 700, fontSize: 14 }}>Inventory</span>
-        <span style={{ color: '#415569', fontSize: 12 }}>|</span>
+        <span style={{ color: 'var(--c-text-dim)', fontSize: 12 }}>|</span>
 
         {/* Tabs */}
         {VIEWS.map(v => (

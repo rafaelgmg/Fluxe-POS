@@ -14,21 +14,21 @@ const FRAGRANCE_OPTIONS = [
 ]
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
-const TEXT   = '#f1f5f9'
-const SUB    = '#cbd0e0'
-const MUTED  = '#94a3b8'
-const DIM    = '#415569'
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
+const TEXT   = 'var(--c-text)'
+const SUB    = 'var(--c-text-sub)'
+const MUTED  = 'var(--c-text-muted)'
+const DIM    = 'var(--c-text-dim)'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
 const PURPLE = '#8b5cf6'
 
-const STAR_COLORS = ['', '#cbd0e0', '#f59e0b', '#f59e0b', '#f59e0b', '#22c55e']
+const STAR_COLORS = ['', 'var(--c-text-sub)', '#f59e0b', '#f59e0b', '#f59e0b', '#22c55e']
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtDate(iso) {
@@ -129,12 +129,12 @@ function AddCustomerModal({ onSave, onClose }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 3000, backdropFilter: 'blur(4px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
+        background: PANEL,
         border: `1px solid ${BORDER}`, borderRadius: 16,
         width: 560, maxHeight: '90vh', overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
@@ -346,12 +346,12 @@ function CustomerProfile({ customer, onClose, onSave, onDelete }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 3000, backdropFilter: 'blur(4px)',
     }}>
       <div style={{
-        background: 'linear-gradient(160deg, #0d1829 0%, #0d1526 100%)',
+        background: PANEL,
         border: `1px solid ${BORDER}`, borderRadius: 16,
         width: 720, maxHeight: '92vh', overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
@@ -438,7 +438,7 @@ function CustomerProfile({ customer, onClose, onSave, onDelete }) {
             zIndex: 10, borderRadius: 16, backdropFilter: 'blur(4px)',
           }}>
             <div style={{
-              background: '#111d30', border: '1px solid rgba(239,68,68,0.3)',
+              background: 'var(--c-bg-card)', border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 12, padding: '28px 32px', width: 380, textAlign: 'center',
               boxShadow: '0 16px 48px rgba(239,68,68,0.15)',
             }}>
@@ -1420,13 +1420,13 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
               style={{
                 display: 'flex', alignItems: 'center',
                 padding: '9px 16px', gap: 8,
-                borderBottom: `1px solid rgba(30,41,59,0.5)`,
-                background: idx % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)',
+                borderBottom: `1px solid var(--c-border-row)`,
+                background: idx % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)',
                 transition: 'background 0.15s',
                 minWidth: 1230,
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.05)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)' }}
             >
               <div style={{ width: colW.firstName, minWidth: colW.firstName, color: TEXT, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.firstName}</div>
               <div style={{ width: colW.lastName,  minWidth: colW.lastName,  color: SUB,  fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.lastName || <span style={{ color: DIM }}>—</span>}</div>

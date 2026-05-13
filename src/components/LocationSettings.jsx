@@ -196,17 +196,17 @@ function nextLocId(list) {
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 const AMBER  = '#f59e0b'
-const MUTED  = '#94a3b8'
-const TEXT   = '#f1f5f9'
-const DIM    = '#cbd0e0'
+const MUTED  = 'var(--c-text-muted)'
+const TEXT   = 'var(--c-text)'
+const DIM    = 'var(--c-text-sub)'
 const LOC_COLOR = '#e74c3c'
 
 // ─── Shared UI helpers ────────────────────────────────────────────────────────
@@ -253,7 +253,7 @@ function Toggle({ label, checked, onChange, description, disabled }) {
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: 12, marginBottom: 12, borderBottom: `1px solid ${BORDER}` }}>
       <button onClick={() => !disabled && onChange(!checked)} style={{
         width: 36, height: 20, borderRadius: 10, border: 'none', cursor: disabled ? 'default' : 'pointer',
-        background: checked ? BLUE : '#253349', position: 'relative', flexShrink: 0, transition: 'background 0.2s',
+        background: checked ? BLUE : 'var(--c-border)', position: 'relative', flexShrink: 0, transition: 'background 0.2s',
       }}>
         <div style={{
           width: 14, height: 14, borderRadius: '50%', background: '#fff',
@@ -519,7 +519,7 @@ function StatusBadge({ live }) {
       borderRadius: 8,
       background: live ? 'rgba(34,197,94,0.12)' : 'rgba(100,116,139,0.12)',
       border: `1px solid ${live ? 'rgba(34,197,94,0.3)' : 'rgba(100,116,139,0.25)'}`,
-      color: live ? GREEN : '#94a3b8',
+      color: live ? GREEN : 'var(--c-text-muted)',
       marginLeft: 8, verticalAlign: 'middle', flexShrink: 0,
     }}>{live ? '● LIVE' : '○ SAVED'}</span>
   )
@@ -969,7 +969,7 @@ function TabPreferences({ form, set, allLocations = [] }) {
               onClick={() => setConfirmCopy(true)}
               style={{
                 padding: '7px 16px', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: copyFrom ? 'pointer' : 'not-allowed',
-                background: copyFrom ? BLUE : '#253349', border: 'none', color: copyFrom ? '#fff' : MUTED,
+                background: copyFrom ? BLUE : 'var(--c-border)', border: 'none', color: copyFrom ? '#fff' : MUTED,
                 transition: 'all 0.15s',
               }}
             >
@@ -1043,24 +1043,24 @@ function TabMerchant({ form, set }) {
 
 // ── Bonus group editor ────────────────────────────────────────────────────────
 // Module-scope to avoid React reconciliation issues (never nest component defs)
-const BONUS_RANK_COLORS = { 1: '#f59e0b', 2: '#cbd0e0', 3: '#cd7c2f' }
+const BONUS_RANK_COLORS = { 1: '#f59e0b', 2: 'var(--c-text-sub)', 3: '#cd7c2f' }
 
 function BonusGroupEditor({ cfg, onChange }) {
   const set = (key, val) => onChange({ ...cfg, [key]: val })
-  const labelStyle = { color: '#94a3b8', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 4 }
+  const labelStyle = { color: 'var(--c-text-muted)', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 4 }
   const field = (label, key, color) => (
     <div>
       <label style={{ ...labelStyle, color }}>{label}</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span style={{ color: '#94a3b8', fontSize: 11 }}>$</span>
+        <span style={{ color: 'var(--c-text-muted)', fontSize: 11 }}>$</span>
         <input
           type="number" min="0" step="1"
           value={cfg[key] ?? 0}
           onChange={e => set(key, Math.max(0, parseFloat(e.target.value) || 0))}
           style={{
-            width: 72, padding: '5px 8px', background: '#030e1e',
-            border: '1px solid #253349', borderRadius: 4,
-            color: color || '#f1f5f9', fontSize: 12, outline: 'none',
+            width: 72, padding: '5px 8px', background: 'var(--c-bg)',
+            border: '1px solid var(--c-border)', borderRadius: 4,
+            color: color || 'var(--c-text)', fontSize: 12, outline: 'none',
           }}
         />
       </div>
@@ -1069,17 +1069,17 @@ function BonusGroupEditor({ cfg, onChange }) {
 
   return (
     <div style={{
-      background: 'rgba(0,0,0,0.25)', border: '1px solid #253349',
+      background: 'var(--c-bg-stripe)', border: '1px solid var(--c-border)',
       borderRadius: 6, padding: '10px 12px', marginTop: 6,
     }}>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         {field('1ST PLACE', 'top1', BONUS_RANK_COLORS[1])}
         {field('2ND PLACE', 'top2', BONUS_RANK_COLORS[2])}
         {field('3RD PLACE', 'top3', BONUS_RANK_COLORS[3])}
-        <div style={{ width: 1, background: '#253349', alignSelf: 'stretch', margin: '0 4px' }} />
-        {field('MIN. TO QUALIFY ($)', 'minimumToQualify', '#94a3b8')}
+        <div style={{ width: 1, background: 'var(--c-border)', alignSelf: 'stretch', margin: '0 4px' }} />
+        {field('MIN. TO QUALIFY ($)', 'minimumToQualify', 'var(--c-text-muted)')}
       </div>
-      <p style={{ color: '#415569', fontSize: 9, marginTop: 6 }}>
+      <p style={{ color: 'var(--c-text-dim)', fontSize: 9, marginTop: 6 }}>
         Minimum to qualify = employees below this value are excluded from the ranked pool (not placed 4th — simply ineligible).
       </p>
     </div>
@@ -1129,7 +1129,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
         transition: 'all 0.15s', boxShadow: active ? `0 0 10px ${BLUE}20` : 'none', minWidth: 0,
       }}>
         <div style={{ fontSize: 11, fontWeight: active ? 700 : 600, marginBottom: 1 }}>{m.label}</div>
-        <div style={{ fontSize: 9, color: active ? '#cbd0e0' : '#415569' }}>{m.desc}</div>
+        <div style={{ fontSize: 9, color: active ? 'var(--c-text-sub)' : 'var(--c-text-dim)' }}>{m.desc}</div>
       </button>
     )
   }
@@ -1199,7 +1199,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
             <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.6, marginBottom: 10 }}>
               🎖️ PLACEMENT BONUSES <StatusBadge live />
             </p>
-            <p style={{ color: '#415569', fontSize: 10, marginBottom: 12 }}>
+            <p style={{ color: 'var(--c-text-dim)', fontSize: 10, marginBottom: 12 }}>
               Award cash bonuses to top-ranked employees per day, per tab. Each group is independent.
             </p>
 
@@ -1222,7 +1222,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
             {/* Spare Bonus (only available when spare ranking is enabled) */}
             <div style={{ marginBottom: 10, opacity: enableSpare ? 1 : 0.4, pointerEvents: enableSpare ? 'auto' : 'none' }}>
               <Toggle
-                label={<>Spare Ranking Bonus{!enableSpare && <span style={{ color: '#415569', fontSize: 10, marginLeft: 8 }}>(enable Spare Ranking above)</span>}</>}
+                label={<>Spare Ranking Bonus{!enableSpare && <span style={{ color: 'var(--c-text-dim)', fontSize: 10, marginLeft: 8 }}>(enable Spare Ranking above)</span>}</>}
                 checked={!!bonusSpare.enabled}
                 onChange={v => set('competitionBonusSpare', { ...bonusSpare, enabled: v })}
                 description="Cash bonus for top Spare ranking (💰 Spare tab)"
@@ -1238,7 +1238,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
             {/* Hybrid Bonus (only available when hybrid ranking is enabled) */}
             <div style={{ marginBottom: 14, opacity: enableHybrid ? 1 : 0.4, pointerEvents: enableHybrid ? 'auto' : 'none' }}>
               <Toggle
-                label={<>Hybrid Ranking Bonus{!enableHybrid && <span style={{ color: '#415569', fontSize: 10, marginLeft: 8 }}>(enable Hybrid Ranking above)</span>}</>}
+                label={<>Hybrid Ranking Bonus{!enableHybrid && <span style={{ color: 'var(--c-text-dim)', fontSize: 10, marginLeft: 8 }}>(enable Hybrid Ranking above)</span>}</>}
                 checked={!!bonusHybrid.enabled}
                 onChange={v => set('competitionBonusHybrid', { ...bonusHybrid, enabled: v })}
                 description="Cash bonus for top Hybrid ranking (⚡ Hybrid tab)"
@@ -1272,7 +1272,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
                         transition: 'all 0.15s',
                       }}>
                         <div style={{ fontSize: 11, fontWeight: active ? 700 : 600, marginBottom: 2 }}>{l}</div>
-                        <div style={{ fontSize: 9, color: active ? '#cbd0e0' : '#415569' }}>{d}</div>
+                        <div style={{ fontSize: 9, color: active ? 'var(--c-text-sub)' : 'var(--c-text-dim)' }}>{d}</div>
                       </button>
                     )
                   })}
@@ -1290,9 +1290,9 @@ function CompetitionCard({ form, set, allLocations = [] }) {
               onClick={() => set('competitionMode', 'none')}
               style={{
                 padding: '8px 20px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                border: `1px solid ${mode === 'none' ? '#94a3b8' : BORDER}`,
+                border: `1px solid ${mode === 'none' ? 'var(--c-text-muted)' : BORDER}`,
                 background: mode === 'none' ? 'rgba(100,116,139,0.15)' : 'transparent',
-                color: mode === 'none' ? '#cbd0e0' : MUTED, transition: 'all 0.15s',
+                color: mode === 'none' ? 'var(--c-text-sub)' : MUTED, transition: 'all 0.15s',
               }}
             >
               None — competition screen shows "no competition configured"
@@ -1376,7 +1376,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
                 <div style={{ paddingBottom: 8 }}>
                   <p style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.6, marginBottom: 4 }}>
                     SELECT REGIONS
-                    <span style={{ color: '#415569', fontWeight: 400, marginLeft: 8, letterSpacing: 0 }}>○ saved — regional filter wired in future update</span>
+                    <span style={{ color: 'var(--c-text-dim)', fontWeight: 400, marginLeft: 8, letterSpacing: 0 }}>○ saved — regional filter wired in future update</span>
                   </p>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
                     {regions.map(r => {
@@ -1394,7 +1394,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
                       )
                     })}
                   </div>
-                  <p style={{ color: '#415569', fontSize: 10 }}>
+                  <p style={{ color: 'var(--c-text-dim)', fontSize: 10 }}>
                     Leave empty to include all regions. Selection is saved and will take effect once regional filtering is wired.
                   </p>
                 </div>
@@ -1549,8 +1549,8 @@ function RecipientRow({ user, channels = {}, onChannelToggle, onRemove }) {
 
       {/* Contact */}
       <div style={{ fontSize: 10, width: 148, flexShrink: 0, lineHeight: 1.6 }}>
-        <div style={{ color: user.phone ? '#cbd0e0' : '#2d3748' }}>📱 {user.phone || 'No phone'}</div>
-        <div style={{ color: user.email ? '#cbd0e0' : '#2d3748' }}>✉ {user.email ? (user.email.length > 18 ? user.email.slice(0,18)+'…' : user.email) : 'No email'}</div>
+        <div style={{ color: user.phone ? 'var(--c-text-sub)' : '#2d3748' }}>📱 {user.phone || 'No phone'}</div>
+        <div style={{ color: user.email ? 'var(--c-text-sub)' : '#2d3748' }}>✉ {user.email ? (user.email.length > 18 ? user.email.slice(0,18)+'…' : user.email) : 'No email'}</div>
       </div>
 
       {/* Channel toggles */}
@@ -1568,7 +1568,7 @@ function RecipientRow({ user, channels = {}, onChannelToggle, onRemove }) {
                 padding: '3px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600,
                 border: `1px solid ${active ? ch.color : BORDER}`,
                 background: active ? `${ch.color}1e` : 'transparent',
-                color: active ? ch.color : disabled ? '#253349' : MUTED,
+                color: active ? ch.color : disabled ? 'var(--c-border)' : MUTED,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 opacity: ch.future ? 0.45 : 1,
                 transition: 'all 0.12s',
@@ -1634,7 +1634,7 @@ function AlertBlock({ alertKey, label, desc, icon, isFuture, alertData, allUsers
           onClick={() => setEnabled(!data.enabled)}
           style={{
             width: 34, height: 19, borderRadius: 10, border: 'none',
-            background: data.enabled ? BLUE : '#253349',
+            background: data.enabled ? BLUE : 'var(--c-border)',
             position: 'relative', flexShrink: 0, cursor: 'pointer', transition: 'background 0.2s',
           }}
         >
@@ -1718,7 +1718,7 @@ function AlertBlock({ alertKey, label, desc, icon, isFuture, alertData, allUsers
                   disabled={!selectedId}
                   style={{
                     padding: '5px 14px', borderRadius: 5, border: 'none', fontSize: 11, fontWeight: 700,
-                    background: selectedId ? BLUE : '#253349',
+                    background: selectedId ? BLUE : 'var(--c-border)',
                     color: selectedId ? '#fff' : MUTED,
                     cursor: selectedId ? 'pointer' : 'not-allowed',
                   }}
@@ -1847,7 +1847,7 @@ function TabAlerts({ form, set, allLocations = [] }) {
               onClick={() => setConfirmCopy(true)}
               style={{
                 padding: '7px 16px', borderRadius: 4, fontSize: 12, fontWeight: 700,
-                background: copyFrom ? BLUE : '#253349', border: 'none',
+                background: copyFrom ? BLUE : 'var(--c-border)', border: 'none',
                 color: copyFrom ? '#fff' : MUTED,
                 cursor: copyFrom ? 'pointer' : 'not-allowed', transition: 'all 0.15s',
               }}
@@ -2006,7 +2006,7 @@ function LocationList({ locations, onEdit, onAdd }) {
             <button key={id} onClick={() => setStatusFilter(id)} style={{
               padding: '4px 12px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
               background: statusFilter === id ? `${color}18` : 'transparent',
-              color: statusFilter === id ? color : '#94a3b8',
+              color: statusFilter === id ? color : 'var(--c-text-muted)',
               outline: statusFilter === id ? `1px solid ${color}40` : 'none',
             }}>
               {label} <span style={{ opacity: 0.7 }}>{counts[id]}</span>
@@ -2034,17 +2034,17 @@ function LocationList({ locations, onEdit, onAdd }) {
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={10} style={{ padding: 48, textAlign: 'center', color: '#415569' }}>No locations found</td></tr>
+              <tr><td colSpan={10} style={{ padding: 48, textAlign: 'center', color: 'var(--c-text-dim)' }}>No locations found</td></tr>
             )}
             {filtered.map((loc, i) => {
               const isActive = loc.active !== false
               return (
-                <tr key={loc.id} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)', cursor: 'pointer', transition: 'background 0.1s' }}
+                <tr key={loc.id} style={{ background: i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)', cursor: 'pointer', transition: 'background 0.1s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(231,76,60,0.04)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(15,23,42,0.4)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)' }}
                   onClick={() => onEdit(loc)}
                 >
-                  <td style={{ ...tdS, textAlign: 'center', color: '#415569', fontSize: 10 }}>{i + 1}</td>
+                  <td style={{ ...tdS, textAlign: 'center', color: 'var(--c-text-dim)', fontSize: 10 }}>{i + 1}</td>
                   <td style={{ ...tdS }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 14 }}>📍</span>
@@ -2053,13 +2053,13 @@ function LocationList({ locations, onEdit, onAdd }) {
                   </td>
                   <td style={{ ...tdS, maxWidth: 180 }}>
                     <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {loc.address || <span style={{ color: '#415569' }}>—</span>}
+                      {loc.address || <span style={{ color: 'var(--c-text-dim)' }}>—</span>}
                     </span>
                   </td>
-                  <td style={tdS}>{loc.phone || <span style={{ color: '#415569' }}>—</span>}</td>
-                  <td style={{ ...tdS, fontFamily: 'monospace', fontSize: 10 }}>{loc.merchantNumber || <span style={{ color: '#415569' }}>—</span>}</td>
-                  <td style={tdS}>{loc.manager || <span style={{ color: '#415569' }}>—</span>}</td>
-                  <td style={tdS}>{loc.region || <span style={{ color: '#415569' }}>—</span>}</td>
+                  <td style={tdS}>{loc.phone || <span style={{ color: 'var(--c-text-dim)' }}>—</span>}</td>
+                  <td style={{ ...tdS, fontFamily: 'monospace', fontSize: 10 }}>{loc.merchantNumber || <span style={{ color: 'var(--c-text-dim)' }}>—</span>}</td>
+                  <td style={tdS}>{loc.manager || <span style={{ color: 'var(--c-text-dim)' }}>—</span>}</td>
+                  <td style={tdS}>{loc.region || <span style={{ color: 'var(--c-text-dim)' }}>—</span>}</td>
                   <td style={tdS}>
                     <span style={{
                       padding: '2px 8px', borderRadius: 10, fontSize: 10, fontWeight: 700,
@@ -2068,7 +2068,7 @@ function LocationList({ locations, onEdit, onAdd }) {
                       color: isActive ? GREEN : RED,
                     }}>{isActive ? 'Active' : 'Inactive'}</span>
                   </td>
-                  <td style={{ ...tdS, color: MUTED, fontSize: 11 }}>{loc.priceList || <span style={{ color: '#415569' }}>—</span>}</td>
+                  <td style={{ ...tdS, color: MUTED, fontSize: 11 }}>{loc.priceList || <span style={{ color: 'var(--c-text-dim)' }}>—</span>}</td>
                   <td style={tdS} onClick={e => { e.stopPropagation(); onEdit(loc) }}>
                     <button style={{
                       padding: '4px 12px', background: 'transparent', border: `1px solid ${LOC_COLOR}`,
