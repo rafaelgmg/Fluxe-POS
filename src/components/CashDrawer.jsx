@@ -12,18 +12,18 @@ import { localId } from '../domain/utils/ids'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin } from '../services/supabaseAuth'
 
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#3a4f6a'
+// ── Design tokens — resolved at runtime via CSS custom properties ──────────────
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
 const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const AMBER  = '#f59e0b'
 const RED    = '#ef4444'
-const MUTED  = '#b8c8da'
-const DIM    = '#cbd0e0'
-const TEXT   = '#f1f5f9'
+const MUTED  = 'var(--c-text-muted)'
+const DIM    = 'var(--c-text-sub)'
+const TEXT   = 'var(--c-text)'
 
 // ── Storage ────────────────────────────────────────────────────────────────────
 const DRAWER_KEY = 'fluxe-cash-drawer-v1'
@@ -179,15 +179,15 @@ function PinGate({ onUnlock, onClose }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.9)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000, backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: `linear-gradient(160deg,#0d1829 0%,${PANEL} 100%)`,
+        background: PANEL,
         border: `1px solid ${BORDER}`, borderRadius: 10,
         width: 360, padding: 28,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+        boxShadow: 'var(--c-shadow-card)',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
@@ -256,7 +256,7 @@ function PinGate({ onUnlock, onClose }) {
                 fontWeight: 600, cursor: !k ? 'default' : 'pointer', opacity: !k ? 0 : 1,
                 transition: 'all 0.1s',
               }}
-              onMouseEnter={e => { if (k) { e.currentTarget.style.background = '#1a3050'; e.currentTarget.style.borderColor = '#4a6080' } }}
+              onMouseEnter={e => { if (k) { e.currentTarget.style.background = 'var(--c-bg-hover)'; e.currentTarget.style.borderColor = 'var(--c-border-md)' } }}
               onMouseLeave={e => { if (k) { e.currentTarget.style.background = CARD; e.currentTarget.style.borderColor = BORDER } }}
             >{k}</button>
           ))}
@@ -302,14 +302,14 @@ function MoneyModal({ type, employee, onDone, onClose }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.9)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1100, backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: `linear-gradient(160deg,#0d1829 0%,${PANEL} 100%)`,
+        background: PANEL,
         border: `1px solid ${color}40`, borderRadius: 10, width: 400, padding: 28,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+        boxShadow: 'var(--c-shadow-card)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
           <span style={{ fontSize: 24 }}>{isAdd ? '➕' : '➖'}</span>
@@ -430,15 +430,15 @@ function CashCountModal({ employee, onDone, onClose }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.9)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1100, backdropFilter: 'blur(2px)', padding: 20,
     }}>
       <div style={{
-        background: `linear-gradient(160deg,#0d1829 0%,${PANEL} 100%)`,
+        background: PANEL,
         border: `1px solid ${BORDER}`, borderRadius: 10, width: 480,
         maxHeight: '88vh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+        boxShadow: 'var(--c-shadow-card)',
       }}>
         {/* Header */}
         <div style={{ padding: '18px 24px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
@@ -594,14 +594,14 @@ export default function CashDrawer({ onClose, location }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.9)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000, backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: `linear-gradient(160deg,#0d1829 0%,${PANEL} 100%)`,
+        background: PANEL,
         border: `1px solid ${BORDER}`, borderRadius: 10, width: 420,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.7)', overflow: 'hidden',
+        boxShadow: 'var(--c-shadow-card)', overflow: 'hidden',
       }}>
 
         {/* Header */}

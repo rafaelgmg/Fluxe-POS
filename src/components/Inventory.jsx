@@ -9,6 +9,14 @@ import { writeStockAdjustment, sendTransfer, receiveTransfer } from '../services
 const LOCATIONS = LOCATIONS_CFG.map(l => l.name)
 const PRIMARY   = COLORS.primary
 
+// ── Design tokens for PIN gate — resolved at runtime ─────────────────────────
+const _PANEL  = 'var(--c-bg-panel)'
+const _CARD   = 'var(--c-bg-card)'
+const _BORDER = 'var(--c-border)'
+const _BORMD  = 'var(--c-border-md)'
+const _MUTED  = 'var(--c-text-muted)'
+const _TEXT   = 'var(--c-text)'
+
 const LOSS_REASONS = ['Damaged', 'Lost', 'Tester', 'Other']
 
 // ── PIN Gate ──────────────────────────────────────────────────────────────────
@@ -35,28 +43,28 @@ function InventoryPinGate({ onUnlock, onClose }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,2,15,0.88)',
+      position: 'fixed', inset: 0, background: 'var(--c-overlay)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
       backdropFilter: 'blur(2px)',
     }}>
       <div style={{
-        background: '#0d1526', border: '1px solid #253349', borderRadius: 10,
+        background: _PANEL, border: `1px solid ${_BORDER}`, borderRadius: 10,
         width: 380, padding: 28, textAlign: 'center',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+        boxShadow: 'var(--c-shadow-card)',
       }}>
         <div style={{ fontSize: 26, marginBottom: 8 }}>📦</div>
-        <h2 style={{ color: '#f1f5f9', fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
+        <h2 style={{ color: _TEXT, fontSize: 17, fontWeight: 700, marginBottom: 4 }}>
           Inventory Management
         </h2>
-        <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 20 }}>
+        <p style={{ color: _MUTED, fontSize: 12, marginBottom: 20 }}>
           Sign in to access inventory
         </p>
 
         <select value={employee} onChange={e => { setEmployee(e.target.value); setPin('') }}
           style={{
-            width: '100%', padding: '9px 12px', background: '#111d30',
-            border: '1px solid #253349', borderRadius: 6,
-            color: '#f1f5f9', fontSize: 13, marginBottom: 16, cursor: 'pointer', outline: 'none',
+            width: '100%', padding: '9px 12px', background: _CARD,
+            border: `1px solid ${_BORDER}`, borderRadius: 6,
+            color: _TEXT, fontSize: 13, marginBottom: 16, cursor: 'pointer', outline: 'none',
           }}>
           {employees.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
         </select>
@@ -69,8 +77,8 @@ function InventoryPinGate({ onUnlock, onClose }) {
           {[0,1,2,3].map(i => (
             <div key={i} style={{
               width: 13, height: 13, borderRadius: '50%',
-              background: i < pin.length ? (shake ? '#ef4444' : PRIMARY) : '#253349',
-              border: `2px solid ${i < pin.length ? (shake ? '#ef4444' : PRIMARY) : '#263354'}`,
+              background: i < pin.length ? (shake ? '#ef4444' : PRIMARY) : _BORDER,
+              border: `2px solid ${i < pin.length ? (shake ? '#ef4444' : PRIMARY) : _BORMD}`,
               transition: 'background 0.12s',
               boxShadow: i < pin.length && !shake ? `0 0 6px ${PRIMARY}` : 'none',
             }} />
@@ -89,9 +97,9 @@ function InventoryPinGate({ onUnlock, onClose }) {
               }}
               disabled={!k}
               style={{
-                padding: '13px 0', background: !k ? 'transparent' : '#111d30',
-                border: !k ? 'none' : '1px solid #253349', borderRadius: 7,
-                color: '#f1f5f9', fontSize: k === '⌫' ? 15 : 18,
+                padding: '13px 0', background: !k ? 'transparent' : _CARD,
+                border: !k ? 'none' : `1px solid ${_BORDER}`, borderRadius: 7,
+                color: _TEXT, fontSize: k === '⌫' ? 15 : 18,
                 fontWeight: 600, cursor: !k ? 'default' : 'pointer', opacity: !k ? 0 : 1,
                 transition: 'background 0.1s',
               }}
@@ -100,7 +108,7 @@ function InventoryPinGate({ onUnlock, onClose }) {
         </div>
         <button onClick={onClose} style={{
           width: '100%', padding: '10px', background: 'transparent',
-          border: '1px solid #253349', borderRadius: 6, color: '#94a3b8', fontSize: 13, cursor: 'pointer',
+          border: `1px solid ${_BORDER}`, borderRadius: 6, color: _MUTED, fontSize: 13, cursor: 'pointer',
           transition: 'all 0.15s',
         }}>Cancel</button>
       </div>
