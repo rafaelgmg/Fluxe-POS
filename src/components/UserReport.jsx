@@ -11,7 +11,8 @@ import { loadUsers } from '../utils/usersStorage'
 import { calcDayCompetitionBonus } from '../utils/competitionBonusEngine'
 import { localDateKey } from '../utils/dateUtils'
 import { fetchClockRecordsByEmployee } from '../services/supabaseRead'
-import { loadLocationConfig } from '../utils/locationConfig'
+import { loadLocationConfig, resolveSpareRateForDay } from '../utils/locationConfig'
+import { sumItemSpare } from '../utils/spareUtils'
 import { verifyEmployeePin } from '../services/supabaseAuth'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -980,12 +981,22 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
   // ── Product Commission lines — one row per item sold ──────────────────────────
   const productCommissionLines = useMemo(() => {
     const categoryMap = buildCategoryMap()
+
+    // Build day-level total spare map so resolveSpareRateForDay gets the same
+    // context that calcPeriodCommission uses for the Summary tab.
+    const daySpares = {}
+    for (const sale of validSales) {
+      const key = localDateStr(new Date(sale.timestamp))
+      daySpares[key] = (daySpares[key] || 0) + sumItemSpare(sale.items || [])
+    }
+
     const lines = []
     for (const sale of validSales) {
-      const dayKey   = localDateStr(new Date(sale.timestamp))
-      const tierRate = dayTierMap[dayKey]?.rate ?? 0
-      const tierLabel = dayTierMap[dayKey]?.label ?? 'Below $600'
-      const { breakdown } = calcInvoiceCommission(sale, categoryMap, tierRate)
+      const dayKey      = localDateStr(new Date(sale.timestamp))
+      const tierRate    = dayTierMap[dayKey]?.rate ?? 0
+      const tierLabel   = dayTierMap[dayKey]?.label ?? 'Below $600'
+      const spareRatePct = resolveSpareRateForDay(sale.location, daySpares[dayKey] ?? 0)
+      const { breakdown } = calcInvoiceCommission(sale, categoryMap, tierRate, spareRatePct)
       ;(sale.items || []).forEach((raw, idx) => {
         const bd = breakdown[idx] || {}
         lines.push({

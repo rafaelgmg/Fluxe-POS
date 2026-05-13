@@ -191,6 +191,7 @@ export function calcInvoiceCommission(invoice, categoryMap, tierRate = 0, spareR
   // summed first so negatives offset positives before the formula is applied.
   // This prevents inflated commission when some items are sold below minPrice.
   const ncRaws = rawItems.filter(raw => {
+    if ((raw.qty ?? 1) <= 0) return false  // exchange return lines earn no commission
     const cat = categoryMap[(raw.product?.category || raw.category || '')]
     return cat?.commissionType === 'tier_nc'
   })
