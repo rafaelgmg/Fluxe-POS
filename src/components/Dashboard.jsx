@@ -7,13 +7,13 @@ import {
   whoIsAtWork,
 } from '../services/dashboardService'
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const BG     = '#030e1e'
-const PANEL  = '#0d1526'
-const CARD   = '#111d30'
-const BORDER = '#253349'
-const MUTED  = '#94a3b8'
-const TEXT   = '#f1f5f9'
+// ── Design tokens — resolved at runtime via CSS custom properties ─────────────
+const BG     = 'var(--c-bg)'
+const PANEL  = 'var(--c-bg-panel)'
+const CARD   = 'var(--c-bg-card)'
+const BORDER = 'var(--c-border)'
+const MUTED  = 'var(--c-text-muted)'
+const TEXT   = 'var(--c-text)'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -73,7 +73,7 @@ function BreakdownTable({ rows, maxRows = 8, showSpare = false }) {
       {top.length === 0 && <p style={{ color: MUTED, fontSize: 12 }}>No data</p>}
       {top.map((r, i) => (
         <div key={r.label + i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, color: '#415569', width: 16, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+          <span style={{ fontSize: 11, color: 'var(--c-text-dim)', width: 16, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
               <span style={{ fontSize: 12, color: TEXT, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -83,7 +83,7 @@ function BreakdownTable({ rows, maxRows = 8, showSpare = false }) {
                 {fmt(r.total)}
               </span>
             </div>
-            <div style={{ height: 3, background: '#253349', borderRadius: 2 }}>
+            <div style={{ height: 3, background: BORDER, borderRadius: 2 }}>
               <div style={{
                 height: '100%', borderRadius: 2, background: '#3b82f6',
                 width: `${Math.max(2, (r.total / maxVal) * 100)}%`,
@@ -193,7 +193,7 @@ export default function Dashboard({ onClose, sales = [] }) {
       <div style={{
         background: PANEL, borderBottom: `1px solid ${BORDER}`,
         padding: '0 20px', height: 52, display: 'flex', alignItems: 'center', gap: 14,
-        flexShrink: 0, boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
+        flexShrink: 0, boxShadow: 'var(--c-shadow-bar)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 18 }}>📈</span>
@@ -327,8 +327,8 @@ export default function Dashboard({ onClose, sales = [] }) {
                 {recentSales.map(s => {
                   const tax = (s.total || 0) - (s.subtotal || 0)
                   return (
-                    <tr key={s.number} style={{ borderBottom: `1px solid rgba(30,41,59,0.5)` }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.04)' }}
+                    <tr key={s.number} style={{ borderBottom: '1px solid var(--c-border-row)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-bg-hover)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                     >
                       <td style={{ padding: '7px 10px', color: '#60a5fa', fontWeight: 700 }}>#{s.number}</td>
@@ -380,7 +380,7 @@ export default function Dashboard({ onClose, sales = [] }) {
               </div>
             )
           }
-          <p style={{ fontSize: 10, color: '#415569', marginTop: 10 }}>
+          <p style={{ fontSize: 10, color: 'var(--c-text-dim)', marginTop: 10 }}>
             ℹ️ Data refreshed from Supabase — click Refresh to update.
           </p>
         </Panel>
