@@ -16,6 +16,7 @@
 import { useState, useMemo } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { loadUsers } from '../utils/usersStorage'
+import { writeLocationConfigToSupabase } from '../services/supabaseWrite'
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 const LOC_KEY = 'fluxe-locations-v1'
@@ -2097,6 +2098,7 @@ export default function LocationSettings({ onBack }) {
         ? prev.map(l => l.id === updated.id ? updated : l)
         : [...prev, updated]
       saveLocations(next)
+      writeLocationConfigToSupabase(updated)
       return next
     })
     setEditing(null)

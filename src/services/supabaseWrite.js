@@ -157,6 +157,52 @@ export async function upsertEODNotes({ locationName, date, notes, updatedBy = nu
   }
 }
 
+// ── Location config upsert ───────────────────────────────────────────────────
+
+/**
+ * Upsert a location config to Supabase.
+ * Stores the full config JSONB so any device can pull it on boot.
+ * Fire-and-forget — localStorage is updated first by the caller.
+ *
+ * @param {object} loc  Full location config object (must have .id and .name)
+ * @returns {Promise<boolean>} true on success, false on failure
+ */
+export async function writeLocationConfigToSupabase(loc) {
+  if (!isSupabaseConfigured()) return false
+  try {
+    await awaitOrgSession()
+    const orgId = await getOrgId()
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/location_configs?on_conflict=organization_id,location_id`,
+      {
+        method: 'POST',
+        headers: {
+          apikey:         SUPABASE_KEY,
+          Authorization:  `Bearer ${authBearer()}`,
+          'Content-Type': 'application/json',
+          Prefer:         'resolution=merge-duplicates,return=minimal',
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          location_id:     loc.id,
+          location_name:   loc.name,
+          config:          loc,
+          updated_at:      loc.updatedAt || new Date().toISOString(),
+        }),
+      }
+    )
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      console.warn('[Fluxe] writeLocationConfigToSupabase failed:', res.status, text)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.warn('[Fluxe] writeLocationConfigToSupabase error:', err.message)
+    return false
+  }
+}
+
 // ── Status mapping ────────────────────────────────────────────────────────────
 
 const STATUS_MAP = {

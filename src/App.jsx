@@ -2,7 +2,7 @@
 import { useTheme } from './theme/ThemeContext'
 import { isDemoMode, seedDemoData, clearDemoData, DEMO_POS_SESSION } from './demo/demoSeed'
 import { loadActiveCategoryNames, ensureCategoriesSeeded, buildCategoryMap } from './utils/categoriesStorage'
-import { getTaxRate, getTaxRateById, loadLocationConfig, loadLocationConfigById, resolveSpareRateForDay, resolveSpareRateForDayById } from './utils/locationConfig'
+import { getTaxRate, getTaxRateById, loadLocationConfig, loadLocationConfigById, resolveSpareRateForDay, resolveSpareRateForDayById, mergeLocationConfigsFromCloud } from './utils/locationConfig'
 import { localId } from './domain/utils/ids'
 import { loadFrozenSales, saveFrozenSales } from './utils/frozenSalesStorage'
 import { appendLockEntry, resolveLastLockEntry } from './utils/lockLogStorage'
@@ -11,7 +11,7 @@ import { loadCommissionTiers, loadSpareRate } from './utils/commissionTiersStora
 import { localDateKey } from './utils/dateUtils'
 import { printReceipt } from './utils/printReceipt'
 import { awaitOrgSession } from './services/supabaseAuth'
-import { getNextInvoiceNumber } from './services/supabaseRead'
+import { getNextInvoiceNumber, fetchLocationConfigs } from './services/supabaseRead'
 import { loadUsersAsync } from './utils/usersStorage'
 import { useCRM } from './hooks/useCRM'
 import { useSales, nextInvoiceNumber } from './hooks/useSales'
@@ -152,6 +152,14 @@ export default function App() {
   // Boot-time user sync: fetch from Supabase, merge with local PINs, save to localStorage.
   // Runs once on mount — all subsequent loadActiveEmployees() calls get fresh data.
   useEffect(() => { loadUsersAsync().catch(() => {}) }, [])
+
+  // Boot-time location config sync: pull latest settings from Supabase and merge into
+  // localStorage so all loadLocationConfig() callers get cross-device fresh data.
+  useEffect(() => {
+    fetchLocationConfigs()
+      .then(rows => { if (rows) mergeLocationConfigsFromCloud(rows) })
+      .catch(() => {})
+  }, [])
 
   // Tax rate — ID-first (stable), falls back to name lookup for legacy sessions without locationId
   const taxRate = posSession?.locationId

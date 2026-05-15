@@ -550,6 +550,27 @@ export async function fetchClockRecordsByDate({ locationName, date = new Date() 
 }
 
 /**
+ * Fetch all location configs for the org.
+ * Returns an array of rows { location_id, location_name, config, updated_at }
+ * or null on failure.
+ *
+ * @returns {Promise<object[] | null>}
+ */
+export async function fetchLocationConfigs() {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId = await getOrgId()
+    const rows  = await sbFetch(
+      `/location_configs?organization_id=eq.${orgId}&order=location_id.asc`
+    )
+    return rows || []
+  } catch (err) {
+    console.warn('[Fluxe] fetchLocationConfigs failed:', err.message)
+    return null
+  }
+}
+
+/**
  * Fetch EOD notes for a specific location and date.
  * Returns the notes string, or null if none saved yet.
  *

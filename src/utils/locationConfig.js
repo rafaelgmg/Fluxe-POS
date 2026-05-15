@@ -145,6 +145,38 @@ export function resolveSpareRateForDay(locationName, daySpareTotal = 0) {
   return loadSpareRateForLocation(locationName)
 }
 
+/**
+ * Merge location configs fetched from Supabase into localStorage.
+ * Called on app boot after fetchLocationConfigs() resolves.
+ * Cloud wins when its updated_at >= local updatedAt (ensures PC saves propagate to kiosks).
+ *
+ * @param {object[]} rows  Array of { location_id, config, updated_at } from Supabase
+ */
+export function mergeLocationConfigsFromCloud(rows) {
+  if (!Array.isArray(rows) || !rows.length) return
+  try {
+    const raw   = localStorage.getItem(LOC_KEY)
+    const local = raw ? JSON.parse(raw) : []
+    let changed = false
+    for (const row of rows) {
+      const cloudCfg = row.config
+      if (!cloudCfg?.id) continue
+      const idx         = local.findIndex(l => l.id === cloudCfg.id)
+      const localUpdated = idx >= 0 ? (local[idx].updatedAt || '') : ''
+      const cloudUpdated = row.updated_at || cloudCfg.updatedAt || ''
+      if (cloudUpdated >= localUpdated) {
+        if (idx >= 0) {
+          local[idx] = cloudCfg
+        } else {
+          local.push(cloudCfg)
+        }
+        changed = true
+      }
+    }
+    if (changed) localStorage.setItem(LOC_KEY, JSON.stringify(local))
+  } catch {}
+}
+
 // ── ID-first variants (preferred for new code with access to locationId) ──────
 
 /**
