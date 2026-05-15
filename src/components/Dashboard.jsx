@@ -189,7 +189,7 @@ export default function Dashboard({ onClose, sales = [] }) {
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      {/* ── Header row 1: title + date presets + controls ───────────────────── */}
       <div style={{
         background: PANEL, borderBottom: `1px solid ${BORDER}`,
         padding: '0 20px', height: 52, display: 'flex', alignItems: 'center', gap: 14,
@@ -225,16 +225,6 @@ export default function Dashboard({ onClose, sales = [] }) {
           </div>
         )}
 
-        {/* Location filter */}
-        <select value={locationId} onChange={e => setLocationId(e.target.value)} style={{
-          padding: '5px 10px', background: CARD, border: `1px solid ${BORDER}`,
-          borderRadius: 6, color: TEXT, fontSize: 12, cursor: 'pointer', outline: 'none',
-        }}>
-          {locationOptions.map(l => (
-            <option key={l.id} value={l.id}>{l.name}</option>
-          ))}
-        </select>
-
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ color: MUTED, fontSize: 11 }}>
             {filtered.length} sale{filtered.length !== 1 ? 's' : ''}
@@ -258,6 +248,25 @@ export default function Dashboard({ onClose, sales = [] }) {
             onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = MUTED }}
           >✕ Close</button>
         </div>
+      </div>
+
+      {/* ── Header row 2: location filter ───────────────────────────────────── */}
+      <div style={{
+        background: PANEL, borderBottom: `1px solid ${BORDER}`,
+        padding: '0 20px', height: 40, display: 'flex', alignItems: 'center', gap: 6,
+        flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 11, color: MUTED, fontWeight: 700, letterSpacing: 0.4, marginRight: 6 }}>LOCATION</span>
+        {locationOptions.map(l => (
+          <button key={l.id} onClick={() => setLocationId(l.id)} style={{
+            padding: '4px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            borderRadius: 6, border: '1px solid',
+            borderColor: locationId === l.id ? '#f59e0b' : BORDER,
+            background:  locationId === l.id ? 'rgba(245,158,11,0.12)' : 'transparent',
+            color:       locationId === l.id ? '#fbbf24' : MUTED,
+            transition:  'all 0.15s',
+          }}>{l.name}</button>
+        ))}
       </div>
 
       {/* ── Scrollable body ──────────────────────────────────────────────────── */}

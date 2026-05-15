@@ -90,7 +90,13 @@ export function byEmployee(sales) {
     const k = s.employee || 'Unknown'
     if (!map[k]) map[k] = { label: k, count: 0, total: 0, spare: 0 }
     map[k].count++
-    map[k].total += s.subtotal || 0
+    // Compute pre-tax subtotal from items (salePrice × qty) — most reliable source.
+    // Falls back to s.subtotal for sales loaded without item details.
+    const itemsSum = (s.items || []).reduce(
+      (acc, it) => acc + (it.subtotal != null ? it.subtotal : (it.salePrice || 0) * (it.qty || 0)),
+      0
+    )
+    map[k].total += itemsSum > 0 ? itemsSum : (s.subtotal || 0)
     map[k].spare += s.totalSpare || 0
   }
   return Object.values(map).sort((a, b) => b.total - a.total)
