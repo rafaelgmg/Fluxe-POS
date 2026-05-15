@@ -7,10 +7,11 @@ const RED   = '#ef4444'
 
 export default function EditItemModal({ product, onAdd, onExchange, onCancel }) {
   const [priceInput,    setPriceInput]    = useState(String(product._cartPrice ?? product.systemPrice))
-  const [qty,           setQty]           = useState('1')
+  const [qty,           setQty]           = useState(String(product._cartQty ?? 1))
   const [activeField,   setActiveField]   = useState('price')
   const [error,         setError]         = useState('')
   const [priceTouched,  setPriceTouched]  = useState(false)
+  const [qtyTouched,    setQtyTouched]    = useState(false)
   const [showDiscount,  setShowDiscount]  = useState(false)
   const [discType,      setDiscType]      = useState('pct')
   const [discInput,     setDiscInput]     = useState('0')
@@ -40,7 +41,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [priceInput, qty, activeField, priceTouched, showDiscount, showExchange])
+  }, [priceInput, qty, activeField, priceTouched, qtyTouched, showDiscount, showExchange])
 
   const price    = parseFloat(priceInput) || 0
   const qtyNum   = parseInt(qty) || 1
@@ -60,9 +61,14 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel }) 
       if (priceInput.split('.')[1]?.length >= 2) return
       setPriceInput(prev => prev + val)
     } else {
-      if (val === 'Clear') { setQty(''); return }
+      if (val === 'Clear') { setQty(''); setQtyTouched(false); return }
       if (val === '.') return
-      const next = qty === '' ? val : qty + val
+      if (!qtyTouched) {
+        setQtyTouched(true)
+        setQty(val)
+        return
+      }
+      const next = qty + val
       if (parseInt(next) > 99) return
       setQty(next)
     }

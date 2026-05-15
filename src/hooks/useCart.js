@@ -68,7 +68,7 @@ export function useCart({ products, location }) {
     const item = cart[idx]
     if (!item || item.exchangeType) return  // exchange lines are not editable
     setEditingCartIdx(idx)
-    setPendingProduct({ ...item.product, _cartPrice: item.salePrice })
+    setPendingProduct({ ...item.product, _cartPrice: item.salePrice, _cartQty: item.qty })
     setShowEdit(true)
   }, [cart])
 

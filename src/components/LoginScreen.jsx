@@ -500,7 +500,7 @@ export default function LoginScreen({ onLogin, onBack }) {
                   checked={onlyThis}
                   onChange={e => {
                     setOnlyThis(e.target.checked)
-                    if (!e.target.checked) { setLocationRestored(false); clearRememberedLocation() }
+                    if (!e.target.checked) setLocationRestored(false)
                   }}
                   style={{ accentColor: BLUE, cursor: 'pointer', width: 14, height: 14 }}
                 />
