@@ -141,17 +141,26 @@ export function computeMetrics(sales) {
 
   for (const s of sales) {
     const amt = s.total || 0
+    // Pre-tax subtotal: sum from items (most reliable); fall back to s.subtotal
+    const itemsSum = (s.items || []).reduce(
+      (acc, it) => acc + (it.subtotal != null ? it.subtotal : (it.salePrice || 0) * (it.qty || 0)),
+      0
+    )
+    const sub = itemsSum > 0 ? itemsSum : (s.subtotal || 0)
+
     total    += amt
     totalTax += s.tax || 0
 
     const emp = s.employee || s.employeeName || (s.employees?.[0]?.name) || 'Unknown'
-    if (!empMap[emp]) empMap[emp] = { name: emp, total: 0, count: 0 }
-    empMap[emp].total += amt
+    if (!empMap[emp]) empMap[emp] = { name: emp, total: 0, subtotal: 0, count: 0 }
+    empMap[emp].total    += amt
+    empMap[emp].subtotal += sub
     empMap[emp].count++
 
     const loc = s.location || s.locationName || 'Unknown'
-    if (!locMap[loc]) locMap[loc] = { name: loc, total: 0, count: 0 }
-    locMap[loc].total += amt
+    if (!locMap[loc]) locMap[loc] = { name: loc, total: 0, subtotal: 0, count: 0 }
+    locMap[loc].total    += amt
+    locMap[loc].subtotal += sub
     locMap[loc].count++
 
     const payments = Array.isArray(s.payments) && s.payments.length > 0

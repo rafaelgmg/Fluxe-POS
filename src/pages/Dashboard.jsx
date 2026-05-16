@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { fetchDashboardData } from '../services/supabaseDashboard'
+import { fetchDashboardData, computeMetrics } from '../services/supabaseDashboard'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || '1234'
@@ -537,6 +537,32 @@ function LeadsModal({ leads, onClose }) {
   )
 }
 
+// ── Location Filter Bar ───────────────────────────────────────────────────────
+function LocationFilterBar({ locations, selected, onChange }) {
+  if (!locations.length) return null
+  return (
+    <div style={{
+      background: C.card, borderBottom: `1px solid ${C.border}`,
+      display: 'flex', gap: 6, padding: '8px 16px',
+      overflowX: 'auto', scrollbarWidth: 'none', flexShrink: 0,
+    }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 0.6, alignSelf: 'center', flexShrink: 0 }}>LOCATION</span>
+      {['all', ...locations].map(loc => {
+        const active = selected === loc
+        return (
+          <button key={loc} onClick={() => onChange(loc)} style={{
+            flexShrink: 0, padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+            background: active ? C.amber : C.bg,
+            color:      active ? '#fff'   : C.muted,
+            border:     `1.5px solid ${active ? C.amber : C.border}`,
+            cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+          }}>{loc === 'all' ? 'All' : loc}</button>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── TODAY tab ─────────────────────────────────────────────────────────────────
 function TodayTab({ current, comparison, leads, onLeadsClick }) {
   if (!current) return <Skeleton />
@@ -718,7 +744,7 @@ function FeedTab({ feed, onSelect }) {
 // ── SELLERS tab ───────────────────────────────────────────────────────────────
 function SellersTab({ current }) {
   if (!current) return <Skeleton />
-  const { byEmployee, total } = current
+  const { byEmployee, subtotal: totalSub } = current
   if (!byEmployee.length) return <Empty message="No sales data" icon="👥" />
 
   const medals = ['🥇', '🥈', '🥉']
@@ -726,7 +752,8 @@ function SellersTab({ current }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {byEmployee.map((emp, i) => {
-        const pct = total > 0 ? emp.total / total * 100 : 0
+        const empSub = emp.subtotal || 0
+        const pct    = totalSub > 0 ? empSub / totalSub * 100 : 0
         return (
           <div key={emp.name} style={{
             background: C.card, borderRadius: 14, padding: '16px 18px',
@@ -742,7 +769,8 @@ function SellersTab({ current }) {
                 <div style={{ fontSize: 12, color: C.muted }}>{emp.count} transactions · {pct.toFixed(0)}%</div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: i === 0 ? C.amber : C.text }}>{fmtK(emp.total)}</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: i === 0 ? C.amber : C.text }}>{fmtK(empSub)}</div>
+                <div style={{ fontSize: 10, color: C.dim }}>subtotal</div>
               </div>
             </div>
             <div style={{ height: 6, background: C.border, borderRadius: 3, overflow: 'hidden' }}>
@@ -905,18 +933,34 @@ const TABS = [
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [authed,       setAuthed]       = useState(isAuthed)
-  const [tab,          setTab]          = useState('today')
-  const [data,         setData]         = useState(null)
-  const [loading,      setLoading]      = useState(false)
-  const [fetchedAt,    setFetchedAt]    = useState(null)
-  const [selectedSale, setSelectedSale] = useState(null)
-  const [showLeads,    setShowLeads]    = useState(false)
-  const [, setTick]                     = useState(0)
+  const [authed,         setAuthed]         = useState(isAuthed)
+  const [tab,            setTab]            = useState('today')
+  const [data,           setData]           = useState(null)
+  const [loading,        setLoading]        = useState(false)
+  const [fetchedAt,      setFetchedAt]      = useState(null)
+  const [selectedSale,   setSelectedSale]   = useState(null)
+  const [showLeads,      setShowLeads]      = useState(false)
+  const [locationFilter, setLocationFilter] = useState('all')
+  const [, setTick]                         = useState(0)
 
   // Date range state
   const [preset, setPreset]       = useState('today')
   const [custom, setCustom]       = useState({ start: null, end: null })
+
+  // Unique location names derived from fetched data (shown after first load)
+  const locations = useMemo(() =>
+    (data?.current?.byLocation || []).map(l => l.name),
+  [data])
+
+  // When a location is selected, recompute metrics from the filtered feed
+  const filteredCurrent = useMemo(() => {
+    if (!data) return null
+    if (locationFilter === 'all') return data.current
+    const filtered = (data.feed || []).filter(s =>
+      (s.location || s.locationName || '') === locationFilter
+    )
+    return computeMetrics(filtered)
+  }, [data, locationFilter])
 
   const getRange = useCallback(() => {
     if (preset === 'custom' && custom.start && custom.end) return custom
@@ -954,11 +998,11 @@ export default function Dashboard() {
 
   const content = (() => {
     switch (tab) {
-      case 'today':    return <TodayTab    current={data?.current} comparison={data?.comparison} leads={data?.leads} onLeadsClick={() => setShowLeads(true)} />
+      case 'today':    return <TodayTab    current={filteredCurrent} comparison={data?.comparison} leads={data?.leads} onLeadsClick={() => setShowLeads(true)} />
       case 'feed':     return <FeedTab     feed={data?.feed} onSelect={setSelectedSale} />
-      case 'sellers':  return <SellersTab  current={data?.current} />
-      case 'payments': return <PaymentsTab current={data?.current} />
-      case 'products': return <ProductsTab current={data?.current} />
+      case 'sellers':  return <SellersTab  current={filteredCurrent} />
+      case 'payments': return <PaymentsTab current={filteredCurrent} />
+      case 'products': return <ProductsTab current={filteredCurrent} />
       default:         return null
     }
   })()
@@ -1012,6 +1056,13 @@ export default function Dashboard() {
         <DateFilterBar
           preset={preset} custom={custom}
           onPreset={handlePreset} onCustom={handleCustom}
+        />
+
+        {/* Location filter — only shown when >1 location exists in data */}
+        <LocationFilterBar
+          locations={locations}
+          selected={locationFilter}
+          onChange={setLocationFilter}
         />
 
         {/* Scrollable content — this is the only thing that scrolls */}
