@@ -179,10 +179,11 @@ function PinLogin({ onAuth }) {
 }
 
 // ── Date Filter Bar ───────────────────────────────────────────────────────────
-function DateFilterBar({ preset, custom, onPreset, onCustom }) {
-  const [showCustom, setShowCustom] = useState(false)
-  const [localStart, setLocalStart] = useState(custom.start ? toInputDate(custom.start) : '')
-  const [localEnd,   setLocalEnd]   = useState(custom.end   ? toInputDate(custom.end)   : '')
+function DateFilterBar({ preset, custom, onPreset, onCustom, locations = [], locationFilter = 'all', onLocationChange }) {
+  const [showCustom,  setShowCustom]  = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [localStart,  setLocalStart]  = useState(custom.start ? toInputDate(custom.start) : '')
+  const [localEnd,    setLocalEnd]    = useState(custom.end   ? toInputDate(custom.end)   : '')
 
   const applyCustom = () => {
     if (!localStart || !localEnd) return
@@ -193,13 +194,12 @@ function DateFilterBar({ preset, custom, onPreset, onCustom }) {
     setShowCustom(false)
   }
 
+  const hasLocFilter = locationFilter !== 'all'
+
   return (
     <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-      {/* Preset chips */}
-      <div style={{
-        display: 'flex', gap: 6, padding: '10px 16px',
-        overflowX: 'auto', scrollbarWidth: 'none',
-      }}>
+      {/* Preset chips + filter toggle */}
+      <div style={{ display: 'flex', gap: 6, padding: '10px 16px', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {PRESETS.map(p => {
           const active = preset === p.id
           return (
@@ -210,12 +210,27 @@ function DateFilterBar({ preset, custom, onPreset, onCustom }) {
                 background: active ? C.blue : C.bg,
                 color: active ? '#fff' : C.muted,
                 border: `1.5px solid ${active ? C.blue : C.border}`,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-                transition: 'all 0.15s',
+                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
               }}
             >{p.id === 'custom' && preset === 'custom' ? presetLabel('custom', custom) : p.label}</button>
           )
         })}
+
+        {/* Location toggle — only shown when locations exist */}
+        {locations.length > 0 && (
+          <button
+            onClick={() => setShowFilters(v => !v)}
+            style={{
+              flexShrink: 0, padding: '6px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+              background: hasLocFilter ? C.amber : (showFilters ? '#FEF3C7' : C.bg),
+              color:      hasLocFilter ? '#fff'   : (showFilters ? C.amber   : C.muted),
+              border:     `1.5px solid ${hasLocFilter || showFilters ? C.amber : C.border}`,
+              cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', marginLeft: 4,
+            }}
+          >
+            📍 {hasLocFilter ? locationFilter : 'Location'}
+          </button>
+        )}
       </div>
 
       {/* Custom date inputs */}
@@ -230,6 +245,24 @@ function DateFilterBar({ preset, custom, onPreset, onCustom }) {
             padding: '8px 14px', borderRadius: 8, background: C.blue,
             border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
           }}>Apply</button>
+        </div>
+      )}
+
+      {/* Location filter chips — toggled by the 📍 button */}
+      {showFilters && locations.length > 0 && (
+        <div style={{ padding: '0 16px 12px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {['all', ...locations].map(loc => {
+            const active = locationFilter === loc
+            return (
+              <button key={loc} onClick={() => { onLocationChange(loc); if (loc !== 'all') setShowFilters(false) }} style={{
+                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                background: active ? C.amber : C.bg,
+                color:      active ? '#fff'   : C.muted,
+                border:     `1.5px solid ${active ? C.amber : C.border}`,
+                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+              }}>{loc === 'all' ? 'All Locations' : loc}</button>
+            )
+          })}
         </div>
       )}
     </div>
@@ -1052,17 +1085,13 @@ export default function Dashboard() {
           }}>↻</button>
         </div>
 
-        {/* Date filter */}
+        {/* Date + location filter */}
         <DateFilterBar
           preset={preset} custom={custom}
           onPreset={handlePreset} onCustom={handleCustom}
-        />
-
-        {/* Location filter — only shown when >1 location exists in data */}
-        <LocationFilterBar
           locations={locations}
-          selected={locationFilter}
-          onChange={setLocationFilter}
+          locationFilter={locationFilter}
+          onLocationChange={setLocationFilter}
         />
 
         {/* Scrollable content — this is the only thing that scrolls */}
