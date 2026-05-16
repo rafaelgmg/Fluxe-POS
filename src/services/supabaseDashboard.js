@@ -116,6 +116,7 @@ export async function fetchDashboardData(startDate, endDate) {
     current:    computeMetrics(selected),
     comparison: computeMetrics(comparison),
     feed:       selected.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 60),
+    all:        selected,   // full untruncated list — used for location-filtered recompute
     leads,
     fetchedAt:  new Date(),
   }

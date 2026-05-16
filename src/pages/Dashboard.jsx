@@ -769,7 +769,7 @@ function SellersTab({ current }) {
                 <div style={{ fontSize: 12, color: C.muted }}>{emp.count} transactions · {pct.toFixed(0)}%</div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: i === 0 ? C.amber : C.text }}>{fmtK(empSub)}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: i === 0 ? C.amber : C.text }}>{fmt$(empSub)}</div>
                 <div style={{ fontSize: 10, color: C.dim }}>subtotal</div>
               </div>
             </div>
@@ -952,11 +952,11 @@ export default function Dashboard() {
     (data?.current?.byLocation || []).map(l => l.name),
   [data])
 
-  // When a location is selected, recompute metrics from the filtered feed
+  // When a location is selected, recompute metrics from the full sales list (not just feed's 60)
   const filteredCurrent = useMemo(() => {
     if (!data) return null
     if (locationFilter === 'all') return data.current
-    const filtered = (data.feed || []).filter(s =>
+    const filtered = (data.all || []).filter(s =>
       (s.location || s.locationName || '') === locationFilter
     )
     return computeMetrics(filtered)
