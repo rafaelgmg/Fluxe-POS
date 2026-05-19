@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { useTheme } from './theme/ThemeContext'
 import { isDemoMode, seedDemoData, clearDemoData, DEMO_POS_SESSION } from './demo/demoSeed'
-import { loadActiveCategoryNames, ensureCategoriesSeeded, buildCategoryMap } from './utils/categoriesStorage'
+import { loadActiveCategoryNames, loadCategoriesAsync, saveCategories, ensureCategoriesSeeded, buildCategoryMap } from './utils/categoriesStorage'
 import { getTaxRate, getTaxRateById, loadLocationConfig, loadLocationConfigById, resolveSpareRateForDay, resolveSpareRateForDayById, mergeLocationConfigsFromCloud } from './utils/locationConfig'
 import { localId } from './domain/utils/ids'
 import { loadFrozenSales, saveFrozenSales } from './utils/frozenSalesStorage'
@@ -76,7 +76,8 @@ export default function App() {
   )
   const [saleEmployee, setSaleEmployee] = useState(null)  // seller confirmed for current sale
   const { products, setProducts, decrementStock } = useProducts()
-  const [selectedCategory, setCategory] = useState('All')
+  const [selectedCategory, setCategory]   = useState('All')
+  const [categoryNames,    setCategoryNames] = useState(() => loadActiveCategoryNames())
   const [search, setSearch]             = useState('')
   const [showBarcodeModal, setShowBarcodeModal] = useState(false)
   const [viewMode,  setViewMode]  = useState(() => localStorage.getItem('fluxe-view-mode')  || 'list')
@@ -158,6 +159,22 @@ export default function App() {
   useEffect(() => {
     fetchLocationConfigs()
       .then(rows => { if (rows) mergeLocationConfigsFromCloud(rows) })
+      .catch(() => {})
+  }, [])
+
+  // Boot-time category sync: fetch from Supabase, merge into localStorage, update sidebar.
+  // Ensures categories created on any device (kiosk/home) appear everywhere.
+  useEffect(() => {
+    loadCategoriesAsync()
+      .then(cats => {
+        if (!cats?.length) return
+        setCategoryNames(
+          cats
+            .filter(c => c.status !== 'inactive')
+            .sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0))
+            .map(c => c.name)
+        )
+      })
       .catch(() => {})
   }, [])
 
@@ -740,7 +757,7 @@ export default function App() {
           width: 110, background: 'var(--c-bg-panel)', borderRight: '1px solid var(--c-border)',
           display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0
         }}>
-          {['All', ...loadActiveCategoryNames()].map(cat => (
+          {['All', ...categoryNames].map(cat => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}

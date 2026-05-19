@@ -157,6 +157,59 @@ export async function upsertEODNotes({ locationName, date, notes, updatedBy = nu
   }
 }
 
+// ── Category sync ─────────────────────────────────────────────────────────────
+
+/**
+ * Upsert all categories to Supabase in a single batch call.
+ * Uses on_conflict=organization_id,name so the operation is idempotent.
+ * Fire-and-forget safe — failure only means categories stay localStorage-only.
+ *
+ * @param {object[]} cats  Full category array from categoriesStorage
+ * @returns {Promise<{[name:string]: string}|null>} name→supabaseId map, or null on failure
+ */
+export async function syncAllCategoriesToSupabase(cats) {
+  if (!isSupabaseConfigured() || !cats?.length) return null
+  try {
+    await awaitOrgSession()
+    const orgId = await getOrgId()
+    const rows = cats.map((cat, i) => ({
+      organization_id: orgId,
+      name:            cat.name,
+      status:          cat.status          || 'active',
+      sort_index:      cat.sortIndex       ?? i,
+      commission_rate: cat.commissionRate  ?? null,
+      commission_type: cat.commissionType  ?? null,
+      notes:           cat.notes           || '',
+    }))
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/categories?on_conflict=organization_id,name`,
+      {
+        method: 'POST',
+        headers: {
+          apikey:         SUPABASE_KEY,
+          Authorization:  `Bearer ${authBearer()}`,
+          'Content-Type': 'application/json',
+          Prefer:         'resolution=merge-duplicates,return=representation',
+        },
+        body: JSON.stringify(rows),
+      }
+    )
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      console.warn('[Fluxe] syncAllCategoriesToSupabase failed:', res.status, text)
+      return null
+    }
+    const inserted = await res.json()
+    if (!Array.isArray(inserted)) return null
+    const uuidMap = {}
+    for (const r of inserted) if (r.name && r.id) uuidMap[r.name] = r.id
+    return uuidMap
+  } catch (err) {
+    console.warn('[Fluxe] syncAllCategoriesToSupabase error:', err.message)
+    return null
+  }
+}
+
 // ── Location config upsert ───────────────────────────────────────────────────
 
 /**

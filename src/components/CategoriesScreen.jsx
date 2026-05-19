@@ -307,6 +307,19 @@ export default function CategoriesScreen({ onBack }) {
     saveCategories(updated)
     setSaved(true)
     setTimeout(() => setSaved(false), 1800)
+    // Sync to Supabase — fire-and-forget; hydrate supabaseId on local records when returned
+    import('../services/supabaseWrite').then(({ syncAllCategoriesToSupabase }) => {
+      syncAllCategoriesToSupabase(updated).then(uuidMap => {
+        if (!uuidMap) return
+        setCats(prev => {
+          const needsUpdate = prev.some(c => !c.supabaseId && uuidMap[c.name])
+          if (!needsUpdate) return prev
+          const u = prev.map(c => ({ ...c, supabaseId: c.supabaseId || uuidMap[c.name] || undefined }))
+          saveCategories(u)
+          return u
+        })
+      }).catch(() => {})
+    }).catch(() => {})
   }
 
   // ── Filtered list ────────────────────────────────────────────────────────────

@@ -55,6 +55,7 @@ const SEED_NAMES = [
   "Unisex",
   "Unisex NC",
   "Women's Brands",
+  "Women's NC",
 ]
 
 function buildSeed() {
@@ -112,9 +113,10 @@ export function loadActiveCategoryNames() {
   return loadActiveCategories().map(c => c.name)
 }
 
-/** Safe next id. */
+/** Safe next id. Handles both integer IDs (local) and UUID IDs (post-Supabase-sync). */
 export function nextCategoryId(cats) {
-  return cats.length > 0 ? Math.max(...cats.map(c => c.id)) + 1 : 1
+  const nums = cats.map(c => c.id).filter(id => typeof id === 'number' && Number.isFinite(id))
+  return nums.length > 0 ? Math.max(...nums) + 1 : 1
 }
 
 /**
@@ -141,15 +143,58 @@ export function buildCategoryMap(activeOnly = false) {
 }
 
 /**
- * Async variant: tries Supabase first, falls back to loadCategories() on failure.
- * Use this from hooks/effects where async is acceptable.
- * Phase 1 only reads — no writes to Supabase.
+ * Merge remote (Supabase) categories into local ones:
+ *  - Existing local category: hydrate supabaseId if not yet set
+ *  - New in Supabase but not local: add with UUID as id
+ * Does not remove local-only categories (could be offline-created and not yet synced).
+ */
+function mergeRemoteCategories(local, remote) {
+  const byName = {}
+  for (const c of local) byName[c.name.toLowerCase()] = c
+
+  const result = local.map(c => ({ ...c }))
+
+  for (const r of remote) {
+    const key = r.name.toLowerCase()
+    if (byName[key]) {
+      // Hydrate supabaseId onto the existing local record
+      const idx = result.findIndex(c => c.name.toLowerCase() === key)
+      if (idx !== -1 && !result[idx].supabaseId) {
+        result[idx] = { ...result[idx], supabaseId: r.id }
+      }
+    } else {
+      // Category exists in Supabase but not locally — add it
+      result.push({
+        id:             r.id,
+        supabaseId:     r.id,
+        name:           r.name,
+        status:         r.status          || 'active',
+        sortIndex:      r.sortIndex       ?? result.length,
+        commissionRate: r.commissionRate  ?? null,
+        commissionType: r.commissionType  ?? null,
+        notes:          r.notes           ?? '',
+        createdAt:      r.createdAt       || new Date().toISOString(),
+      })
+    }
+  }
+
+  return result
+}
+
+/**
+ * Async variant: tries Supabase first and merges into local, then falls back.
+ * Saves the merged result to localStorage so future sync-free boots stay fast.
  */
 export async function loadCategoriesAsync() {
   try {
     const { fetchCategories } = await import('../services/supabaseRead')
     const remote = await fetchCategories()
-    if (remote) return remote
+    if (remote && remote.length > 0) {
+      const local  = loadCategories()
+      const merged = mergeRemoteCategories(local, remote)
+      saveCategories(merged)
+      return merged
+    }
   } catch {}
   return loadCategories()
 }
