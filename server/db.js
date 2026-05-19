@@ -173,6 +173,36 @@ function getSMSLog() {
   return readJSON(LOG_FILE)
 }
 
+/**
+ * Returns true if a successful SMS of the given type was already sent to
+ * this customer within the last `windowHours` hours.
+ * Used to prevent duplicate automated messages (e.g. two thank_you sends).
+ */
+function wasSentRecently(customerId, type, windowHours = 48) {
+  const cutoff = new Date(Date.now() - windowHours * 60 * 60 * 1000)
+  return getSMSLog().some(e =>
+    e.customerId === customerId &&
+    e.type       === type       &&
+    e.status     !== 'error'    &&
+    e.status     !== 'dry_run'  &&
+    new Date(e.loggedAt) > cutoff
+  )
+}
+
+/**
+ * Returns the number of successful SMS sent to a customer in the last `windowHours`.
+ * Used for per-customer rate limiting across manual + auto sends.
+ */
+function sentCountInWindow(customerId, windowHours = 24) {
+  const cutoff = new Date(Date.now() - windowHours * 60 * 60 * 1000)
+  return getSMSLog().filter(e =>
+    e.customerId === customerId &&
+    e.status     !== 'error'   &&
+    e.status     !== 'dry_run' &&
+    new Date(e.loggedAt) > cutoff
+  ).length
+}
+
 // ─── Sales ────────────────────────────────────────────────────────────────────
 
 function getAllSales() {
@@ -199,6 +229,8 @@ module.exports = {
   getPendingMessages,
   logSMS,
   getSMSLog,
+  wasSentRecently,
+  sentCountInWindow,
   getAllSales,
   saveSale,
 }

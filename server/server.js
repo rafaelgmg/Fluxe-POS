@@ -103,11 +103,15 @@ app.post('/api/account-login', (req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({
-    status:          'ok',
-    twilio:          !!twilioClient,
-    customers:       db.getAllCustomers().length,
-    scheduledPending: db.getScheduledMessages().filter(m => m.status === 'pending').length,
-    timestamp:       new Date().toISOString(),
+    status:            'ok',
+    twilio:            !!twilioClient,
+    twilioMode:        !twilioClient ? 'dry_run' : (process.env.SMS_TEST_NUMBER ? 'test' : 'live'),
+    testNumber:        process.env.SMS_TEST_NUMBER || null,
+    automationEnabled: process.env.SMS_AUTOMATION_ENABLED === 'true',
+    rateLimitPerDay:   parseInt(process.env.SMS_RATE_LIMIT_PER_DAY) || 3,
+    customers:         db.getAllCustomers().length,
+    scheduledPending:  db.getScheduledMessages().filter(m => m.status === 'pending').length,
+    timestamp:         new Date().toISOString(),
   })
 })
 
@@ -199,6 +203,21 @@ app.post('/api/sms/send', async (req, res) => {
 
   if (!resolvedPhone || !message) {
     return res.status(400).json({ error: 'phone and message are required' })
+  }
+
+  // Rate limit check — per customer, per 24h window (skip in dry-run and test modes)
+  if (!dryRun && resolvedLocalId) {
+    const limit   = parseInt(process.env.SMS_RATE_LIMIT_PER_DAY) || 3
+    const recent  = db.sentCountInWindow(resolvedLocalId, 24)
+    if (recent >= limit) {
+      console.warn(`[SMS] Rate limit hit for ${resolvedLocalId} — ${recent}/${limit} sends in last 24h`)
+      return res.status(429).json({
+        error:       'rate_limit',
+        message:     `Rate limit: ${recent} messages already sent to this customer in the last 24 hours (limit: ${limit})`,
+        sentToday:   recent,
+        limit,
+      })
+    }
   }
 
   // Consent check — only when Supabase is configured and supabaseId known
@@ -517,11 +536,32 @@ Write-Output "OK:$printerName:$written"
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`\n🧴 Perfume Passage CRM Server`)
-  console.log(`   Running on http://localhost:${PORT}`)
-  console.log(`   Twilio: ${twilioClient ? '✓ connected' : '⚠ dry-run mode'}`)
-  console.log(`   Customers: ${db.getAllCustomers().length}`)
-  console.log(`   Pending SMS: ${db.getScheduledMessages().filter(m => m.status === 'pending').length}\n`)
+  const automationEnabled = process.env.SMS_AUTOMATION_ENABLED === 'true'
+  const testNumber        = process.env.SMS_TEST_NUMBER
+  const rateLimit         = parseInt(process.env.SMS_RATE_LIMIT_PER_DAY) || 3
+  const pendingCount      = db.getScheduledMessages().filter(m => m.status === 'pending').length
+
+  let twilioStatus
+  if (!twilioClient)  twilioStatus = 'DRY-RUN  (no credentials — nothing sends)'
+  else if (testNumber) twilioStatus = `TEST MODE (all SMS → ${testNumber})`
+  else                 twilioStatus = 'LIVE      (sends to real customers)'
+
+  console.log('\n──────────────────────────────────────────────────────')
+  console.log('  🧴  Perfume Passage CRM Server')
+  console.log('──────────────────────────────────────────────────────')
+  console.log(`  Port        : ${PORT}`)
+  console.log(`  Twilio      : ${twilioStatus}`)
+  console.log(`  Automation  : ${automationEnabled ? 'ENABLED  (auto-scheduler active)' : 'DISABLED (SMS_AUTOMATION_ENABLED=false)'}`)
+  console.log(`  Rate limit  : ${rateLimit} SMS per customer per 24h`)
+  console.log(`  Customers   : ${db.getAllCustomers().length}`)
+  console.log(`  Pending SMS : ${pendingCount}`)
+  console.log('──────────────────────────────────────────────────────\n')
+
+  if (twilioClient && !testNumber && !automationEnabled) {
+    console.warn('[Server] Twilio is LIVE but SMS_TEST_NUMBER is not set.')
+    console.warn('[Server] Manual sends from the CRM will go to real customers.')
+    console.warn('[Server] To test safely, set SMS_TEST_NUMBER=+1XXXXXXXXXX in .env\n')
+  }
 
   scheduler.start()
 })
