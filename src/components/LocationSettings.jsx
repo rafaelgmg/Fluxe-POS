@@ -1094,6 +1094,7 @@ function CompetitionCard({ form, set, allLocations = [] }) {
   const timeframe        = form.competitionTimeframe       || 'daily'
   const viewTop          = Number(form.competitionViewTop  ?? 5)
   const enableSpare      = !!form.competitionEnableSpare
+  const enableLeads      = !!form.competitionEnableLeads
   const enableHybrid     = !!form.competitionEnableHybrid
   const hybridMultiplier = Number(form.competitionHybridMultiplier ?? 1.0)
   const bonusSales       = form.competitionBonusSales  || { enabled: false, top1: 0, top2: 0, top3: 0, minimumToQualify: 0 }
@@ -1170,6 +1171,12 @@ function CompetitionCard({ form, set, allLocations = [] }) {
               checked={enableSpare}
               onChange={v => set('competitionEnableSpare', v)}
               description="Shows '💰 Spare' tab in Competition screen — ranks by total spare generated"
+            />
+            <Toggle
+              label={<>Show Leads in Competition <StatusBadge live /></>}
+              checked={enableLeads}
+              onChange={v => set('competitionEnableLeads', v)}
+              description="Shows 👤 Leads Captured badge per seller — pulled from Supabase, respects timeframe"
             />
             <Toggle
               label={<>Enable Hybrid Ranking <StatusBadge live /></>}

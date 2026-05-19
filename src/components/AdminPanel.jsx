@@ -15,6 +15,7 @@ import BonusRulesScreen     from './BonusRulesScreen'
 import BarcodeModal, { BarcodeIconButton } from './BarcodeModal'
 import CustomersAdmin from './CustomersAdmin'
 import CRMSettings    from './CRMSettings'
+import CRMAnalytics   from './CRMAnalytics'
 import AdminEODReport  from './AdminEODReport'
 import InvoicesAdmin   from './InvoicesAdmin'
 
@@ -99,11 +100,12 @@ const MODULES = [
   {
     id: 'customers', icon: '🙋', label: 'Customers', color: '#f39c12',
     submenu: [
-      { id: 'cust-mgmt',      label: 'Management',   screen: 'customers-mgmt' },
-      { id: 'cust-settings',  label: 'CRM Settings', screen: 'crm-settings'   },
+      { id: 'cust-mgmt',       label: 'Management',    screen: 'customers-mgmt'  },
+      { id: 'cust-analytics', label: 'CRM Analytics', screen: 'crm-analytics'   },
+      { id: 'cust-settings',  label: 'CRM Settings',  screen: 'crm-settings'    },
       { id: 'cust-email',     label: 'Email Campaign'  },
-      { id: 'cust-layaway',  label: 'Layaways'        },
-      { id: 'cust-quotes',   label: 'Quotes'          },
+      { id: 'cust-layaway',   label: 'Layaways'        },
+      { id: 'cust-quotes',    label: 'Quotes'          },
     ],
   },
   {
@@ -903,18 +905,10 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
   const products    = liveProducts && liveProducts.length > 0 ? liveProducts : localProducts
   const setProducts = setAppProducts
     ? (updater) => {
-        if (typeof updater === 'function') {
-          // Compute next from liveProducts (the ground truth), not localProducts (may lag by one render).
-          // Call both setters with the same value — avoids calling setAppProducts inside a
-          // setLocalProducts updater (nested setState anti-pattern that fires twice in Strict Mode).
-          const prev = liveProducts && liveProducts.length > 0 ? liveProducts : localProducts
-          const next = updater(prev)
-          setLocalProducts(next)
-          setAppProducts(next)
-        } else {
-          setLocalProducts(updater)
-          setAppProducts(updater)
-        }
+        // Pass updater directly to both React setters so each receives the actual current state.
+        // Capturing liveProducts from the closure caused stale-state overwrites on async ID swaps.
+        setLocalProducts(updater)
+        setAppProducts(updater)
       }
     : setLocalProducts
 
@@ -1042,6 +1036,15 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
         updateSale={updateSale}
         onClose={goBack}
       />
+    )
+  }
+
+  if (activeScreen?.screen === 'crm-analytics') {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'var(--c-bg)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+        <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Customers" />
+        <CRMAnalytics posSession={posSession} />
+      </div>
     )
   }
 

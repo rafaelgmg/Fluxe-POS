@@ -86,6 +86,56 @@ export async function fetchLeadsInRange(startDate, endDate) {
   }
 }
 
+// ── Extended leads fetch for CRM Analytics ───────────────────────────────────
+// Same query as fetchLeadsInRange but also returns smsConsent + purchases.
+// Kept separate so the lightweight fetchLeadsInRange signature stays stable.
+
+export async function fetchLeadsForAnalytics(startDate, endDate) {
+  if (!isSupabaseConfigured()) return []
+  try {
+    const orgId    = await getOrgId()
+    const startISO = startDate.toISOString()
+    const endISO   = endDate.toISOString()
+
+    const [customers, users, locations] = await Promise.all([
+      sbFetch(
+        `/customers?organization_id=eq.${orgId}` +
+        `&or=(` +
+          `and(captured_at.gte.${encodeURIComponent(startISO)},captured_at.lt.${encodeURIComponent(endISO)}),` +
+          `and(captured_at.is.null,created_at.gte.${encodeURIComponent(startISO)},created_at.lt.${encodeURIComponent(endISO)})` +
+        `)` +
+        `&archived=eq.false` +
+        `&order=captured_at.desc.nullslast&limit=500`
+      ),
+      sbFetch(`/v_users?select=id,first_name,last_name&organization_id=eq.${orgId}`).catch(() => []),
+      sbFetch(`/locations?select=id,name&organization_id=eq.${orgId}`).catch(() => []),
+    ])
+
+    const userMap = {}
+    for (const u of users) {
+      userMap[u.id] = `${u.first_name || ''} ${u.last_name || ''}`.trim() || null
+    }
+    const locMap = {}
+    for (const l of locations) locMap[l.id] = l.name
+
+    return customers.map(r => ({
+      id:           r.id,
+      firstName:    r.first_name  || '',
+      lastName:     r.last_name   || '',
+      phone:        r.phone       || '',
+      email:        r.email       || '',
+      capturedAt:   r.captured_at || r.created_at,
+      capturedBy:   userMap[r.captured_by_user_id] || null,
+      locationName: locMap[r.captured_location_id] || null,
+      smsConsent:   r.sms_consent_status || 'unknown',
+      purchases:    Array.isArray(r.purchases) ? r.purchases : [],
+    }))
+  } catch (err) {
+    console.warn('[Fluxe] fetchLeadsForAnalytics failed:', err.message)
+    return []
+  }
+}
+
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 
 /**

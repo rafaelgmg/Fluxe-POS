@@ -3,6 +3,7 @@ import { COLORS } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { localDateKey } from '../utils/dateUtils'
 import { fetchSalesByLocationAndDate, isSupabaseConfigured } from '../services/supabaseRead'
+import { fetchLeadsInRange } from '../services/supabaseDashboard'
 import { loadActiveEmployees } from '../utils/usersStorage'
 
 // ── Avatar colors ─────────────────────────────────────────────────────────────
@@ -53,6 +54,27 @@ function fmtTime(d) {
   return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
 }
 
+function timeframeRange(timeframe, todayStr) {
+  const ref = new Date(todayStr + 'T12:00:00')
+  if (timeframe === 'weekly') {
+    const dow = ref.getDay()
+    const mon = new Date(ref)
+    mon.setDate(ref.getDate() - (dow === 0 ? 6 : dow - 1))
+    mon.setHours(0, 0, 0, 0)
+    const next = new Date(mon); next.setDate(mon.getDate() + 7)
+    return { start: mon, end: next }
+  }
+  if (timeframe === 'monthly') {
+    const start = new Date(ref.getFullYear(), ref.getMonth(), 1)
+    const end   = new Date(ref.getFullYear(), ref.getMonth() + 1, 1)
+    return { start, end }
+  }
+  // daily
+  const start = new Date(todayStr + 'T00:00:00')
+  const end   = new Date(start); end.setDate(end.getDate() + 1)
+  return { start, end }
+}
+
 // ── Mode / timeframe labels ───────────────────────────────────────────────────
 const MODE_LABEL = {
   individual_total:    'Total Sales · Employee',
@@ -90,19 +112,27 @@ const MEDALS = {
 }
 
 // ── Secondary metrics row ─────────────────────────────────────────────────────
-// showSpare is controlled by locCfg.competitionEnableSpare (Location Settings).
-// location, count, and commission are hidden by default.
-function MetaRow({ person, isFirst = false, showSpare = false }) {
-  if (!showSpare || !(person.spare > 0.01)) return null
+// showSpare / showLeads are controlled by Location Settings (competitionEnable*).
+function MetaRow({ person, isFirst = false, showSpare = false, showLeads = false }) {
+  const hasSpare = showSpare && person.spare > 0.01
+  const hasLeads = showLeads && (person.leads || 0) > 0
+  if (!hasSpare && !hasLeads) return null
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
-      <span style={{
-        background: 'rgba(15,23,42,0.7)', border: `1px solid ${DIM}`,
-        borderRadius: 10, padding: '2px 7px', fontSize: isFirst ? 10 : 9,
-        color: '#f59e0b', fontWeight: 600,
-      }}>
-        {fmt$(person.spare)} spare
-      </span>
+      {hasLeads && (
+        <span style={{
+          background: 'rgba(15,23,42,0.7)', border: '1px solid rgba(34,197,94,0.3)',
+          borderRadius: 10, padding: '2px 7px', fontSize: isFirst ? 10 : 9,
+          color: '#22c55e', fontWeight: 600,
+        }}>👤 {person.leads} leads</span>
+      )}
+      {hasSpare && (
+        <span style={{
+          background: 'rgba(15,23,42,0.7)', border: `1px solid ${DIM}`,
+          borderRadius: 10, padding: '2px 7px', fontSize: isFirst ? 10 : 9,
+          color: '#f59e0b', fontWeight: 600,
+        }}>{fmt$(person.spare)} spare</span>
+      )}
     </div>
   )
 }
@@ -117,6 +147,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
   const viewTop          = Number(locCfg.competitionViewTop  ?? 5)
   const rankOnly         = !!locCfg.competitionShowRankingOnly
   const enableSpare      = !!locCfg.competitionEnableSpare
+  const enableLeads      = !!locCfg.competitionEnableLeads
   const enableHybrid     = !!locCfg.competitionEnableHybrid
   const hybridMultiplier = Number(locCfg.competitionHybridMultiplier ?? 1.0)
 
@@ -125,6 +156,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
 
   // ── Cross-kiosk Supabase polling ──────────────────────────────────────────
   const [remoteSales, setRemoteSales] = useState(null)   // null = not yet fetched
+  const [remoteLeads, setRemoteLeads] = useState([])
   const [lastUpdated, setLastUpdated] = useState(null)
   const [fetching,    setFetching]    = useState(false)
   const [dataSource,  setDataSource]  = useState('local')
@@ -133,18 +165,23 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
     if (!isSupabaseConfigured()) return
     setFetching(true)
     try {
-      const data = await fetchSalesByLocationAndDate({ date: new Date() })
+      const { start, end } = timeframeRange(timeframe, today)
+      const [data, leads] = await Promise.all([
+        fetchSalesByLocationAndDate({ date: new Date() }),
+        fetchLeadsInRange(start, end).catch(() => []),
+      ])
       if (Array.isArray(data)) {
         setRemoteSales(data)
         setLastUpdated(new Date())
         setDataSource('supabase')
       }
+      if (Array.isArray(leads)) setRemoteLeads(leads)
     } catch {
-      // Keep previous remoteSales; indicator stays 'supabase' if we had data before
+      // Keep previous data; indicator stays 'supabase' if we had data before
     } finally {
       setFetching(false)
     }
-  }, [])
+  }, [timeframe, today])
 
   useEffect(() => {
     poll()
@@ -161,6 +198,14 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
     const pendingLocal  = sales.filter(s => !remoteNumbers.has(s.number))
     return pendingLocal.length > 0 ? [...remoteSales, ...pendingLocal] : remoteSales
   }, [remoteSales, sales])
+
+  const leadsMap = useMemo(() => {
+    const map = {}
+    for (const l of remoteLeads) {
+      if (l.capturedBy) map[l.capturedBy.trim()] = (map[l.capturedBy.trim()] || 0) + 1
+    }
+    return map
+  }, [remoteLeads])
 
   // ── Day rollover detection ────────────────────────────────────────────────
   const [today, setToday] = useState(() => localDateStr())
@@ -283,6 +328,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
       commission: meta[name].commission,
       count:      meta[name].count,
       location:   meta[name].location,
+      leads:      leadsMap[name.trim()] || 0,
       initials:   getInitials(name),
       color:      AVATAR_COLORS[names.indexOf(name) % AVATAR_COLORS.length],
       photo:      photoMap[name] || null,
@@ -290,7 +336,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
     })).sort((a, b) => b.value - a.value)
 
     return viewTop > 0 ? all.slice(0, viewTop) : all
-  }, [activeSales, today, compMode, timeframe, viewTop, rankTab, hybridMultiplier])
+  }, [activeSales, today, compMode, timeframe, viewTop, rankTab, hybridMultiplier, leadsMap])
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('en-US', {
@@ -518,7 +564,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                   )}
 
                   {/* Spare — only if enabled in Location Settings */}
-                  <MetaRow person={person} isFirst={isCenter} showSpare={enableSpare} />
+                  <MetaRow person={person} isFirst={isCenter} showSpare={enableSpare} showLeads={enableLeads} />
 
                   {/* Podium block */}
                   <div style={{
@@ -564,7 +610,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                     <p style={{ color: person.color, fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
                       {fmt(person.value)}
                     </p>
-                    <MetaRow person={person} showSpare={enableSpare} />
+                    <MetaRow person={person} showSpare={enableSpare} showLeads={enableLeads} />
                   </div>
                 </div>
               ))}
@@ -637,7 +683,7 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
                       }}>TOP SELLER</span>
                     )}
                   </div>
-                  <MetaRow person={person} isFirst={false} showSpare={enableSpare} />
+                  <MetaRow person={person} isFirst={false} showSpare={enableSpare} showLeads={enableLeads} />
                 </div>
 
                 {/* Value */}

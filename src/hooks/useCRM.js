@@ -61,7 +61,7 @@ function mergeSupabaseIntoLocal(localList, serverList) {
 
     // Only adopt supabaseId — don't overwrite local data with server data here.
     // Full sync (server → local) happens on first load, not on every upsert.
-    return local.supabaseId ? local : { ...local, supabaseId: server.supabaseId }
+    return local.supabaseId ? local : { ...local, supabaseId: server.supabaseId, pendingSync: false }
   })
 
   // Add server-only records (captured on another device / kiosk)
@@ -121,11 +121,30 @@ export function useCRM(posSession = null, currentUser = null) {
 
     fetchCustomers(orgId)
       .then(serverList => {
-        if (!serverList || serverList.length === 0) return
-        setCustomers(local => {
-          const merged = mergeSupabaseIntoLocal(local, serverList)
-          persist(merged)
-          return merged
+        if (serverList && serverList.length > 0) {
+          setCustomers(local => {
+            const merged = mergeSupabaseIntoLocal(local, serverList)
+            persist(merged)
+            return merged
+          })
+        }
+        // Auto-sync customers that failed to reach Supabase previously
+        const locationId = sessionRef.current?.locationUUID
+        const userId     = userRef.current?.id || null
+        const pending    = load().filter(c => c.pendingSync && !c.supabaseId && !c.archived)
+        pending.forEach(c => {
+          writeCustomerToSupabase(c, orgId, userId, locationId)
+            .then(result => {
+              if (!result) return
+              setCustomers(prev => {
+                const u = prev.map(x =>
+                  x.id === c.id ? { ...x, supabaseId: result.supabaseId, pendingSync: false } : x
+                )
+                persist(u)
+                return u
+              })
+            })
+            .catch(() => {})
         })
       })
       .catch(err => console.warn('[CRM] Supabase hydration failed:', err.message))
@@ -228,14 +247,28 @@ export function useCRM(posSession = null, currentUser = null) {
       const locationId = sessionRef.current?.locationUUID
       const userId     = userRef.current?.id || null
 
-      if (orgId && upsertedLocal) {
+      if (!orgId) {
+        // Session not ready — mark pending so auto-sync picks it up on next login
+        if (upsertedLocal) {
+          setCustomers(prev => {
+            const updated = prev.map(c =>
+              c.id === upsertedLocal.id ? { ...c, pendingSync: true } : c
+            )
+            persist(updated)
+            return updated
+          })
+        }
+        setSyncStatus('offline')
+        return
+      }
+
+      if (upsertedLocal) {
         writeCustomerToSupabase(upsertedLocal, orgId, userId, locationId)
           .then(result => {
             if (!result) return
-            // Store supabaseId back into local record
             setCustomers(prev => {
               const updated = prev.map(c =>
-                c.id === upsertedLocal.id ? { ...c, supabaseId: result.supabaseId } : c
+                c.id === upsertedLocal.id ? { ...c, supabaseId: result.supabaseId, pendingSync: false } : c
               )
               persist(updated)
               return updated
@@ -244,6 +277,13 @@ export function useCRM(posSession = null, currentUser = null) {
           })
           .catch(err => {
             console.warn('[CRM] Supabase write failed (local preserved):', err.message)
+            setCustomers(prev => {
+              const updated = prev.map(c =>
+                c.id === upsertedLocal.id ? { ...c, pendingSync: true } : c
+              )
+              persist(updated)
+              return updated
+            })
             setSyncStatus('offline')
           })
         return // don't fall through to Twilio SMS path
@@ -411,13 +451,31 @@ export function useCRM(posSession = null, currentUser = null) {
             if (!result) return
             setCustomers(prev => {
               const updated = prev.map(c =>
-                c.id === newId ? { ...c, supabaseId: result.supabaseId } : c
+                c.id === newId ? { ...c, supabaseId: result.supabaseId, pendingSync: false } : c
               )
               persist(updated)
               return updated
             })
           })
-          .catch(err => console.warn('[CRM] addCustomer Supabase write failed:', err.message))
+          .catch(err => {
+            console.warn('[CRM] addCustomer Supabase write failed:', err.message)
+            setCustomers(prev => {
+              const updated = prev.map(c =>
+                c.id === newId ? { ...c, pendingSync: true } : c
+              )
+              persist(updated)
+              return updated
+            })
+          })
+      } else {
+        // No session yet — mark pending for auto-sync on next login
+        setCustomers(prev => {
+          const updated = prev.map(c =>
+            c.id === newId ? { ...c, pendingSync: true } : c
+          )
+          persist(updated)
+          return updated
+        })
       }
     }
 

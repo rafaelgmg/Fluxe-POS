@@ -831,6 +831,17 @@ export async function writeProductToSupabase(product) {
 
     return row.id
   } catch (err) {
+    // Barcode already exists in Supabase (23505 unique constraint).
+    // Fetch the existing UUID so the local record gets properly hydrated instead of failing.
+    if (err.message.includes('23505')) {
+      try {
+        const orgId2 = await getOrgId()
+        const rows = await sbGet(
+          `/products?organization_id=eq.${orgId2}&barcode=eq.${encodeURIComponent(product.barcode)}&select=id&limit=1`
+        )
+        if (rows?.[0]?.id) return rows[0].id
+      } catch {}
+    }
     console.warn('[Fluxe] writeProductToSupabase failed — saved locally only:', err.message)
     return null
   }

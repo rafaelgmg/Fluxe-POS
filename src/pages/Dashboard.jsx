@@ -995,6 +995,13 @@ export default function Dashboard() {
     return computeMetrics(filtered)
   }, [data, locationFilter])
 
+  // Filter leads by the active location — keeps lead count consistent with sales metrics
+  const filteredLeads = useMemo(() => {
+    if (!data?.leads) return null
+    if (locationFilter === 'all') return data.leads
+    return data.leads.filter(l => (l.locationName || '') === locationFilter)
+  }, [data, locationFilter])
+
   const getRange = useCallback(() => {
     if (preset === 'custom' && custom.start && custom.end) return custom
     return rangeForPreset(preset) || rangeForPreset('today')
@@ -1031,7 +1038,7 @@ export default function Dashboard() {
 
   const content = (() => {
     switch (tab) {
-      case 'today':    return <TodayTab    current={filteredCurrent} comparison={data?.comparison} leads={data?.leads} onLeadsClick={() => setShowLeads(true)} />
+      case 'today':    return <TodayTab    current={filteredCurrent} comparison={data?.comparison} leads={filteredLeads} onLeadsClick={() => setShowLeads(true)} />
       case 'feed':     return <FeedTab     feed={data?.feed} onSelect={setSelectedSale} />
       case 'sellers':  return <SellersTab  current={filteredCurrent} />
       case 'payments': return <PaymentsTab current={filteredCurrent} />
@@ -1052,8 +1059,8 @@ export default function Dashboard() {
         <SaleDetailModal sale={selectedSale} onClose={() => setSelectedSale(null)} />
       )}
 
-      {showLeads && data?.leads && (
-        <LeadsModal leads={data.leads} onClose={() => setShowLeads(false)} />
+      {showLeads && filteredLeads && (
+        <LeadsModal leads={filteredLeads} onClose={() => setShowLeads(false)} />
       )}
 
       {/* Full-height flex column — owns its own scroll so body overflow:hidden doesn't matter */}

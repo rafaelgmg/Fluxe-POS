@@ -1,6 +1,7 @@
 ﻿import { useState, useMemo, useCallback, useEffect } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { fetchTodayClockRecords } from '../services/supabaseRead'
+import { fetchLeadsInRange } from '../services/supabaseDashboard'
 import {
   buildPreset, filterSales, calcKPIs,
   byLocation, byEmployee, byProduct, byPaymentMethod,
@@ -37,7 +38,10 @@ function methodColor(m) { return METHOD_COLOR[(m || '').toLowerCase()] || '#94a3
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function KpiCard({ icon, label, value, color = TEXT, sub = null, negative = false }) {
+function KpiCard({ icon, label, value = 0, rawValue, color = TEXT, sub = null, negative = false }) {
+  const displayed = rawValue !== undefined
+    ? rawValue
+    : `${negative && value > 0 ? '-' : ''}${fmt(value)}`
   return (
     <div style={{
       flex: 1, minWidth: 140,
@@ -49,7 +53,7 @@ function KpiCard({ icon, label, value, color = TEXT, sub = null, negative = fals
         <span style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.4 }}>{label}</span>
       </div>
       <p style={{ fontSize: 22, fontWeight: 800, color: negative ? '#ef4444' : color, lineHeight: 1 }}>
-        {negative && value > 0 ? '-' : ''}{fmt(value)}
+        {displayed}
       </p>
       {sub && <p style={{ fontSize: 11, color: MUTED }}>{sub}</p>}
     </div>
@@ -137,6 +141,7 @@ export default function Dashboard({ onClose, sales = [] }) {
   const [locationId,    setLocationId]    = useState('all')
   const [refreshKey,    setRefreshKey]    = useState(0)
   const [clockRecords,  setClockRecords]  = useState([])
+  const [leads,         setLeads]         = useState([])
 
   // ── Derived date range ──────────────────────────────────────────────────────
   const { from, to } = useMemo(() => {
@@ -174,6 +179,22 @@ export default function Dashboard({ onClose, sales = [] }) {
   useEffect(() => {
     fetchTodayClockRecords().then(records => { if (records) setClockRecords(records) })
   }, [refreshKey])
+
+  // Fetch leads from Supabase — respects date range + location filter
+  useEffect(() => {
+    if (!from || !to) { setLeads([]); return }
+    // Use to+1ms so the upper bound is inclusive (fetchLeadsInRange uses < exclusive)
+    const endInclusive = new Date(to.getTime() + 1)
+    fetchLeadsInRange(from, endInclusive)
+      .then(list => {
+        if (!Array.isArray(list)) return
+        setLeads(locationId !== 'all'
+          ? list.filter(l => (l.locationName || '') === locationId)
+          : list
+        )
+      })
+      .catch(() => {})
+  }, [from, to, locationId, refreshKey])
 
   const handleRefresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
@@ -285,6 +306,13 @@ export default function Dashboard({ onClose, sales = [] }) {
             color={kpis.netProfit >= 0 ? '#22c55e' : '#ef4444'}
             sub="Revenue − Inventory Cost"
             negative={kpis.netProfit < 0}
+          />
+          <KpiCard
+            icon="👤"
+            label="LEADS CAPTURED"
+            rawValue={String(leads.length)}
+            color="#22c55e"
+            sub="new contacts · from Supabase"
           />
         </div>
 
