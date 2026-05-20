@@ -154,6 +154,16 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
   // ── Active ranking tab ────────────────────────────────────────────────────
   const [rankTab, setRankTab] = useState('sales')
 
+  // ── Day rollover detection (must be declared before `poll` uses it) ──────
+  const [today, setToday] = useState(() => localDateStr())
+  useEffect(() => {
+    const id = setInterval(() => {
+      const nd = localDateStr()
+      setToday(prev => prev !== nd ? nd : prev)
+    }, 60_000)
+    return () => clearInterval(id)
+  }, [])
+
   // ── Cross-kiosk Supabase polling ──────────────────────────────────────────
   const [remoteSales, setRemoteSales] = useState(null)   // null = not yet fetched
   const [remoteLeads, setRemoteLeads] = useState([])
@@ -206,16 +216,6 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
     }
     return map
   }, [remoteLeads])
-
-  // ── Day rollover detection ────────────────────────────────────────────────
-  const [today, setToday] = useState(() => localDateStr())
-  useEffect(() => {
-    const id = setInterval(() => {
-      const nd = localDateStr()
-      setToday(prev => prev !== nd ? nd : prev)
-    }, 60_000)
-    return () => clearInterval(id)
-  }, [])
 
   // ── Pulse on new sale ─────────────────────────────────────────────────────
   const [pulse, setPulse] = useState(false)
