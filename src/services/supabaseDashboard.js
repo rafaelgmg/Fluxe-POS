@@ -70,16 +70,25 @@ export async function fetchLeadsInRange(startDate, endDate) {
     const locMap = {}
     for (const l of locations) locMap[l.id] = l.name
 
-    return customers.map(r => ({
-      id:           r.id,
-      firstName:    r.first_name  || '',
-      lastName:     r.last_name   || '',
-      phone:        r.phone       || '',
-      email:        r.email       || '',
-      capturedAt:   r.captured_at || r.created_at,
-      capturedBy:   userMap[r.captured_by_user_id] || null,
-      locationName: locMap[r.captured_location_id] || null,
-    }))
+    return customers.map(r => {
+      // Primary: resolve name via captured_by_user_id → v_users.
+      // Fallback: use the seller name from the first purchase record.
+      // Needed because captured_by_user_id may be null for older leads, and because
+      // v_users full name ("Rafael Gouveia") may not match the sales employee field ("Rafael").
+      const sellerSnap = Array.isArray(r.purchases) && r.purchases.length > 0
+        ? (r.purchases[0]?.seller || null)
+        : null
+      return {
+        id:           r.id,
+        firstName:    r.first_name  || '',
+        lastName:     r.last_name   || '',
+        phone:        r.phone       || '',
+        email:        r.email       || '',
+        capturedAt:   r.captured_at || r.created_at,
+        capturedBy:   userMap[r.captured_by_user_id] || sellerSnap || null,
+        locationName: locMap[r.captured_location_id] || null,
+      }
+    })
   } catch (err) {
     console.warn('[Fluxe] fetchLeadsInRange failed:', err.message)
     return []
@@ -118,18 +127,23 @@ export async function fetchLeadsForAnalytics(startDate, endDate) {
     const locMap = {}
     for (const l of locations) locMap[l.id] = l.name
 
-    return customers.map(r => ({
-      id:           r.id,
-      firstName:    r.first_name  || '',
-      lastName:     r.last_name   || '',
-      phone:        r.phone       || '',
-      email:        r.email       || '',
-      capturedAt:   r.captured_at || r.created_at,
-      capturedBy:   userMap[r.captured_by_user_id] || null,
-      locationName: locMap[r.captured_location_id] || null,
-      smsConsent:   r.sms_consent_status || 'unknown',
-      purchases:    Array.isArray(r.purchases) ? r.purchases : [],
-    }))
+    return customers.map(r => {
+      const sellerSnap = Array.isArray(r.purchases) && r.purchases.length > 0
+        ? (r.purchases[0]?.seller || null)
+        : null
+      return {
+        id:           r.id,
+        firstName:    r.first_name  || '',
+        lastName:     r.last_name   || '',
+        phone:        r.phone       || '',
+        email:        r.email       || '',
+        capturedAt:   r.captured_at || r.created_at,
+        capturedBy:   userMap[r.captured_by_user_id] || sellerSnap || null,
+        locationName: locMap[r.captured_location_id] || null,
+        smsConsent:   r.sms_consent_status || 'unknown',
+        purchases:    Array.isArray(r.purchases) ? r.purchases : [],
+      }
+    })
   } catch (err) {
     console.warn('[Fluxe] fetchLeadsForAnalytics failed:', err.message)
     return []

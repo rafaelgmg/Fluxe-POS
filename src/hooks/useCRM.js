@@ -130,7 +130,7 @@ export function useCRM(posSession = null, currentUser = null) {
         }
         // Auto-sync customers that failed to reach Supabase previously
         const locationId = sessionRef.current?.locationUUID
-        const userId     = userRef.current?.id || null
+        const userId     = userRef.current?.supabaseId || null
         const pending    = load().filter(c => c.pendingSync && !c.supabaseId && !c.archived)
         pending.forEach(c => {
           writeCustomerToSupabase(c, orgId, userId, locationId)
