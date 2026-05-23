@@ -130,10 +130,11 @@ export function useCRM(posSession = null, currentUser = null) {
         }
         // Auto-sync customers that failed to reach Supabase previously
         const locationId = sessionRef.current?.locationUUID
-        const userId     = userRef.current?.supabaseId || null
         const pending    = load().filter(c => c.pendingSync && !c.supabaseId && !c.archived)
         pending.forEach(c => {
-          writeCustomerToSupabase(c, orgId, userId, locationId)
+          // Use the UUID stored at capture time; fall back to current user only if missing
+          const syncUserId = c.capturedByUserId || userRef.current?.supabaseId || null
+          writeCustomerToSupabase(c, orgId, syncUserId, locationId)
             .then(result => {
               if (!result) return
               setCustomers(prev => {
@@ -151,7 +152,8 @@ export function useCRM(posSession = null, currentUser = null) {
   }, [posSession?.orgId]) // re-runs when session (orgId) changes from null → UUID after login
 
   // capturedByOverride — usado em capturas standalone (sem venda)
-  const upsertCustomer = useCallback(async (formData, invoice, capturedByOverride = null) => {
+  // capturedByUserId  — UUID do vendedor que fez o capture (pode ser diferente do currentUser)
+  const upsertCustomer = useCallback(async (formData, invoice, capturedByOverride = null, capturedByUserId = null) => {
     const digits    = normalizePhone(formData.phone)
     const emailNorm = (formData.email || '').trim().toLowerCase()
     const resolvedCapturedBy = capturedByOverride || invoice?.employee || null
@@ -220,6 +222,7 @@ export function useCRM(posSession = null, currentUser = null) {
           notes:                formData.notes                || '',
           marketingConsent:     formData.marketingConsent     || false,
           capturedBy:           resolvedCapturedBy,
+          capturedByUserId:     capturedByUserId || null,
           capturedLocation:     formData.capturedLocation || invoice?.location || '',
           capturedAt:           new Date().toISOString(),
           createdAt:            new Date().toISOString(),
@@ -245,7 +248,8 @@ export function useCRM(posSession = null, currentUser = null) {
     if (isSupabaseConfigured()) {
       const orgId      = sessionRef.current?.orgId
       const locationId = sessionRef.current?.locationUUID
-      const userId     = userRef.current?.id || null
+      // capturedByUserId is the Capture employee's UUID (may differ from currentUser in 2-employee flow)
+      const userId     = capturedByUserId || userRef.current?.supabaseId || null
 
       if (!orgId) {
         // Session not ready — mark pending so auto-sync picks it up on next login
@@ -444,7 +448,7 @@ export function useCRM(posSession = null, currentUser = null) {
     if (isSupabaseConfigured()) {
       const orgId      = sessionRef.current?.orgId
       const locationId = sessionRef.current?.locationUUID
-      const userId     = userRef.current?.id || null
+      const userId     = userRef.current?.supabaseId || null
       if (orgId) {
         writeCustomerToSupabase(newCust, orgId, userId, locationId)
           .then(result => {

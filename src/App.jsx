@@ -417,7 +417,8 @@ export default function App() {
   // Captura standalone — capturedBy = vendedor autenticado neste fluxo específico
   const handleCaptureClientSave = (formData) => {
     if (!captureEmployee?.name) return  // guard: nunca salvar sem vendedor autenticado
-    upsertCustomer({ ...formData, capturedLocation: posSession?.location || '' }, null, captureEmployee.name)
+    // captureEmployee.id = Supabase UUID from verifyEmployeePin — used as captured_by_user_id
+    upsertCustomer({ ...formData, capturedLocation: posSession?.location || '' }, null, captureEmployee.name, captureEmployee.id)
     setShowCaptureClient(false)
     setCaptureEmployee(null)
   }
