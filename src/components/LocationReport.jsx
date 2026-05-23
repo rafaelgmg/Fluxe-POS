@@ -25,6 +25,17 @@ const PAY_COLORS = {
 }
 const PAY_COLOR_DEFAULT = 'var(--c-text-sub)'
 
+// Normalize raw payment method strings (e.g. "cash", "card") → display labels
+function normalizeMethodLabel(m) {
+  if (!m) return 'Other'
+  const l = m.toLowerCase()
+  if (l === 'cash')                                 return 'Cash'
+  if (l === 'card' || l.includes('card'))           return 'Credit Card'
+  if (l === 'external' || l.includes('external'))   return 'External Credit'
+  if (l.includes('check'))                          return 'Check'
+  return m
+}
+
 const fmt$ = (n) => `$${(n || 0).toFixed(2)}`
 
 function isoToday(offsetDays = 0) {
@@ -248,12 +259,20 @@ export default function LocationReport({ onClose, sales = [] }) {
   }, [locSales])
 
   // ── Payment method breakdown ───────────────────────────────────────────────
+  // Expands split payments into components (cash + card) using s.payments array.
+  // Falls back to s.paymentMethod for single-method sales.
   const payBreakdown = useMemo(() => {
     const map = {}
     locSales.forEach(s => {
-      const m = s.paymentMethod || 'Other'
-      if (!map[m]) map[m] = 0
-      map[m] += s.total || 0
+      const payments = Array.isArray(s.payments) && s.payments.length > 0
+        ? s.payments
+        : [{ method: s.paymentMethod || 'other', amount: s.total || 0 }]
+      for (const p of payments) {
+        const method = (p.method || '').toLowerCase()
+        if (method === 'split') continue // skip the split marker — components already listed
+        const label = normalizeMethodLabel(p.method)
+        map[label] = (map[label] || 0) + (p.amount || 0)
+      }
     })
     return map
   }, [locSales])
