@@ -10,12 +10,16 @@ const FRAGRANCE_OPTIONS = [
 ]
 
 // invoice = null → modo standalone (captura sem venda)
-export default function CustomerCaptureModal({ invoice = null, onSave, onSkip }) {
+// capturedByEmployee = { id, name } — vendedor autenticado via PIN (pré-preenche o dropdown)
+// sellerOptions = [{ id, name }] — lista de vendedores ativos para o dropdown
+export default function CustomerCaptureModal({ invoice = null, onSave, onSkip, capturedByEmployee = null, sellerOptions = [] }) {
   const standalone = !invoice
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', phone: '', email: '',
     birthday: '', fragrancePreferences: [], notes: '', marketingConsent: false,
+    capturedByName: capturedByEmployee?.name || '',
+    capturedById:   capturedByEmployee?.id   || null,
   })
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }))
@@ -174,6 +178,34 @@ export default function CustomerCaptureModal({ invoice = null, onSave, onSkip })
               placeholder="Bought for wife, prefers light scents..."
             />
           </div>
+
+          {/* Captured by — only in standalone Capture mode */}
+          {standalone && sellerOptions.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              {lbl('Captured by')}
+              <select
+                value={form.capturedByName}
+                onChange={e => {
+                  const sel = sellerOptions.find(s => s.name === e.target.value)
+                  setForm(f => ({ ...f, capturedByName: e.target.value, capturedById: sel?.id || null }))
+                }}
+                style={{
+                  ...inputStyle,
+                  cursor: 'pointer',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  paddingRight: 34,
+                  appearance: 'none',
+                }}
+              >
+                <option value="">— Select seller —</option>
+                {sellerOptions.map(s => (
+                  <option key={s.id || s.name} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Marketing consent */}
           <label style={{

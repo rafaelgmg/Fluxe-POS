@@ -12,7 +12,7 @@ import { localDateKey } from './utils/dateUtils'
 import { printReceipt } from './utils/printReceipt'
 import { awaitOrgSession } from './services/supabaseAuth'
 import { getNextInvoiceNumber, fetchLocationConfigs } from './services/supabaseRead'
-import { loadUsersAsync } from './utils/usersStorage'
+import { loadUsersAsync, loadActiveEmployees } from './utils/usersStorage'
 import { useCRM } from './hooks/useCRM'
 import { useSales, nextInvoiceNumber } from './hooks/useSales'
 import { useCart } from './hooks/useCart'
@@ -414,11 +414,12 @@ export default function App() {
     setShowCaptureClient(true)
   }
 
-  // Captura standalone — capturedBy = vendedor autenticado neste fluxo específico
+  // Captura standalone — capturedBy = vendedor selecionado no formulário (pré-preenchido via PIN)
   const handleCaptureClientSave = (formData) => {
-    if (!captureEmployee?.name) return  // guard: nunca salvar sem vendedor autenticado
-    // captureEmployee.id = Supabase UUID from verifyEmployeePin — used as captured_by_user_id
-    upsertCustomer({ ...formData, capturedLocation: posSession?.location || '' }, null, captureEmployee.name, captureEmployee.id)
+    const sellerName = formData.capturedByName || captureEmployee?.name || null
+    const sellerId   = formData.capturedById   || captureEmployee?.id   || null
+    if (!sellerName) return  // guard: nunca salvar sem vendedor identificado
+    upsertCustomer({ ...formData, capturedLocation: posSession?.location || '' }, null, sellerName, sellerId)
     setShowCaptureClient(false)
     setCaptureEmployee(null)
   }
@@ -1101,6 +1102,8 @@ export default function App() {
         <CustomerCaptureModal
           onSave={handleCaptureClientSave}
           onSkip={() => { setShowCaptureClient(false); setCaptureEmployee(null) }}
+          capturedByEmployee={captureEmployee}
+          sellerOptions={loadActiveEmployees()}
         />
       )}
 
