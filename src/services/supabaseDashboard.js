@@ -5,6 +5,7 @@
 import { fetchSales, getOrgId, isSupabaseConfigured } from './supabaseRead'
 import { initOrgSession } from './supabaseAuth'
 import { getAccessToken }  from './supabaseSession'
+import { loadActiveEmployees } from '../utils/usersStorage'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL      || ''
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -70,14 +71,26 @@ export async function fetchLeadsInRange(startDate, endDate) {
     const locMap = {}
     for (const l of locations) locMap[l.id] = l.name
 
+    // Build UUID → short name map from local employees (matches Competition podium names)
+    const localEmpMap = {}
+    try {
+      for (const e of loadActiveEmployees()) {
+        if (e.supabaseId) localEmpMap[e.supabaseId] = e.name
+      }
+    } catch {}
+
     return customers.map(r => {
-      // Primary: resolve name via captured_by_user_id → v_users.
-      // Fallback: use the seller name from the first purchase record.
-      // Needed because captured_by_user_id may be null for older leads, and because
-      // v_users full name ("Rafael Gouveia") may not match the sales employee field ("Rafael").
+      // Priority order for capturedBy name (must match the short names used in Competition):
+      // 1. purchases[0].seller — snapshot of the seller's short name at time of sale ← most reliable for sale captures
+      // 2. local employee list matched by UUID — short name, works for standalone captures
+      // 3. v_users full name — fallback, may not match Competition podium
       const sellerSnap = Array.isArray(r.purchases) && r.purchases.length > 0
         ? (r.purchases[0]?.seller || null)
         : null
+      const capturedBy = sellerSnap
+        || localEmpMap[r.captured_by_user_id]
+        || userMap[r.captured_by_user_id]
+        || null
       return {
         id:           r.id,
         firstName:    r.first_name  || '',
@@ -85,7 +98,7 @@ export async function fetchLeadsInRange(startDate, endDate) {
         phone:        r.phone       || '',
         email:        r.email       || '',
         capturedAt:   r.captured_at || r.created_at,
-        capturedBy:   userMap[r.captured_by_user_id] || sellerSnap || null,
+        capturedBy,
         locationName: locMap[r.captured_location_id] || null,
       }
     })
@@ -127,10 +140,21 @@ export async function fetchLeadsForAnalytics(startDate, endDate) {
     const locMap = {}
     for (const l of locations) locMap[l.id] = l.name
 
+    const localEmpMap = {}
+    try {
+      for (const e of loadActiveEmployees()) {
+        if (e.supabaseId) localEmpMap[e.supabaseId] = e.name
+      }
+    } catch {}
+
     return customers.map(r => {
       const sellerSnap = Array.isArray(r.purchases) && r.purchases.length > 0
         ? (r.purchases[0]?.seller || null)
         : null
+      const capturedBy = sellerSnap
+        || localEmpMap[r.captured_by_user_id]
+        || userMap[r.captured_by_user_id]
+        || null
       return {
         id:           r.id,
         firstName:    r.first_name  || '',
@@ -138,7 +162,7 @@ export async function fetchLeadsForAnalytics(startDate, endDate) {
         phone:        r.phone       || '',
         email:        r.email       || '',
         capturedAt:   r.captured_at || r.created_at,
-        capturedBy:   userMap[r.captured_by_user_id] || sellerSnap || null,
+        capturedBy,
         locationName: locMap[r.captured_location_id] || null,
         smsConsent:   r.sms_consent_status || 'unknown',
         purchases:    Array.isArray(r.purchases) ? r.purchases : [],

@@ -133,7 +133,7 @@ export function useCRM(posSession = null, currentUser = null) {
         const pending    = load().filter(c => c.pendingSync && !c.supabaseId && !c.archived)
         pending.forEach(c => {
           // Use the UUID stored at capture time; fall back to current user only if missing
-          const syncUserId = c.capturedByUserId || userRef.current?.supabaseId || null
+          const syncUserId = c.capturedByUserId || userRef.current?.id || null
           writeCustomerToSupabase(c, orgId, syncUserId, locationId)
             .then(result => {
               if (!result) return
@@ -248,8 +248,9 @@ export function useCRM(posSession = null, currentUser = null) {
     if (isSupabaseConfigured()) {
       const orgId      = sessionRef.current?.orgId
       const locationId = sessionRef.current?.locationUUID
-      // capturedByUserId is the Capture employee's UUID (may differ from currentUser in 2-employee flow)
-      const userId     = capturedByUserId || userRef.current?.supabaseId || null
+      // Priority: explicit capturedByUserId (Capture module) → invoice seller UUID → main POS user UUID
+      // currentUser.id IS the Supabase UUID (from verifyEmployeePin); .supabaseId does not exist on this shape
+      const userId     = capturedByUserId || invoice?.employeeId || userRef.current?.id || null
 
       if (!orgId) {
         // Session not ready — mark pending so auto-sync picks it up on next login
@@ -448,7 +449,7 @@ export function useCRM(posSession = null, currentUser = null) {
     if (isSupabaseConfigured()) {
       const orgId      = sessionRef.current?.orgId
       const locationId = sessionRef.current?.locationUUID
-      const userId     = userRef.current?.supabaseId || null
+      const userId     = userRef.current?.id || null
       if (orgId) {
         writeCustomerToSupabase(newCust, orgId, userId, locationId)
           .then(result => {
