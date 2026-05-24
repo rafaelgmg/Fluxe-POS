@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { loadCRM, saveCRM } from '../utils/crmStorage'
 import { localId } from '../domain/utils/ids'
 import { isSupabaseConfigured } from '../services/supabaseRead'
+import { loadActiveEmployees } from '../utils/usersStorage'
 import {
   fetchCustomers,
   writeCustomerToSupabase,
@@ -66,6 +67,15 @@ function mergeSupabaseIntoLocal(localList, serverList) {
 
   // Add server-only records (captured on another device / kiosk)
   const localIds  = new Set(localList.map(c => c.supabaseId).filter(Boolean))
+
+  // Build UUID → short name from local employees (for standalone captures without purchases)
+  const empByUUID = {}
+  try {
+    for (const e of loadActiveEmployees()) {
+      if (e.supabaseId) empByUUID[e.supabaseId] = e.name
+    }
+  } catch {}
+
   const toAdd = serverList
     .filter(s => !localIds.has(s.supabaseId))
     .map(s => ({
@@ -83,7 +93,8 @@ function mergeSupabaseIntoLocal(localList, serverList) {
       notes:                s.notes,
       tags:                 s.tags,
       crmScore:             s.crmScore,
-      capturedBy:           null,
+      // Resolve seller name: purchase snapshot first (sale captures), then local UUID lookup (standalone)
+      capturedBy:           s.purchases?.[0]?.seller || empByUUID[s.capturedByUserId] || null,
       capturedLocation:     null,
       capturedAt:           s.capturedAt,
       createdAt:            s.createdAt,
