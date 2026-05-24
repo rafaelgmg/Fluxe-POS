@@ -192,17 +192,20 @@ export async function verifyEmployeePin(employeeName, pin) {
         // Prefer local role — Supabase position can be null for legacy/seeded users
         const localEmp = loadActiveEmployees().find(e => e.name === employeeName)
 
-        // Auto-cache PIN in localStorage so offline fallback works on casino WiFi
-        // after first successful online login — no manual setup needed per device.
+        // Auto-cache PIN + supabaseId in localStorage so offline fallback works and
+        // UUID → short-name lookups (Competition, EOD merge) resolve correctly on all devices.
         try {
           const users = loadUsers()
           const idx = users.findIndex(usr =>
             usr.supabaseId === u.id ||
             `${usr.firstName} ${usr.lastName}`.trim().toLowerCase() === employeeName.toLowerCase()
           )
-          if (idx >= 0 && users[idx].pin !== pin) {
-            users[idx] = { ...users[idx], pin }
-            saveUsers(users)
+          if (idx >= 0) {
+            const needsUpdate = users[idx].pin !== pin || users[idx].supabaseId !== u.id
+            if (needsUpdate) {
+              users[idx] = { ...users[idx], pin, supabaseId: u.id }
+              saveUsers(users)
+            }
           }
         } catch {}
 
