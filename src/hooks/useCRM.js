@@ -187,72 +187,74 @@ export function useCRM(posSession = null, currentUser = null) {
     } : null
 
     // ── localStorage write (sync, immediate) ────────────────────────────────
-    let upsertedLocal = null
+    // Compute the new state directly from localStorage (always in sync via persist).
+    // Assigning upsertedLocal inside a React 18 state updater is unreliable because
+    // the updater may run asynchronously — side effects inside updaters are not safe.
+    const current = load()
+    let idx = -1
+    if (digits)    idx = current.findIndex(c => normalizePhone(c.phone) === digits)
+    if (idx === -1 && emailNorm)
+                   idx = current.findIndex(c => (c.email || '').trim().toLowerCase() === emailNorm)
 
-    setCustomers(prev => {
-      let idx = -1
-      if (digits)    idx = prev.findIndex(c => normalizePhone(c.phone) === digits)
-      if (idx === -1 && emailNorm)
-                     idx = prev.findIndex(c => (c.email || '').trim().toLowerCase() === emailNorm)
+    let upsertedLocal
+    let nextState
 
-      let updated
-      if (idx >= 0) {
-        updated = prev.map((c, i) => i !== idx ? c : {
-          ...c,
-          archived:             false,
-          archivedAt:           null,
-          firstName:            formData.firstName            || c.firstName,
-          lastName:             formData.lastName             || c.lastName,
-          phone:                formData.phone                || c.phone,
-          email:                formData.email                || c.email,
-          birthday:             formData.birthday             || c.birthday,
-          fragrancePreferences: mergePrefs(
-            c.fragrancePreferences ?? c.fragrancePreference,
-            formData.fragrancePreferences,
-          ),
-          notes: formData.notes
-            ? (c.notes ? c.notes + '\n---\n' + formData.notes : formData.notes)
-            : c.notes,
-          marketingConsent: formData.marketingConsent ?? c.marketingConsent,
-          capturedBy:       c.capturedBy || resolvedCapturedBy,
-          updatedAt:        new Date().toISOString(),
-          purchases:        purchase ? [...(c.purchases || []), purchase] : (c.purchases || []),
-        })
-        upsertedLocal = updated[idx]
-      } else {
-        const newCust = {
-          id:                   localId('cust'),
-          firstName:            formData.firstName,
-          lastName:             formData.lastName             || '',
-          phone:                formData.phone                || '',
-          email:                formData.email                || '',
-          birthday:             formData.birthday             || '',
-          fragrancePreferences: Array.isArray(formData.fragrancePreferences)
-            ? formData.fragrancePreferences
-            : (formData.fragrancePreferences ? [formData.fragrancePreferences] : []),
-          notes:                formData.notes                || '',
-          marketingConsent:     formData.marketingConsent     || false,
-          capturedBy:           resolvedCapturedBy,
-          capturedByUserId:     capturedByUserId || null,
-          capturedLocation:     formData.capturedLocation || invoice?.location || '',
-          capturedAt:           new Date().toISOString(),
-          createdAt:            new Date().toISOString(),
-          updatedAt:            new Date().toISOString(),
-          purchases:            purchase ? [purchase] : [],
-          tags:                 [],
-          crmScore:             0,
-          archived:             false,
-          archivedAt:           null,
-          lastInteraction:      null,
-          preferredChannel:     '',
-        }
-        updated = [...prev, newCust]
-        upsertedLocal = newCust
+    if (idx >= 0) {
+      const c = current[idx]
+      upsertedLocal = {
+        ...c,
+        archived:             false,
+        archivedAt:           null,
+        firstName:            formData.firstName            || c.firstName,
+        lastName:             formData.lastName             || c.lastName,
+        phone:                formData.phone                || c.phone,
+        email:                formData.email                || c.email,
+        birthday:             formData.birthday             || c.birthday,
+        fragrancePreferences: mergePrefs(
+          c.fragrancePreferences ?? c.fragrancePreference,
+          formData.fragrancePreferences,
+        ),
+        notes: formData.notes
+          ? (c.notes ? c.notes + '\n---\n' + formData.notes : formData.notes)
+          : c.notes,
+        marketingConsent: formData.marketingConsent ?? c.marketingConsent,
+        capturedBy:       c.capturedBy || resolvedCapturedBy,
+        updatedAt:        new Date().toISOString(),
+        purchases:        purchase ? [...(c.purchases || []), purchase] : (c.purchases || []),
       }
+      nextState = current.map((x, i) => i !== idx ? x : upsertedLocal)
+    } else {
+      upsertedLocal = {
+        id:                   localId('cust'),
+        firstName:            formData.firstName,
+        lastName:             formData.lastName             || '',
+        phone:                formData.phone                || '',
+        email:                formData.email                || '',
+        birthday:             formData.birthday             || '',
+        fragrancePreferences: Array.isArray(formData.fragrancePreferences)
+          ? formData.fragrancePreferences
+          : (formData.fragrancePreferences ? [formData.fragrancePreferences] : []),
+        notes:                formData.notes                || '',
+        marketingConsent:     formData.marketingConsent     || false,
+        capturedBy:           resolvedCapturedBy,
+        capturedByUserId:     capturedByUserId || null,
+        capturedLocation:     formData.capturedLocation || invoice?.location || '',
+        capturedAt:           new Date().toISOString(),
+        createdAt:            new Date().toISOString(),
+        updatedAt:            new Date().toISOString(),
+        purchases:            purchase ? [purchase] : [],
+        tags:                 [],
+        crmScore:             0,
+        archived:             false,
+        archivedAt:           null,
+        lastInteraction:      null,
+        preferredChannel:     '',
+      }
+      nextState = [...current, upsertedLocal]
+    }
 
-      persist(updated)
-      return updated
-    })
+    persist(nextState)
+    setCustomers(nextState)
 
     // ── Supabase write (fire-and-forget) ─────────────────────────────────────
     setSyncStatus('syncing')
