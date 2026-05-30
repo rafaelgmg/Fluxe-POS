@@ -636,12 +636,22 @@ function StepReview({ selected, customers, message, templateId, posSession, onBa
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
               <button
-                disabled
-                title="Configure Twilio in server/.env to enable real sending"
-                style={{ padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'not-allowed', background: 'rgba(59,130,246,0.07)', border: `1px solid rgba(59,130,246,0.15)`, color: DIM, opacity: 0.6 }}
+                disabled={!twilioOk || eligibleList.length === 0}
+                onClick={() => runCampaign(false)}
+                title={!twilioOk ? 'Configure Twilio in server/.env to enable real sending' : `Send to ${eligibleList.length} recipients`}
+                style={{
+                  padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                  cursor: (!twilioOk || eligibleList.length === 0) ? 'not-allowed' : 'pointer',
+                  background: twilioOk && eligibleList.length > 0 ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(59,130,246,0.07)',
+                  border: `1px solid ${twilioOk && eligibleList.length > 0 ? 'rgba(59,130,246,0.6)' : 'rgba(59,130,246,0.15)'}`,
+                  color: twilioOk && eligibleList.length > 0 ? '#fff' : DIM,
+                  opacity: twilioOk === null ? 0.5 : 1,
+                  boxShadow: twilioOk && eligibleList.length > 0 ? '0 0 16px rgba(59,130,246,0.3)' : 'none',
+                  transition: 'all 0.15s',
+                }}
               >Send Real SMS</button>
-              <span style={{ fontSize: 10, color: twilioOk === false ? RED : DIM, whiteSpace: 'nowrap' }}>
-                {twilioOk === false ? '⚠ Twilio not configured' : 'Coming soon'}
+              <span style={{ fontSize: 10, whiteSpace: 'nowrap', color: twilioOk === true ? GREEN : twilioOk === false ? RED : DIM }}>
+                {twilioOk === true ? '✓ Twilio ready' : twilioOk === false ? '⚠ Twilio not configured' : 'Checking...'}
               </span>
             </div>
 
