@@ -17,6 +17,9 @@ import { getAccessToken } from './supabaseSession'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL      || ''
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUUID(v) { return typeof v === 'string' && UUID_RE.test(v) }
+
 function authBearer() { return getAccessToken() || SUPABASE_KEY }
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
@@ -121,8 +124,8 @@ function toPayload(local, orgId, userId, locationId) {
     archived_at:           local.archivedAt               || null,
     legacy_local_id:       local.id                       || null,
   }
-  if (userId)     payload.captured_by_user_id  = userId
-  if (locationId) payload.captured_location_id = locationId
+  if (isUUID(userId))     payload.captured_by_user_id  = userId
+  if (isUUID(locationId)) payload.captured_location_id = locationId
   // Preserve the original capture timestamp so dashboard filters work correctly.
   // Without this, PostgreSQL sets captured_at = NOW() on sync, making old leads look new.
   const capturedAt = local.capturedAt || local.createdAt || null
