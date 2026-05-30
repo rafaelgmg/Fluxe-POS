@@ -5,8 +5,9 @@ import { getLoyaltyStars, starsLabel, calcCRMScore } from '../utils/loyaltyEngin
 import { getCustomerAppointments, upsertAppointment, deleteAppointment } from '../utils/appointmentsStorage'
 import { writeCustomerToSupabase } from '../services/supabaseCRM'
 import { isSupabaseConfigured } from '../services/supabaseRead'
-import CampaignSMS   from './CampaignSMS'
-import CampaignEmail from './CampaignEmail'
+import CampaignSMS    from './CampaignSMS'
+import CampaignEmail  from './CampaignEmail'
+import DripCampaigns  from './DripCampaigns'
 
 const FRAGRANCE_OPTIONS = [
   'Floral', 'Fresh / Aquatic', 'Woody', 'Oriental / Oud',
@@ -1079,6 +1080,7 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
   const TABS = [
     { id: 'customers', label: 'Customers' },
     { id: 'sms',       label: 'SMS Campaign' },
+    { id: 'drip',      label: 'Drip Campaigns' },
     { id: 'email',     label: 'Email Campaign' },
   ]
 
@@ -1111,6 +1113,9 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
           initialStep={campaignPreload?.step ?? 1}
           initialMessage={campaignPreload?.message ?? null}
         />
+      )}
+      {activeTab === 'drip' && (
+        <DripCampaigns customers={customers} posSession={posSession} />
       )}
       {activeTab === 'email' && <CampaignEmail />}
 
