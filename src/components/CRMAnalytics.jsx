@@ -106,6 +106,38 @@ function computeAnalytics(leads, start, end) {
   const repeat     = leads.filter(l => l.purchases.length > 1).length
   const firstTime  = total - repeat
 
+  // Daily captures — ordered array of { date, count } for the full range
+  const dayMap = {}
+  leads.forEach(l => {
+    const d   = new Date(l.capturedAt)
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    dayMap[key] = (dayMap[key] || 0) + 1
+  })
+  const byDay = []
+  const cursor = new Date(start)
+  cursor.setHours(0, 0, 0, 0)
+  while (cursor < end) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`
+    byDay.push({
+      label: cursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      count: dayMap[key] || 0,
+    })
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  // Fragrance preferences
+  const fragMap = {}
+  leads.forEach(l => {
+    const prefs = Array.isArray(l.fragrancePreferences) ? l.fragrancePreferences
+      : l.fragrancePreference ? [l.fragrancePreference] : []
+    prefs.forEach(p => { if (p) fragMap[p] = (fragMap[p] || 0) + 1 })
+  })
+  const byFragrance = Object.entries(fragMap).sort(([, a], [, b]) => b - a)
+
+  // Captures by hour (0–23)
+  const byHour = Array(24).fill(0)
+  leads.forEach(l => { if (l.capturedAt) byHour[new Date(l.capturedAt).getHours()]++ })
+
   return {
     total, withPhone, withEmail, withBoth, noContact,
     consent,
@@ -113,6 +145,7 @@ function computeAnalytics(leads, start, end) {
     byLocation: Object.entries(locMap).sort(([, a], [, b]) => b - a),
     converted, convRate, periodRevenue, periodTxCount, avgTicket,
     repeat, firstTime,
+    byDay, byFragrance, byHour,
   }
 }
 
@@ -190,6 +223,85 @@ function ConsentPill({ label, count, total, color, icon }) {
       <div style={{ fontSize: 11, color: MUTED, marginBottom: 8 }}>{fmtPct(pct)} of leads</div>
       <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 2, transition: 'width 0.4s ease' }} />
+      </div>
+    </div>
+  )
+}
+
+function FunnelBar({ label, count, total, color, icon, isLast }) {
+  const pct = total > 0 ? Math.min(100, count / total * 100) : 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: isLast ? 0 : 10 }}>
+      <div style={{ width: 26, textAlign: 'center', fontSize: 16, flexShrink: 0 }}>{icon}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span style={{ color: TEXT, fontSize: 13, fontWeight: 500 }}>{label}</span>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <span style={{ color, fontSize: 14, fontWeight: 800 }}>{count.toLocaleString()}</span>
+            <span style={{ color: MUTED, fontSize: 11, minWidth: 36, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
+          </div>
+        </div>
+        <div style={{ height: 8, background: BORDER, borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 4, transition: 'width 0.5s ease' }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DailyChart({ days }) {
+  if (!days || days.length === 0) return null
+  const max = Math.max(...days.map(d => d.count), 1)
+  // collapse if > 14 days — show every-other label
+  const labelEvery = days.length > 14 ? Math.ceil(days.length / 14) : 1
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, minWidth: days.length * 28, height: 100, paddingBottom: 24, position: 'relative' }}>
+        {days.map((d, i) => {
+          const h = max > 0 ? Math.max(4, (d.count / max) * 76) : 4
+          const showLabel = i % labelEvery === 0
+          return (
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', minWidth: 24 }}
+              title={`${d.label}: ${d.count} leads`}>
+              {d.count > 0 && (
+                <span style={{ fontSize: 9, color: BLUE, fontWeight: 700, marginBottom: 2, lineHeight: 1 }}>{d.count}</span>
+              )}
+              <div style={{ width: '100%', maxWidth: 22, height: h, background: d.count > 0 ? BLUE : BORDER, borderRadius: '3px 3px 0 0', transition: 'height 0.4s ease', opacity: d.count > 0 ? 1 : 0.3 }} />
+              {showLabel && (
+                <span style={{ position: 'absolute', bottom: 0, fontSize: 9, color: MUTED, whiteSpace: 'nowrap', transform: 'rotate(-35deg)', transformOrigin: 'top left', marginTop: 4, left: '50%' }}>
+                  {d.label}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function HourChart({ byHour }) {
+  const max = Math.max(...byHour, 1)
+  const hours = byHour.map((count, h) => ({
+    count, h,
+    label: h === 0 ? '12a' : h < 12 ? `${h}a` : h === 12 ? '12p' : `${h-12}p`,
+  }))
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, minWidth: 580, height: 80, paddingBottom: 20, position: 'relative' }}>
+        {hours.map(({ count, h, label }) => {
+          const ht = max > 0 ? Math.max(3, (count / max) * 56) : 3
+          const isDay  = h >= 9 && h <= 20
+          const color  = count === Math.max(...byHour) ? AMBER : isDay ? BLUE : DIM
+          return (
+            <div key={h} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', minWidth: 20 }}
+              title={`${label}: ${count} leads`}>
+              {count > 0 && <span style={{ fontSize: 8, color, fontWeight: 700, marginBottom: 1 }}>{count}</span>}
+              <div style={{ width: '100%', maxWidth: 18, height: ht, background: color, borderRadius: '2px 2px 0 0', opacity: count > 0 ? 1 : 0.2, transition: 'height 0.4s ease' }} />
+              <span style={{ position: 'absolute', bottom: 0, fontSize: 8, color: MUTED, whiteSpace: 'nowrap' }}>{(h % 3 === 0) ? label : ''}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -526,23 +638,137 @@ export default function CRMAnalytics() {
                   <BarRow label={`First-time (${stats.firstTime})`} count={stats.firstTime} total={stats.total} color={TEAL}   />
                 </div>
                 <div style={{ display: 'flex', gap: 12, flex: '1 1 220px' }}>
-                  <div style={{
-                    flex: 1, background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-                    padding: '14px 16px', textAlign: 'center',
-                  }}>
+                  <div style={{ flex: 1, background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '14px 16px', textAlign: 'center' }}>
                     <div style={{ fontSize: 28, fontWeight: 800, color: PURPLE }}>{stats.repeat}</div>
                     <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Returning</div>
                   </div>
-                  <div style={{
-                    flex: 1, background: BG, border: `1px solid ${BORDER}`, borderRadius: 8,
-                    padding: '14px 16px', textAlign: 'center',
-                  }}>
+                  <div style={{ flex: 1, background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '14px 16px', textAlign: 'center' }}>
                     <div style={{ fontSize: 28, fontWeight: 800, color: TEAL }}>{stats.firstTime}</div>
                     <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>First-time</div>
                   </div>
                 </div>
               </div>
             </Panel>
+
+            {/* ── Capture Funnel ─────────────────────────────────────────── */}
+            <Panel title="Capture Funnel" icon="🔽">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+                <div>
+                  <FunnelBar icon="👤" label="Total leads captured"  count={stats.total}     total={stats.total}     color={BLUE}   />
+                  <FunnelBar icon="📞" label="Have phone (reachable)" count={stats.withPhone} total={stats.total}     color={TEAL}   />
+                  <FunnelBar icon="✅" label="SMS opted-in (ready)"   count={stats.consent.opted_in || 0} total={stats.total} color={GREEN} />
+                  <FunnelBar icon="💰" label="Converted (purchased)"  count={stats.converted} total={stats.total}     color={AMBER}  isLast />
+                </div>
+                <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    ['Phone reach rate',   stats.withPhone,               stats.total,     TEAL,  'of captured leads are reachable by SMS'],
+                    ['Consent rate',       stats.consent.opted_in || 0,   stats.withPhone, GREEN, 'of reachable leads opted in'],
+                    ['Conversion rate',    stats.converted,               stats.total,     AMBER, 'of all leads made a purchase'],
+                  ].map(([label, num, den, color, desc]) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <div>
+                        <p style={{ color: TEXT, fontSize: 12, fontWeight: 600 }}>{label}</p>
+                        <p style={{ color: MUTED, fontSize: 11 }}>{desc}</p>
+                      </div>
+                      <span style={{ fontSize: 18, fontWeight: 800, color, flexShrink: 0 }}>
+                        {den > 0 ? `${((num / den) * 100).toFixed(0)}%` : '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Panel>
+
+            {/* ── Daily Captures ─────────────────────────────────────────── */}
+            {stats.byDay.length > 1 && (
+              <Panel title="Captures per Day" icon="📅">
+                <DailyChart days={stats.byDay} />
+                <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
+                  {(() => {
+                    const peak = stats.byDay.reduce((a, b) => b.count > a.count ? b : a, stats.byDay[0])
+                    const avg  = stats.total / stats.byDay.length
+                    return (
+                      <>
+                        <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px' }}>
+                          <p style={{ color: MUTED, fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}>PEAK DAY</p>
+                          <p style={{ color: BLUE, fontSize: 16, fontWeight: 800, marginTop: 2 }}>{peak.label}</p>
+                          <p style={{ color: MUTED, fontSize: 11 }}>{peak.count} leads</p>
+                        </div>
+                        <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px' }}>
+                          <p style={{ color: MUTED, fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}>DAILY AVG</p>
+                          <p style={{ color: TEAL, fontSize: 16, fontWeight: 800, marginTop: 2 }}>{avg.toFixed(1)}</p>
+                          <p style={{ color: MUTED, fontSize: 11 }}>leads / day</p>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+              </Panel>
+            )}
+
+            {/* ── Fragrance Preferences ──────────────────────────────────── */}
+            {stats.byFragrance.length > 0 && (
+              <Panel title="Fragrance Preferences" icon="🧴">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+                  <div>
+                    {stats.byFragrance.slice(0, 8).map(([name, count]) => (
+                      <BarRow key={name} label={name} count={count} total={stats.total} color={PURPLE} />
+                    ))}
+                  </div>
+                  <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '14px 16px' }}>
+                    <p style={{ color: MUTED, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, marginBottom: 10 }}>TOP 3</p>
+                    {stats.byFragrance.slice(0, 3).map(([name, count], i) => (
+                      <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i < 2 ? 10 : 0 }}>
+                        <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>
+                          {['🥇', '🥈', '🥉'][i]}
+                        </span>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ color: TEXT, fontSize: 13, fontWeight: 600 }}>{name}</p>
+                          <p style={{ color: MUTED, fontSize: 11 }}>{count} customers · {stats.total > 0 ? ((count/stats.total)*100).toFixed(0) : 0}%</p>
+                        </div>
+                      </div>
+                    ))}
+                    {stats.byFragrance.length === 0 && (
+                      <p style={{ color: MUTED, fontSize: 12 }}>No preference data yet — add preferences when capturing leads.</p>
+                    )}
+                  </div>
+                </div>
+              </Panel>
+            )}
+
+            {/* ── Capture by Hour ────────────────────────────────────────── */}
+            {stats.total > 0 && (
+              <Panel title="Captures by Hour of Day" icon="🕐">
+                <HourChart byHour={stats.byHour} />
+                <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
+                  {(() => {
+                    const peakH = stats.byHour.indexOf(Math.max(...stats.byHour))
+                    const label = peakH === 0 ? '12am' : peakH < 12 ? `${peakH}am` : peakH === 12 ? '12pm' : `${peakH-12}pm`
+                    const dayTotal  = stats.byHour.slice(9, 18).reduce((a, b) => a + b, 0)
+                    const nightTotal = stats.byHour.slice(18, 24).reduce((a, b) => a + b, 0) + stats.byHour.slice(0, 9).reduce((a, b) => a + b, 0)
+                    return (
+                      <>
+                        <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px' }}>
+                          <p style={{ color: MUTED, fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}>PEAK HOUR</p>
+                          <p style={{ color: AMBER, fontSize: 16, fontWeight: 800, marginTop: 2 }}>{label}</p>
+                          <p style={{ color: MUTED, fontSize: 11 }}>{stats.byHour[peakH]} leads</p>
+                        </div>
+                        <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px' }}>
+                          <p style={{ color: MUTED, fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}>9AM – 6PM</p>
+                          <p style={{ color: BLUE, fontSize: 16, fontWeight: 800, marginTop: 2 }}>{dayTotal}</p>
+                          <p style={{ color: MUTED, fontSize: 11 }}>{stats.total > 0 ? ((dayTotal/stats.total)*100).toFixed(0) : 0}% of captures</p>
+                        </div>
+                        <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 8, padding: '10px 14px' }}>
+                          <p style={{ color: MUTED, fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}>EVENING +</p>
+                          <p style={{ color: PURPLE, fontSize: 16, fontWeight: 800, marginTop: 2 }}>{nightTotal}</p>
+                          <p style={{ color: MUTED, fontSize: 11 }}>{stats.total > 0 ? ((nightTotal/stats.total)*100).toFixed(0) : 0}% of captures</p>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+              </Panel>
+            )}
 
           </>
         )}
