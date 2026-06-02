@@ -1117,7 +1117,7 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
       {activeTab === 'drip' && (
         <DripCampaigns customers={customers} posSession={posSession} />
       )}
-      {activeTab === 'email' && <CampaignEmail />}
+      {activeTab === 'email' && <CampaignEmail customers={customers} />}
 
       {/* ── Customers Tab ── */}
       {activeTab === 'customers' && <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>

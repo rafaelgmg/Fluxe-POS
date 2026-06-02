@@ -47,6 +47,23 @@ if (
 
 scheduler.init(twilioClient)
 
+// ─── Resend setup ─────────────────────────────────────────────────────────────
+
+let resendClient = null
+const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Perfume Passage <onboarding@resend.dev>'
+
+if (process.env.RESEND_API_KEY) {
+  try {
+    const { Resend } = require('resend')
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+    console.log('[Resend] Client initialized ✓')
+  } catch (err) {
+    console.warn('[Resend] Package not installed — run: npm install resend in server/', err.message)
+  }
+} else {
+  console.warn('[Resend] RESEND_API_KEY not set — email sending disabled.')
+}
+
 // ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(cors({
@@ -109,6 +126,8 @@ app.get('/api/health', (_req, res) => {
     testNumber:        process.env.SMS_TEST_NUMBER || null,
     automationEnabled: process.env.SMS_AUTOMATION_ENABLED === 'true',
     rateLimitPerDay:   parseInt(process.env.SMS_RATE_LIMIT_PER_DAY) || 3,
+    resend:            !!resendClient,
+    resendFrom:        resendClient ? RESEND_FROM : null,
     customers:         db.getAllCustomers().length,
     scheduledPending:  db.getScheduledMessages().filter(m => m.status === 'pending').length,
     timestamp:         new Date().toISOString(),
@@ -296,6 +315,70 @@ app.get('/api/sms/log', (_req, res) => {
 // GET /api/sms/scheduled
 app.get('/api/sms/scheduled', (_req, res) => {
   res.json(db.getScheduledMessages())
+})
+
+// ─── Email (Resend) ───────────────────────────────────────────────────────────
+
+function buildEmailHtml(bodyText, storeName) {
+  const escaped = bodyText
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>')
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+  <tr><td style="background:#030e1e;padding:24px 32px;border-radius:10px 10px 0 0">
+    <h1 style="margin:0;color:#f1f5f9;font-size:22px;font-weight:800">${storeName}</h1>
+    <p style="margin:4px 0 0;color:#94a3b8;font-size:13px">Las Vegas, Nevada</p>
+  </td></tr>
+  <tr><td style="background:#ffffff;padding:32px;color:#1e293b;font-size:15px;line-height:1.7">
+    ${escaped}
+  </td></tr>
+  <tr><td style="background:#f8fafc;padding:20px 32px;border-radius:0 0 10px 10px;border-top:1px solid #e2e8f0">
+    <p style="margin:0;font-size:12px;color:#94a3b8">
+      ${storeName} · 3663 Las Vegas Blvd, Las Vegas NV 89109<br>
+      <a href="mailto:unsubscribe@perfumepassage.com?subject=Unsubscribe" style="color:#94a3b8">Unsubscribe</a>
+    </p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`
+}
+
+// POST /api/email/send
+app.post('/api/email/send', async (req, res) => {
+  const { to, firstName, subject, body, dryRun } = req.body || {}
+
+  if (!to || !subject || !body) {
+    return res.status(400).json({ error: 'to, subject, and body are required' })
+  }
+
+  const storeName = process.env.BUSINESS_NAME || 'Perfume Passage'
+  const html      = buildEmailHtml(body, storeName)
+
+  if (dryRun) {
+    return res.json({ success: true, id: 'dry-run', dryRun: true })
+  }
+
+  if (!resendClient) {
+    return res.status(503).json({ error: 'Resend not configured. Add RESEND_API_KEY to server/.env and run: npm install resend' })
+  }
+
+  try {
+    const result = await resendClient.emails.send({
+      from:    RESEND_FROM,
+      to:      [to],
+      subject,
+      html,
+      text:    body,
+    })
+    if (result.error) {
+      return res.status(400).json({ error: result.error.message || 'Resend error' })
+    }
+    res.json({ success: true, id: result.data?.id })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 // ─── Sales ────────────────────────────────────────────────────────────────────
