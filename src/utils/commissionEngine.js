@@ -192,7 +192,7 @@ export function calcInvoiceCommission(invoice, categoryMap, tierRate = 0, spareR
   // This prevents inflated commission when some items are sold below minPrice.
   const ncRaws = rawItems.filter(raw => {
     if ((raw.qty ?? 1) <= 0) return false  // exchange return lines earn no commission
-    const cat = categoryMap[(raw.product?.category || raw.category || '')]
+    const cat = categoryMap[(raw.product?.category || raw.category || '').toLowerCase()]
     return cat?.commissionType === 'tier_nc'
   })
 
@@ -236,7 +236,7 @@ export function calcInvoiceCommission(invoice, categoryMap, tierRate = 0, spareR
   // ── Per-item breakdown ────────────────────────────────────────────────────────
   const breakdown = rawItems.map(raw => {
     const item      = resolveItemFields(raw)
-    const catConfig = categoryMap[item.category] || null
+    const catConfig = categoryMap[(item.category || '').toLowerCase()] || null
     const commType  = catConfig?.commissionType
 
     let commission        = 0

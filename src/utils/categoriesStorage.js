@@ -139,7 +139,9 @@ export function ensureCategoriesSeeded() {
  */
 export function buildCategoryMap(activeOnly = false) {
   const cats = activeOnly ? loadActiveCategories() : loadCategories()
-  return Object.fromEntries(cats.map(c => [c.name, c]))
+  // Lowercase keys so lookups are case-insensitive — category names on sale items
+  // may differ in case from the stored config (e.g. "men's brands" vs "Men's Brands").
+  return Object.fromEntries(cats.map(c => [c.name.toLowerCase(), c]))
 }
 
 /**
