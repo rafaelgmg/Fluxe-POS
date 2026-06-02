@@ -26,6 +26,7 @@ import EditItemModal from './components/EditItemModal'
 import Cart from './components/Cart'
 import PaymentModal from './components/PaymentModal'
 import CustomerCaptureModal from './components/CustomerCaptureModal'
+import SmsReceiptModal from './components/SmsReceiptModal'
 import CRMPanel from './components/CRMPanel'
 import EndOfDayReport from './components/EndOfDayReport'
 import UserReport from './components/UserReport'
@@ -91,6 +92,7 @@ export default function App() {
   const [frozenSales, setFrozenSales]   = useState(loadFrozenSales)
   const [showFrozen, setShowFrozen] = useState(false)
   const [saleComplete, setSaleComplete] = useState(null)
+  const [smsReceipt,   setSmsReceipt]   = useState(null)   // { invoice, phone } | null
   const [showDashboard, setShowDashboard]   = useState(false)
   const [showEndOfDay, setShowEndOfDay]     = useState(false)
   const [showUserReport, setShowUserReport] = useState(false)
@@ -396,6 +398,8 @@ export default function App() {
     const invoice = pendingInvoice
     if (!invoice) return                 // already handled (stale click)
     setPendingInvoice(null)              // close modal immediately — visual feedback
+    // Stash phone so the SMS Receipt modal can pre-fill it
+    if (formData.phone) setSmsReceipt(prev => prev ? prev : { invoice: null, phone: formData.phone })
     upsertCustomer(formData, invoice)
     finalizeSale(invoice)
   }
@@ -1127,11 +1131,11 @@ export default function App() {
           position: 'fixed', bottom: 48, left: '50%', transform: 'translateX(-50%)',
           background: '#111d30', border: '1px solid #22c55e', borderRadius: 10,
           padding: '16px 24px', color: '#f1f5f9', fontSize: 14, fontWeight: 600,
-          zIndex: 2000, display: 'flex', alignItems: 'center', gap: 14,
+          zIndex: 2000, display: 'flex', alignItems: 'center', gap: 10,
           boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
         }}>
           <span style={{ fontSize: 22 }}>✅</span>
-          <div>
+          <div style={{ marginRight: 4 }}>
             <div style={{ fontWeight: 700, fontSize: 15 }}>
               Sale #{saleComplete.number} — ${saleComplete.total.toFixed(2)}
             </div>
@@ -1142,24 +1146,40 @@ export default function App() {
           <button
             onClick={() => printReceipt(saleComplete)}
             style={{
-              marginLeft: 4, background: '#3b82f6', border: 'none',
-              borderRadius: 6, color: '#fff', padding: '8px 16px',
+              background: '#3b82f6', border: 'none',
+              borderRadius: 6, color: '#fff', padding: '8px 14px',
               cursor: 'pointer', fontSize: 13, fontWeight: 700,
             }}
-          >
-            🖨 Print
-          </button>
+          >🖨 Print</button>
           <button
-            onClick={() => setSaleComplete(null)}
+            onClick={() => {
+              setSmsReceipt(prev => ({ invoice: saleComplete, phone: prev?.phone || '' }))
+              setSaleComplete(null)
+            }}
+            style={{
+              background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.35)',
+              borderRadius: 6, color: '#93c5fd', padding: '8px 14px',
+              cursor: 'pointer', fontSize: 13, fontWeight: 700,
+            }}
+          >📱 SMS</button>
+          <button
+            onClick={() => { setSaleComplete(null); setSmsReceipt(null) }}
             style={{
               background: 'transparent', border: '1px solid #253349',
-              borderRadius: 6, color: '#94a3b8', padding: '8px 14px',
+              borderRadius: 6, color: '#94a3b8', padding: '8px 12px',
               cursor: 'pointer', fontSize: 13,
             }}
-          >
-            Close
-          </button>
+          >Close</button>
         </div>
+      )}
+
+      {/* SMS RECEIPT MODAL */}
+      {smsReceipt?.invoice && (
+        <SmsReceiptModal
+          invoice={smsReceipt.invoice}
+          defaultPhone={smsReceipt.phone || ''}
+          onClose={() => setSmsReceipt(null)}
+        />
       )}
 
       {/* LOCK SCREEN — renderizado sobre tudo, sem destruir o estado */}
