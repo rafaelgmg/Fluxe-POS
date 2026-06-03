@@ -33,6 +33,7 @@
 
 import { loadCommissionTiers } from './commissionTiersStorage'
 import { getDayBonusResult } from './bonusEngine'
+import { findBonusRule } from './bonusStorage'
 import { calcDayCompetitionBonus } from './competitionBonusEngine'
 import { calcPeriodCommissionFresh } from './commissionEngine'
 import { localDateKey } from './dateUtils'
@@ -245,17 +246,41 @@ export function runCommand(cmd, { sales = [], customers = [], empName, location 
 
     // ── Bonus ────────────────────────────────────────────────────────────────
     case 'bonus': {
-      const subtotal = myTodaySales.reduce((s, inv) => s + (inv.subtotal || 0), 0)
+      const subtotal  = myTodaySales.reduce((s, inv) => s + (inv.subtotal || 0), 0)
       try {
-        const result = getDayBonusResult(subtotal, today, location, empName)
-        const lines  = []
-        if (result.autoBonus > 0)  lines.push(`Auto Bonus: ${fmt$(result.autoBonus)}`)
+        const result    = getDayBonusResult(subtotal, today, location, empName)
+        const bonusRule = findBonusRule(today, location)
+        const lines     = []
+
+        if (!bonusRule || !bonusRule.tiers || bonusRule.tiers.length === 0) {
+          lines.push(`Total Bonus: ${fmt$(result.finalBonus)}`)
+          lines.push('No bonus rule configured for today.')
+          return { lines, type: 'info' }
+        }
+
+        // All tiers sorted ascending so they display lowest → highest
+        const tiers = [...bonusRule.tiers].sort((a, b) => a.threshold - b.threshold)
+
+        // Primary line — total earned so far
+        lines.push(`Total Bonus: ${fmt$(result.finalBonus)}`)
+        lines.push(`Today: ${fmt$(subtotal)}`)
+
+        // One line per tier — checkmark if reached, circle + distance if not
+        for (const t of tiers) {
+          if (subtotal >= t.threshold) {
+            lines.push(`✓ Sell ${fmt$(t.threshold)}+ → +${fmt$(t.bonusAmount)}`)
+          } else {
+            const away = t.threshold - subtotal
+            lines.push(`○ Sell ${fmt$(t.threshold)}+ → +${fmt$(t.bonusAmount)}  (${fmt$(away)} away)`)
+          }
+        }
+
+        // Manual adjustment at the bottom if present
         if (result.manualBonus !== 0) {
           const note = result.manualNote ? `  (${result.manualNote})` : ''
           lines.push(`Manual Adj.: ${fmt$(result.manualBonus)}${note}`)
         }
-        lines.push(`Total Bonus: ${fmt$(result.finalBonus)}`)
-        if (result.finalBonus === 0) lines.push('No bonus rule active or threshold not reached.')
+
         return { lines, type: result.finalBonus > 0 ? 'ok' : 'info' }
       } catch {
         return { lines: ['Bonus data unavailable.'], type: 'warn' }

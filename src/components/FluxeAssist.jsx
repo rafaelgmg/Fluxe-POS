@@ -81,10 +81,7 @@ function formatLines(lines, canonicalCmd) {
       case 'commission today':
         return line.replace('Commission Today:', 'Commission Today (so far):')
       case 'bonus':
-        // first line can be "Auto Bonus: $X" or "Total Bonus: $X"
-        return line
-          .replace('Auto Bonus:', 'Auto Bonus (so far):')
-          .replace('Total Bonus:', 'Total Bonus (so far):')
+        return line.replace('Total Bonus:', 'Total Bonus (so far):')
       case 'next tier':
         // "No tier reached yet. Today: $X" → "No tier reached yet (today): $X"
         return line.replace('No tier reached yet.  Today:', 'No tier reached yet · today:')
