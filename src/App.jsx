@@ -130,6 +130,8 @@ export default function App() {
   const [captureEmployee,   setCaptureEmployee]   = useState(null) // vendedor autenticado no fluxo de captura
   const [showCRMAuth,       setShowCRMAuth]       = useState(false)
   const [showAssist,        setShowAssist]         = useState(false)
+  const [showAssistAuth,    setShowAssistAuth]     = useState(false)
+  const [assistEmployee,    setAssistEmployee]     = useState(null)
 
   const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSHistory, updateSmsConsent, getSMSLog, getScheduled } = useCRM(posSession, currentUser)
   const { sales, saveSale, updateSale, voidSale } = useSales()
@@ -666,7 +668,10 @@ export default function App() {
 
         {/* Fluxe Assist button */}
         <button
-          onClick={() => setShowAssist(v => !v)}
+          onClick={() => {
+            if (showAssist) { setShowAssist(false); setAssistEmployee(null) }
+            else setShowAssistAuth(true)
+          }}
           title="Fluxe Assist — quick commands"
           style={{
             background: showAssist ? 'rgba(37,99,235,0.15)' : 'transparent',
@@ -1028,12 +1033,24 @@ export default function App() {
       {showEndOfDay    && <EndOfDayReport onClose={() => setShowEndOfDay(false)}   sales={sales} posSession={posSession} />}
       {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} />}
       {showCompetition && <Competition   onClose={() => setShowCompetition(false)} sales={sales} posSession={posSession} />}
+      {showAssistAuth && (
+        <LoginModal
+          title="Fluxe Assist"
+          subtitle="Enter your PIN to view your stats"
+          onLogin={emp => {
+            setAssistEmployee(emp)
+            setShowAssistAuth(false)
+            setShowAssist(true)
+          }}
+          onCancel={() => setShowAssistAuth(false)}
+        />
+      )}
       {showAssist && (
         <FluxeAssist
-          onClose={() => setShowAssist(false)}
+          onClose={() => { setShowAssist(false); setAssistEmployee(null) }}
           sales={sales}
           customers={customers}
-          empName={currentUser?.name || ''}
+          empName={assistEmployee?.name || currentUser?.name || ''}
           location={posSession?.location || ''}
         />
       )}
