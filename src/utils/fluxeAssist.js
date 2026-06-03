@@ -270,8 +270,7 @@ export function runCommand(cmd, { sales = [], customers = [], empName, location 
           if (subtotal >= t.threshold) {
             lines.push(`✓ Sell ${fmt$(t.threshold)}+ → +${fmt$(t.bonusAmount)}`)
           } else {
-            const away = t.threshold - subtotal
-            lines.push(`○ Sell ${fmt$(t.threshold)}+ → +${fmt$(t.bonusAmount)}  (${fmt$(away)} away)`)
+              lines.push(`○ Sell ${fmt$(t.threshold)}+ → +${fmt$(t.bonusAmount)}`)
           }
         }
 
