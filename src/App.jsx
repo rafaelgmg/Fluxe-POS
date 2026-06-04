@@ -562,13 +562,23 @@ export default function App() {
           }}>{posSession?.location || DEFAULT_LOCATION}</span>
         </div>
 
-        {/* Demo mode badge */}
+        {/* Demo mode badge + exit button */}
         {isDemoMode() && (
-          <span style={{
-            padding: '2px 10px', borderRadius: 6,
-            background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)',
-            color: '#fbbf24', fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
-          }}>DEMO</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              padding: '2px 10px', borderRadius: 6,
+              background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)',
+              color: '#fbbf24', fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+            }}>DEMO</span>
+            <button
+              onClick={() => { clearDemoData(); location.reload() }}
+              style={{
+                padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 700,
+                background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
+                color: '#f87171', cursor: 'pointer',
+              }}
+            >Exit Demo</button>
+          </div>
         )}
 
         {/* Nav icons — main modules */}
