@@ -301,6 +301,27 @@ export default function CategoriesScreen({ onBack }) {
   const [selected,  setSelected]  = useState(null)   // selected id in list
   const [statusTab, setStatusTab] = useState('all')  // 'all' | 'active' | 'inactive'
   const [saved,     setSaved]     = useState(false)
+  const [syncing,   setSyncing]   = useState(false)
+  const [syncMsg,   setSyncMsg]   = useState('')   // '' | 'ok' | 'error'
+
+  const handleSyncToCloud = () => {
+    setSyncing(true)
+    setSyncMsg('')
+    import('../services/supabaseWrite').then(({ syncAllCategoriesToSupabase }) => {
+      syncAllCategoriesToSupabase(cats).then(uuidMap => {
+        setSyncing(false)
+        if (!uuidMap) { setSyncMsg('error'); setTimeout(() => setSyncMsg(''), 3000); return }
+        // Hydrate supabaseIds on local records
+        setCats(prev => {
+          const u = prev.map(c => ({ ...c, supabaseId: c.supabaseId || uuidMap[c.name] || c.supabaseId }))
+          saveCategories(u)
+          return u
+        })
+        setSyncMsg('ok')
+        setTimeout(() => setSyncMsg(''), 3000)
+      }).catch(() => { setSyncing(false); setSyncMsg('error'); setTimeout(() => setSyncMsg(''), 3000) })
+    }).catch(() => { setSyncing(false); setSyncMsg('error') })
+  }
 
   const persist = (updated) => {
     setCats(updated)
@@ -424,13 +445,37 @@ export default function CategoriesScreen({ onBack }) {
           <p style={{ color: MUTED, fontSize: 11 }}>Manage categories used across Products, Inventory and POS</p>
         </div>
 
-        {saved && (
-          <span style={{
-            marginLeft: 'auto', fontSize: 12, color: GREEN,
-            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
-            padding: '4px 12px', borderRadius: 6,
-          }}>✓ Saved</span>
-        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {saved && (
+            <span style={{
+              fontSize: 12, color: GREEN,
+              background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+              padding: '4px 12px', borderRadius: 6,
+            }}>✓ Saved</span>
+          )}
+          {syncMsg === 'ok' && (
+            <span style={{ fontSize: 12, color: GREEN, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', padding: '4px 12px', borderRadius: 6 }}>
+              ✓ Synced to cloud
+            </span>
+          )}
+          {syncMsg === 'error' && (
+            <span style={{ fontSize: 12, color: '#ef4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', padding: '4px 12px', borderRadius: 6 }}>
+              ✗ Sync failed
+            </span>
+          )}
+          <button
+            onClick={handleSyncToCloud}
+            disabled={syncing}
+            style={{
+              padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700,
+              cursor: syncing ? 'not-allowed' : 'pointer',
+              background: syncing ? 'rgba(37,99,235,0.06)' : 'rgba(37,99,235,0.15)',
+              border: `1px solid rgba(37,99,235,${syncing ? '0.15' : '0.4'})`,
+              color: syncing ? MUTED : '#93c5fd',
+              opacity: syncing ? 0.7 : 1,
+            }}
+          >{syncing ? '⟳ Syncing...' : '☁ Sync to Cloud'}</button>
+        </div>
       </div>
 
       {/* ── Body ── */}
