@@ -489,14 +489,22 @@ export default function App() {
   }
 
   // Filtered products — inactive products are never shown to sellers
-  const filtered = products.filter(p => {
-    if (p.status === 'inactive') return false
-    const matchCat = selectedCategory === 'All' || p.category === selectedCategory
-    const matchSearch = search === '' ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.barcode.includes(search)
-    return matchCat && matchSearch
-  })
+  const filtered = (() => {
+    const seen = new Set()
+    return products.filter(p => {
+      if (p.status === 'inactive') return false
+      const matchCat = selectedCategory === 'All' || p.category === selectedCategory
+      const matchSearch = search === '' ||
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.barcode.includes(search)
+      if (!matchCat || !matchSearch) return false
+      // Dedup by barcode — prevents duplicates from showing in POS grid
+      const key = p.barcode?.trim()
+      if (key && seen.has(key)) return false
+      if (key) seen.add(key)
+      return true
+    })
+  })()
 
   const sorted = sortOrder === 'az' ? [...filtered].sort((a, b) => a.name.localeCompare(b.name))
                : sortOrder === 'za' ? [...filtered].sort((a, b) => b.name.localeCompare(a.name))

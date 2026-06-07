@@ -26,7 +26,15 @@ export function useProducts() {
         // Keep local-only products not yet synced to Supabase
         const remoteSet = new Set(remote.map(p => p.barcode))
         current.forEach(p => { if (!remoteSet.has(p.barcode)) merged.push(p) })
-        return merged
+
+        // Dedup by barcode — last write wins (Supabase record preferred since it comes first)
+        const seen = new Set()
+        return merged.filter(p => {
+          const key = p.barcode?.trim()
+          if (!key || seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
       })
     })
     return () => { cancelled = true }
