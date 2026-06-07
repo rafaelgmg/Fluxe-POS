@@ -193,11 +193,9 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
     }
   }, [timeframe, today])
 
-  useEffect(() => {
-    poll()
-    const id = setInterval(poll, 30_000)
-    return () => clearInterval(id)
-  }, [poll])
+  // Fetch once on open — no continuous polling to save Supabase bandwidth.
+  // Manual refresh button available in the UI.
+  useEffect(() => { poll() }, [poll])
 
   // Active sales: Supabase is primary (cross-kiosk), but local sales not yet
   // synced must still appear — otherwise a sale disappears while writeSaleToSupabase
@@ -736,6 +734,18 @@ export default function Competition({ onClose, sales = [], posSession = null }) 
             Cross-kiosk
           </span>
         )}
+        <button
+          onClick={poll}
+          disabled={fetching}
+          style={{
+            background: 'transparent', border: '1px solid #253349',
+            borderRadius: 6, color: fetching ? '#253349' : '#415569',
+            fontSize: 10, padding: '2px 8px', cursor: fetching ? 'default' : 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => { if (!fetching) { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#60a5fa' }}}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#253349'; e.currentTarget.style.color = fetching ? '#253349' : '#415569' }}
+        >⟳ Refresh</button>
         <span style={{ color: '#253349' }}>·</span>
         <span>{subtitle}</span>
       </div>
