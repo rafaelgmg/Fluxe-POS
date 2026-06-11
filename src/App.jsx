@@ -34,7 +34,7 @@ import Competition from './components/Competition'
 import ClockInOut from './components/ClockInOut'
 import Inventory from './components/Inventory'
 import AdminPanel from './components/AdminPanel'
-import CashDrawer from './components/CashDrawer'
+import CashDrawer, { triggerDrawerHardware } from './components/CashDrawer'
 import Receipts from './components/Receipts'
 import SellerSelectModal from './components/SellerSelectModal'
 import FrozenSalesModal from './components/FrozenSalesModal'
@@ -384,6 +384,18 @@ export default function App() {
       locationName:  finalInvoice.location,
       employee:      finalInvoice.employee,
     }, saleId)
+
+    // Auto-open cash drawer if enabled for this location (fire-and-forget — never cancels sale)
+    const locCfg = posSession?.locationId
+      ? loadLocationConfigById(posSession.locationId)
+      : loadLocationConfig(posSession?.location)
+    if (locCfg?.autoOpenCashDrawerAfterSale) {
+      triggerDrawerHardware(finalInvoice.location).then(result => {
+        if (result === 'error') console.warn('[AutoDrawer] Failed to open cash drawer after sale', finalInvoice.number)
+      }).catch(err => {
+        console.warn('[AutoDrawer] Exception opening cash drawer after sale:', err)
+      })
+    }
 
     setSaleComplete(finalInvoice)
     clearCart()

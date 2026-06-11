@@ -93,7 +93,7 @@ function kickViaDrawerSlip() {
   })
 }
 
-async function triggerDrawerHardware(location) {
+export async function triggerDrawerHardware(location) {
   const tag = `[CashDrawer] Location: ${location || 'unknown'}`
 
   // 1. Local server (Win32 Spooler RAW — most reliable, no paper)

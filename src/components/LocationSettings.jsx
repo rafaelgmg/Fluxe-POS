@@ -112,8 +112,9 @@ function defaultExt(loc) {
     // ════════════════════════════════════════════════════════
     // B. Security
     // ════════════════════════════════════════════════════════
-    enableCashCount:     false,  // enable cash count module (structure only)
-    drawerOnlyAfterSale: false,  // open drawer ONLY after a sale — overrides autoOpenDrawer
+    enableCashCount:                 false,  // enable cash count module (structure only)
+    drawerOnlyAfterSale:             false,  // open drawer ONLY after a sale — overrides autoOpenDrawer
+    autoOpenCashDrawerAfterSale:     false,  // ✅ LIVE — auto-kick drawer on successful checkout
 
     // ════════════════════════════════════════════════════════
     // C. Timezone
@@ -695,6 +696,12 @@ function TabPreferences({ form, set, allLocations = [] }) {
               set('autoOpenDrawer', !v)  // keep legacy field in sync
             }}
             description="Prevents the drawer from being opened manually outside of a sale transaction"
+          />
+          <Toggle
+            label={<>Auto Open Cash Drawer After Sale <StatusBadge live /></>}
+            checked={form.autoOpenCashDrawerAfterSale}
+            onChange={v => set('autoOpenCashDrawerAfterSale', v)}
+            description="Automatically opens the cash drawer after a successful invoice is completed."
           />
         </PrefGroup>
       </div>
