@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { fetchDashboardData, computeMetrics } from '../services/supabaseDashboard'
+import InventoryTab from './dashboard/InventoryTab'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || '1234'
@@ -957,11 +958,12 @@ function ProductsTab({ current }) {
 
 // ── Tab bar ───────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'today',    label: 'Today',    icon: '📊' },
-  { id: 'feed',     label: 'Feed',     icon: '⚡' },
-  { id: 'sellers',  label: 'Sellers',  icon: '👥' },
-  { id: 'payments', label: 'Payments', icon: '💳' },
-  { id: 'products', label: 'Products', icon: '🧴' },
+  { id: 'today',     label: 'Today',     icon: '📊' },
+  { id: 'feed',      label: 'Feed',      icon: '⚡' },
+  { id: 'sellers',   label: 'Sellers',   icon: '👥' },
+  { id: 'payments',  label: 'Payments',  icon: '💳' },
+  { id: 'products',  label: 'Products',  icon: '🧴' },
+  { id: 'inventory', label: 'Inventory', icon: '📦' },
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1042,8 +1044,9 @@ export default function Dashboard() {
       case 'feed':     return <FeedTab     feed={data?.feed} onSelect={setSelectedSale} />
       case 'sellers':  return <SellersTab  current={filteredCurrent} />
       case 'payments': return <PaymentsTab current={filteredCurrent} />
-      case 'products': return <ProductsTab current={filteredCurrent} />
-      default:         return null
+      case 'products':  return <ProductsTab current={filteredCurrent} />
+      case 'inventory': return <InventoryTab />
+      default:          return null
     }
   })()
 
