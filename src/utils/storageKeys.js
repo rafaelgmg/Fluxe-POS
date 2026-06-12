@@ -33,6 +33,7 @@ export const KEY_BONUS_MANUAL     = 'fluxe-bonus-manual-v1'
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
 export const KEY_INV_HISTORY      = 'fluxe-inv-history-v1'
+export const KEY_DAILY_COUNTS     = 'fluxe-daily-counts-v1'
 
 // ── Operational state (frontend-only, no backend needed) ──────────────────────
 export const KEY_FROZEN_SALES     = 'fluxe-frozen-sales-v1'

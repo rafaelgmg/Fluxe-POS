@@ -80,7 +80,7 @@ const MODULES = [
       { id: 'inv-orders',   label: 'Automatic Purchase Orders'   },
       { id: 'inv-report',   label: 'Inventory Report'            },
       { id: 'inv-transfer', label: 'Transfers',                  screen: 'inv-transfers'  },
-      { id: 'inv-counts',   label: 'Daily Counts'                },
+      { id: 'inv-counts',   label: 'Daily Counts',               screen: 'inv-counts'     },
       { id: 'inv-history',  label: 'History',                    screen: 'inv-history'    },
     ],
   },
@@ -972,6 +972,10 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
 
   if (activeScreen?.screen === 'inv-history') {
     return <InventoryAdmin onClose={goBack} defaultView="history" />
+  }
+
+  if (activeScreen?.screen === 'inv-counts') {
+    return <InventoryAdmin onClose={goBack} defaultView="daily-counts" currentUser={posSession} />
   }
 
   if (activeScreen?.screen === 'product-table') {

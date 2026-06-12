@@ -8,6 +8,7 @@ import { loadAllSales } from '../utils/salesStorage'
 import { localId } from '../domain/utils/ids'
 import { fetchProducts, fetchInventoryMovements, fetchRecentTransfers, getLocationUUID } from '../services/supabaseRead'
 import { sendTransfer, receiveTransfer } from '../services/supabaseWrite'
+import DailyCountsAdmin from './DailyCountsAdmin'
 
 function addEntry(setHistory, entry) {
   setHistory(prev => {
@@ -933,12 +934,13 @@ function HistoryView({ history, filterProductId, clearFilter }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const VIEWS = [
-  { id: 'management', label: '📦 Management' },
-  { id: 'transfers',  label: '↔ Transfers'  },
-  { id: 'history',    label: '📋 History'    },
+  { id: 'management',   label: '📦 Management'    },
+  { id: 'transfers',    label: '↔ Transfers'      },
+  { id: 'history',      label: '📋 History'        },
+  { id: 'daily-counts', label: '🔢 Daily Counts'  },
 ]
 
-export default function InventoryAdmin({ onClose, defaultView = 'management' }) {
+export default function InventoryAdmin({ onClose, defaultView = 'management', currentUser = null }) {
   const [view, setView]           = useState(defaultView)
   const [products, setProducts]   = useState(loadAllProducts)
   const [history,  setHistory]    = useState(loadInventoryHistory)
@@ -1030,6 +1032,9 @@ export default function InventoryAdmin({ onClose, defaultView = 'management' }) 
           filterProductId={historyProductFilter}
           clearFilter={() => setHistoryProductFilter(null)}
         />
+      )}
+      {view === 'daily-counts' && (
+        <DailyCountsAdmin currentUser={currentUser} />
       )}
     </div>
   )

@@ -5,6 +5,8 @@ import { BUSINESS_SHORT, COLORS, LOCATIONS_CFG } from '../config/branding'
 import { verifyEmployeePin } from '../services/supabaseAuth'
 import { fetchProducts, getLocationUUID, fetchPendingTransfers } from '../services/supabaseRead'
 import { writeStockAdjustment, sendTransfer, receiveTransfer } from '../services/supabaseWrite'
+import { addDailyCount } from '../utils/dailyCountsStorage'
+import { localId } from '../domain/utils/ids'
 
 const LOCATIONS = LOCATIONS_CFG.map(l => l.name)
 const PRIMARY   = COLORS.primary
@@ -167,8 +169,10 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
   const [ntSearch,         setNtSearch]         = useState('')
   const [ntSending,        setNtSending]        = useState(false)
 
-  // Submit Count (By Item)
-  const [countSaved, setCountSaved]     = useState(false)
+  // Daily Count submission (By Item tab) — absolute qty per product, not delta
+  const [pendingCounts, setPendingCounts]   = useState({})  // productId → absolute qty string
+  const [countSubmitted, setCountSubmitted] = useState(false)
+  const [countSubmitMsg, setCountSubmitMsg] = useState('')
 
   // ── Filtered products (hooks ALWAYS before any return) ───────────────────
   const filtered = useMemo(() => {
@@ -232,18 +236,60 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
   }
 
   const handleCountChange = (id, val) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id !== id) return p
-      const n = parseInt(val)
-      if (isNaN(n) || n < 0) return p
-      return { ...p, qty: n }
-    }))
-    setCountSaved(false)
+    setPendingCounts(prev => ({ ...prev, [id]: val }))
+    setCountSubmitted(false)
   }
 
   const handleCountSubmit = () => {
-    setCountSaved(true)
-    setTimeout(() => setCountSaved(false), 2000)
+    const entries = Object.entries(pendingCounts).filter(([, v]) => v !== '')
+    if (!entries.length) {
+      setCountSubmitMsg('Enter at least one count before submitting.')
+      setCountSubmitted(true)
+      setTimeout(() => setCountSubmitted(false), 3000)
+      return
+    }
+
+    const items = entries.map(([pid, val]) => {
+      const p        = products.find(pr => pr.id === pid)
+      if (!p) return null
+      const counted  = Math.max(0, parseInt(val))
+      const systemQty = p.qtyByLoc?.[locId] ?? p.qty
+      return {
+        productId:   p.id,
+        barcode:     p.barcode,
+        productName: p.name,
+        category:    p.category || '',
+        description: p.description || '',
+        size:        p.size || '',
+        systemQty,
+        countedQty:  isNaN(counted) ? systemQty : counted,
+        difference:  isNaN(counted) ? 0 : counted - systemQty,
+        itemStatus:  'pending',
+      }
+    }).filter(Boolean)
+
+    const hasDiff = items.some(it => it.difference !== 0)
+
+    addDailyCount({
+      id:            localId('dc'),
+      locationId:    locId   || '',
+      locationName:  location,
+      submittedBy:   signedIn.name,
+      submittedById: signedIn.id || null,
+      submittedAt:   new Date().toISOString(),
+      status:        hasDiff ? 'count_error' : 'ok',
+      reviewedBy:    null,
+      reviewedAt:    null,
+      appliedBy:     null,
+      appliedAt:     null,
+      notes:         '',
+      items,
+    })
+
+    setPendingCounts({})
+    setCountSubmitMsg(hasDiff ? 'Count submitted for admin review. Differences found.' : 'Count submitted. No differences found.')
+    setCountSubmitted(true)
+    setTimeout(() => setCountSubmitted(false), 4000)
   }
 
   const handleReportLoss = () => {
@@ -437,11 +483,20 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
               <span style={{ color: '#94a3b8', fontSize: 12, flex: 1 }}>
                 Current Location: <strong style={{ color: '#cbd0e0' }}>{location}</strong>
               </span>
+              {countSubmitted && (
+                <span style={{
+                  fontSize: 12, color: countSubmitMsg.includes('admin') ? '#f59e0b' : '#22c55e',
+                  background: countSubmitMsg.includes('admin') ? 'rgba(245,158,11,0.1)' : 'rgba(34,197,94,0.1)',
+                  border: `1px solid ${countSubmitMsg.includes('admin') ? 'rgba(245,158,11,0.3)' : 'rgba(34,197,94,0.3)'}`,
+                  borderRadius: 4, padding: '4px 10px',
+                }}>{countSubmitMsg}</span>
+              )}
               <button onClick={handleCountSubmit} style={{
-                padding: '6px 16px', background: countSaved ? '#22c55e' : PRIMARY,
+                padding: '6px 16px',
+                background: countSubmitted ? '#22c55e' : PRIMARY,
                 border: 'none', borderRadius: 4, color: '#fff', fontSize: 13,
                 fontWeight: 600, cursor: 'pointer'
-              }}>{countSaved ? '✓ Saved' : 'Submit Count'}</button>
+              }}>{countSubmitted ? '✓ Submitted' : 'Submit Count'}</button>
               <button style={{ padding: '6px 12px', background: 'transparent', border: '1px solid #253349', borderRadius: 5, color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}>
                 🖨 Print
               </button>
@@ -452,19 +507,17 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
                   <tr>
-                    <TH w={50}>ID</TH>
                     <TH w={120}>Category</TH>
                     <TH w={140}>Barcode</TH>
                     <TH>Product Name</TH>
                     <TH>Desc.</TH>
-                    <TH w={90}>Size</TH>
-                    <TH w={60}>Color</TH>
-                    <TH w={80}>Quantity</TH>
-                    <TH w={90}>Count</TH>
+                    <TH w={80}>Size</TH>
+                    <TH w={90}>System Qty</TH>
+                    <TH w={90}>Counted</TH>
+                    <TH w={90}>Difference</TH>
                   </tr>
-                  {/* Filter row */}
                   <tr style={{ background: '#111d30' }}>
-                    {['Equals:','Equals:','Contains:','Contains:','Contains:','Contains:','Contains:','Equals:','Equals:'].map((f,i) => (
+                    {['Equals:','Contains:','Contains:','Contains:','Contains:','Equals:','Equals:','Equals:'].map((f,i) => (
                       <td key={i} style={{ padding: '4px 10px', fontSize: 10, color: '#415569', borderRight: '1px solid #253349' }}>
                         ▽ {f}
                       </td>
@@ -477,27 +530,41 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,0.05)'; e.currentTarget.style.borderBottomColor = 'rgba(37,99,235,0.12)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderBottomColor = 'rgba(30,41,59,0.5)' }}
                     >
-                      <TD color="#666">{p.id}</TD>
                       <TD color="#aaa">{p.category}</TD>
                       <TD color="#555"><span style={{ fontFamily: 'monospace' }}>{p.barcode}</span></TD>
                       <TD><span style={{ color: '#e0e0e0', fontWeight: 500 }}>{p.name}</span></TD>
                       <TD color="#666">{p.description || ''}</TD>
                       <TD color="#888">{p.size || ''}</TD>
-                      <TD color="#666">—</TD>
                       <TD center>
-                        <span style={{
-                          color: stockColor(p.qtyByLoc?.[locId] ?? p.qty), fontWeight: 700,
-                          background: `${stockColor(p.qtyByLoc?.[locId] ?? p.qty)}20`, padding: '2px 8px', borderRadius: 4
-                        }}>{p.qtyByLoc?.[locId] ?? p.qty}</span>
+                        {(() => {
+                          const sysQty = p.qtyByLoc?.[locId] ?? p.qty
+                          return <span style={{ color: stockColor(sysQty), fontWeight: 700, background: `${stockColor(sysQty)}20`, padding: '2px 8px', borderRadius: 4 }}>{sysQty}</span>
+                        })()}
                       </TD>
                       <TD center>
-                        <input type="number" min="0" defaultValue={p.qtyByLoc?.[locId] ?? p.qty}
+                        <input
+                          type="number" min="0"
+                          value={pendingCounts[p.id] ?? ''}
+                          placeholder="—"
                           onChange={e => handleCountChange(p.id, e.target.value)}
                           style={{
                             width: 56, padding: '3px 6px', background: '#111d30',
-                            border: '1px solid #253349', borderRadius: 4,
-                            color: '#f1f5f9', fontSize: 12, textAlign: 'center', outline: 'none'
-                          }} />
+                            border: `1px solid ${pendingCounts[p.id] !== undefined ? '#3b82f6' : '#253349'}`,
+                            borderRadius: 4, color: '#f1f5f9', fontSize: 12, textAlign: 'center', outline: 'none'
+                          }}
+                        />
+                      </TD>
+                      <TD center>
+                        {(() => {
+                          const raw = pendingCounts[p.id]
+                          if (raw === undefined || raw === '') return <span style={{ color: '#415569' }}>—</span>
+                          const sysQty = p.qtyByLoc?.[locId] ?? p.qty
+                          const counted = parseInt(raw)
+                          if (isNaN(counted)) return <span style={{ color: '#415569' }}>—</span>
+                          const diff = counted - sysQty
+                          const color = diff === 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#f59e0b'
+                          return <span style={{ color, fontWeight: 700, background: `${color}15`, padding: '2px 8px', borderRadius: 4 }}>{diff > 0 ? `+${diff}` : diff}</span>
+                        })()}
                       </TD>
                     </tr>
                   ))}
