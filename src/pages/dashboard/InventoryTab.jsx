@@ -6,6 +6,7 @@
  */
 
 import { useState, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { loadAllProducts, saveAllProducts } from '../../utils/productsStorage'
 import {
   loadDailyCounts,
@@ -755,32 +756,35 @@ export default function InventoryTab() {
         )}
       </div>
 
-      {/* Modals */}
-      {selectedProduct && !adjProduct && (
+      {/* Modals — rendered via portal to escape WebkitOverflowScrolling stacking context */}
+      {selectedProduct && !adjProduct && createPortal(
         <ProductDetailModal
           product={selectedProduct}
           locQty={locQty}
           onAdjust={p => { setAdjProduct(p); setSelectedProduct(null) }}
           onClose={() => setSelectedProduct(null)}
-        />
+        />,
+        document.body
       )}
 
-      {adjProduct && (
+      {adjProduct && createPortal(
         <AdjustmentModal
           product={adjProduct}
           locFilter={locFilter}
           locQty={locQty}
           onClose={() => setAdjProduct(null)}
           onDone={msg => { reload(); flash(msg) }}
-        />
+        />,
+        document.body
       )}
 
-      {selectedCount && (
+      {selectedCount && createPortal(
         <CountReviewModal
           count={selectedCount}
           onClose={() => { setSelectedCount(null); reload() }}
           onDone={msg => { reload(); flash(msg); setSelectedCount(null) }}
-        />
+        />,
+        document.body
       )}
     </div>
   )
