@@ -80,55 +80,45 @@ function ProductDetailModal({ product, locQty, onAdjust, onClose }) {
     }} onClick={onClose}>
       <div style={{
         background: C.bg, borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480,
-        padding: '6px 18px 0', boxShadow: '0 -4px 24px rgba(0,0,0,0.2)',
-        paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
+        padding: '6px 16px 50px', boxShadow: '0 -4px 24px rgba(0,0,0,0.2)',
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ width: 36, height: 4, background: C.border, borderRadius: 2, margin: '8px auto 14px' }} />
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, background: C.border, borderRadius: 2, margin: '8px auto 12px' }} />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 2 }}>{product.name}</div>
-            <div style={{ fontSize: 11, color: C.muted }}>
-              {product.category}{product.size ? ` · ${product.size}` : ''}{product.description ? ` · ${product.description}` : ''}
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{product.name}</div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
+              {product.category}{product.size ? ` · ${product.size}` : ''}
             </div>
-            {product.barcode && (
-              <div style={{ fontSize: 10, color: C.dim, fontFamily: 'monospace', marginTop: 2 }}>{product.barcode}</div>
-            )}
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.muted, lineHeight: 1, padding: 0, flexShrink: 0 }}>✕</button>
         </div>
 
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 0.5, marginBottom: 6 }}>STOCK BY LOCATION</div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-            {[
-              { name: 'Miracle Mall 01', qty: loc01 },
-              { name: 'Perfume Passage', qty: loc02 },
-            ].map(row => (
-              <div key={row.name} style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                background: C.card, borderRadius: 10, padding: '10px 8px',
-                border: `1px solid ${row.qty === 0 ? C.red + '40' : row.qty <= LOW_STOCK ? C.amber + '40' : C.border}`,
-                gap: 4,
-              }}>
-                <span style={{ fontSize: 11, color: C.muted, textAlign: 'center', lineHeight: 1.2 }}>{row.name}</span>
-                <span style={{
-                  fontSize: 28, fontWeight: 900, lineHeight: 1,
-                  color: row.qty === 0 ? C.red : row.qty <= LOW_STOCK ? C.amber : C.green,
-                }}>{row.qty}</span>
-              </div>
-            ))}
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              background: C.card, borderRadius: 10, padding: '10px 12px',
-              border: `1px solid ${C.border}`, gap: 4, minWidth: 56,
+        {/* Stock cards — horizontal row */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          {[
+            { name: 'Miracle Mall 01', qty: loc01 },
+            { name: 'Perfume Passage', qty: loc02 },
+            { name: 'Total', qty: loc01 + loc02, isTotal: true },
+          ].map(row => (
+            <div key={row.name} style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              background: C.card, borderRadius: 10, padding: '8px 6px',
+              border: `1px solid ${!row.isTotal && row.qty === 0 ? C.red + '40' : !row.isTotal && row.qty <= LOW_STOCK ? C.amber + '40' : C.border}`,
+              gap: 3,
             }}>
-              <span style={{ fontSize: 11, color: C.muted }}>Total</span>
-              <span style={{ fontSize: 28, fontWeight: 900, color: C.text, lineHeight: 1 }}>{loc01 + loc02}</span>
+              <span style={{ fontSize: 10, color: C.muted, textAlign: 'center', lineHeight: 1.2 }}>{row.name}</span>
+              <span style={{
+                fontSize: 26, fontWeight: 900, lineHeight: 1,
+                color: row.isTotal ? C.text : row.qty === 0 ? C.red : row.qty <= LOW_STOCK ? C.amber : C.green,
+              }}>{row.qty}</span>
             </div>
-          </div>
+          ))}
         </div>
 
+        {/* Adjust button */}
         <button onClick={() => onAdjust(product)} style={{
           width: '100%', padding: '11px', borderRadius: 10, fontSize: 13, fontWeight: 700,
           background: C.blue, color: '#fff', border: 'none', cursor: 'pointer',
