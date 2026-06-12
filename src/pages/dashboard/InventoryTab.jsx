@@ -80,7 +80,8 @@ function ProductDetailModal({ product, locQty, onAdjust, onClose }) {
     }} onClick={onClose}>
       <div style={{
         background: C.bg, borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480,
-        padding: '6px 18px 20px', boxShadow: '0 -4px 24px rgba(0,0,0,0.2)',
+        padding: '6px 18px 0', boxShadow: '0 -4px 24px rgba(0,0,0,0.2)',
+        paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
       }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 36, height: 4, background: C.border, borderRadius: 2, margin: '8px auto 14px' }} />
 
@@ -190,7 +191,8 @@ function AdjustmentModal({ product, locFilter, locQty, onClose, onDone }) {
     }} onClick={onClose}>
       <div style={{
         background: C.bg, borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480,
-        padding: '8px 24px 32px', boxShadow: '0 -4px 32px rgba(0,0,0,0.25)',
+        padding: '8px 24px 0', paddingBottom: 'max(28px, env(safe-area-inset-bottom, 0px))',
+        boxShadow: '0 -4px 32px rgba(0,0,0,0.25)',
         maxHeight: '92dvh', overflowY: 'auto',
       }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '10px auto 18px' }} />
@@ -376,6 +378,7 @@ function CountReviewModal({ count: initialCount, onClose, onDone }) {
         background: C.bg, borderRadius: '20px 20px 0 0', width: '100%',
         maxHeight: '92dvh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 -4px 32px rgba(0,0,0,0.3)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}>
         <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '10px auto 0' }} />
 
