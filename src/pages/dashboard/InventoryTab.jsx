@@ -79,56 +79,57 @@ function ProductDetailModal({ product, locQty, onAdjust, onClose }) {
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
     }} onClick={onClose}>
       <div style={{
-        background: C.bg, borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480,
-        padding: '8px 24px 32px', boxShadow: '0 -4px 32px rgba(0,0,0,0.25)',
+        background: C.bg, borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480,
+        padding: '6px 18px 20px', boxShadow: '0 -4px 24px rgba(0,0,0,0.2)',
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '10px auto 18px' }} />
+        <div style={{ width: 36, height: 4, background: C.border, borderRadius: 2, margin: '8px auto 14px' }} />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-          <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: C.text, marginBottom: 3 }}>{product.name}</div>
-            <div style={{ fontSize: 12, color: C.muted }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 2 }}>{product.name}</div>
+            <div style={{ fontSize: 11, color: C.muted }}>
               {product.category}{product.size ? ` · ${product.size}` : ''}{product.description ? ` · ${product.description}` : ''}
             </div>
             {product.barcode && (
-              <div style={{ fontSize: 11, color: C.dim, fontFamily: 'monospace', marginTop: 3 }}>{product.barcode}</div>
+              <div style={{ fontSize: 10, color: C.dim, fontFamily: 'monospace', marginTop: 2 }}>{product.barcode}</div>
             )}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: C.muted, lineHeight: 1, padding: 0, flexShrink: 0 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.muted, lineHeight: 1, padding: 0, flexShrink: 0 }}>✕</button>
         </div>
 
-        <div style={{ marginBottom: 20 }}>
-          <SectionLabel>STOCK BY LOCATION</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 0.5, marginBottom: 6 }}>STOCK BY LOCATION</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
             {[
               { name: 'Miracle Mall 01', qty: loc01 },
               { name: 'Perfume Passage', qty: loc02 },
             ].map(row => (
               <div key={row.name} style={{
-                display: 'flex', alignItems: 'center',
-                background: C.card, borderRadius: 10, padding: '13px 16px',
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                background: C.card, borderRadius: 10, padding: '10px 8px',
                 border: `1px solid ${row.qty === 0 ? C.red + '40' : row.qty <= LOW_STOCK ? C.amber + '40' : C.border}`,
+                gap: 4,
               }}>
-                <span style={{ flex: 1, fontSize: 13, color: C.text }}>📍 {row.name}</span>
+                <span style={{ fontSize: 11, color: C.muted, textAlign: 'center', lineHeight: 1.2 }}>{row.name}</span>
                 <span style={{
-                  fontSize: 24, fontWeight: 900,
+                  fontSize: 28, fontWeight: 900, lineHeight: 1,
                   color: row.qty === 0 ? C.red : row.qty <= LOW_STOCK ? C.amber : C.green,
                 }}>{row.qty}</span>
               </div>
             ))}
             <div style={{
-              display: 'flex', alignItems: 'center',
-              background: C.card, borderRadius: 10, padding: '10px 16px',
-              border: `1px solid ${C.border}`,
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              background: C.card, borderRadius: 10, padding: '10px 12px',
+              border: `1px solid ${C.border}`, gap: 4, minWidth: 56,
             }}>
-              <span style={{ flex: 1, fontSize: 13, color: C.muted, fontWeight: 600 }}>Total</span>
-              <span style={{ fontSize: 20, fontWeight: 900, color: C.text }}>{loc01 + loc02}</span>
+              <span style={{ fontSize: 11, color: C.muted }}>Total</span>
+              <span style={{ fontSize: 28, fontWeight: 900, color: C.text, lineHeight: 1 }}>{loc01 + loc02}</span>
             </div>
           </div>
         </div>
 
         <button onClick={() => onAdjust(product)} style={{
-          width: '100%', padding: 14, borderRadius: 12, fontSize: 14, fontWeight: 700,
+          width: '100%', padding: '11px', borderRadius: 10, fontSize: 13, fontWeight: 700,
           background: C.blue, color: '#fff', border: 'none', cursor: 'pointer',
         }}>
           ✏ Adjust Inventory
