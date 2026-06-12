@@ -181,9 +181,9 @@ function AdjustmentModal({ product, locFilter, locQty, onClose, onDone }) {
     }} onClick={onClose}>
       <div style={{
         background: C.bg, borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480,
-        padding: '8px 24px 0', paddingBottom: 'max(28px, env(safe-area-inset-bottom, 0px))',
+        padding: '8px 20px 50px',
         boxShadow: '0 -4px 32px rgba(0,0,0,0.25)',
-        maxHeight: '92dvh', overflowY: 'auto',
+        maxHeight: '88dvh', overflowY: 'auto',
       }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '10px auto 18px' }} />
 
@@ -366,9 +366,8 @@ function CountReviewModal({ count: initialCount, onClose, onDone }) {
     }}>
       <div style={{
         background: C.bg, borderRadius: '20px 20px 0 0', width: '100%',
-        maxHeight: '92dvh', display: 'flex', flexDirection: 'column',
+        maxHeight: '88dvh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 -4px 32px rgba(0,0,0,0.3)',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}>
         <div style={{ width: 40, height: 4, background: C.border, borderRadius: 2, margin: '10px auto 0' }} />
 
@@ -432,7 +431,7 @@ function CountReviewModal({ count: initialCount, onClose, onDone }) {
         </div>
 
         {/* Action bar */}
-        <div style={{ padding: '12px 16px 28px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 8, flexShrink: 0 }}>
+        <div style={{ padding: '12px 16px 50px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 8, flexShrink: 0 }}>
           {pendingItems.length > 0 && (
             <button onClick={fixAll} disabled={saving} style={{
               flex: 2, padding: '13px 10px', borderRadius: 10, fontSize: 13, fontWeight: 700,
