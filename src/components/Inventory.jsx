@@ -129,11 +129,17 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
     if (liveProducts.length > 0) setProducts(liveProducts)
   }, [liveProducts])
 
-  // Fetch fresh stock from Supabase when the user signs in
+  const [loadingStock, setLoadingStock] = useState(false)
+
+  // Re-fetch stock from Supabase on sign-in AND whenever location changes
+  // fetchProducts() returns all locations in one call — locId switch picks the right slice
   useEffect(() => {
     if (!signedIn) return
-    fetchProducts().then(remote => { if (remote) setProducts(remote) })
-  }, [signedIn])
+    setLoadingStock(true)
+    fetchProducts()
+      .then(remote => { if (remote) setProducts(remote) })
+      .finally(() => setLoadingStock(false))
+  }, [signedIn, location])
 
   // Fetch pending transfers for current location whenever sign-in or location changes
   useEffect(() => {
@@ -211,7 +217,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
       if (val === undefined || val === '') return p
       const n = parseInt(val)
       if (isNaN(n)) return p
-      const qtyBefore   = p.qtyByLoc?.[locId] ?? p.qty
+      const qtyBefore   = locQty(p)
       const qtyAfter    = Math.max(0, qtyBefore + n)
       const newQtyByLoc = locId && p.qtyByLoc
         ? { ...p.qtyByLoc, [locId]: qtyAfter }
@@ -253,7 +259,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
       const p        = products.find(pr => pr.id === pid)
       if (!p) return null
       const counted  = Math.max(0, parseInt(val))
-      const systemQty = p.qtyByLoc?.[locId] ?? p.qty
+      const systemQty = locQty(p)
       return {
         productId:   p.id,
         barcode:     p.barcode,
@@ -296,7 +302,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
     if (!selectedProduct || !lossReason) return
 
     const locationUUID = getLocationUUID(locId)
-    const qtyBefore    = selectedProduct.qtyByLoc?.[locId] ?? selectedProduct.qty
+    const qtyBefore    = locQty(selectedProduct)
     const qtyAfter     = Math.max(0, qtyBefore - lossQty)
 
     setProducts(prev => prev.map(p => {
@@ -417,6 +423,16 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
   const stockColor = (qty) => qty <= 0 ? '#ef4444' : qty <= 2 ? '#ef4444' : qty <= 5 ? '#f59e0b' : '#22c55e'
   const locId = LOCATIONS_CFG.find(l => l.name === location)?.id
 
+  // Resolve qty for the current location.
+  // If qtyByLoc has any entries (Supabase data loaded), use it — default to 0 for this location
+  // rather than falling back to the global total, which would hide location differences.
+  // If qtyByLoc is empty (offline / no Supabase data), fall back to p.qty as before.
+  const locQty = (p) => {
+    const byLoc = p.qtyByLoc || {}
+    if (Object.keys(byLoc).length > 0) return byLoc[locId] ?? 0
+    return p.qty
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <div style={{
@@ -453,10 +469,11 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
       }}>
         <div style={{ marginRight: 20, paddingBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: '#94a3b8', fontSize: 11, fontWeight: 600, letterSpacing: 0.4 }}>LOCATION:</span>
-          <select value={location} onChange={e => setLocation(e.target.value)}
+          <select value={location} onChange={e => { setLocation(e.target.value); setPendingCounts({}) }}
             style={{ padding: '5px 10px', background: '#111d30', border: '1px solid #253349', borderRadius: 5, color: '#f1f5f9', fontSize: 12, outline: 'none' }}>
             {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
+          {loadingStock && <span style={{ color: '#3b82f6', fontSize: 11 }}>loading…</span>}
         </div>
         {tabBtn('byItem',    '📋 By Item')}
         {tabBtn('byCategory','🗂 By Category')}
@@ -537,7 +554,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
                       <TD color="#888">{p.size || ''}</TD>
                       <TD center>
                         {(() => {
-                          const sysQty = p.qtyByLoc?.[locId] ?? p.qty
+                          const sysQty = locQty(p)
                           return <span style={{ color: stockColor(sysQty), fontWeight: 700, background: `${stockColor(sysQty)}20`, padding: '2px 8px', borderRadius: 4 }}>{sysQty}</span>
                         })()}
                       </TD>
@@ -558,7 +575,7 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
                         {(() => {
                           const raw = pendingCounts[p.id]
                           if (raw === undefined || raw === '') return <span style={{ color: '#415569' }}>—</span>
-                          const sysQty = p.qtyByLoc?.[locId] ?? p.qty
+                          const sysQty = locQty(p)
                           const counted = parseInt(raw)
                           if (isNaN(counted)) return <span style={{ color: '#415569' }}>—</span>
                           const diff = counted - sysQty
@@ -947,8 +964,8 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
                         >
                           <span style={{ color: '#f1f5f9', fontSize: 13 }}>{p.name}</span>
                           <span style={{ color: '#415569', fontSize: 11, marginLeft: 8, fontFamily: 'monospace' }}>{p.barcode}</span>
-                          <span style={{ color: stockColor(p.qtyByLoc?.[locId] ?? p.qty), fontSize: 11, marginLeft: 8 }}>
-                            Qty: {p.qtyByLoc?.[locId] ?? p.qty}
+                          <span style={{ color: stockColor(locQty(p)), fontSize: 11, marginLeft: 8 }}>
+                            Qty: {locQty(p)}
                           </span>
                         </div>
                       ))}
