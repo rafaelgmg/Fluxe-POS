@@ -608,11 +608,6 @@ export default function InventoryTab() {
             color: locFilter === l.id ? C.blue : C.muted, whiteSpace: 'nowrap',
           }}>{l.icon} {l.id === 'all' ? 'All' : l.name.split(' ')[0]}</button>
         ))}
-        <button onClick={reload} style={{
-          padding: '6px 10px', borderRadius: 20, fontSize: 13, cursor: syncing ? 'wait' : 'pointer',
-          border: `1px solid ${C.border}`, background: C.card, color: C.muted, marginLeft: 'auto',
-          opacity: syncing ? 0.5 : 1,
-        }}>{syncing ? '⟳' : '↻'}</button>
       </div>
 
       {/* KPI Grid (2 rows × 3 cols) */}
