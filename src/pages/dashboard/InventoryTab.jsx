@@ -14,7 +14,7 @@ import {
   updateDailyCountItem,
   deriveCountStatus,
 } from '../../utils/dailyCountsStorage'
-import { writeStockAdjustment } from '../../services/supabaseWrite'
+import { writeStockAdjustment, sendTransfer, receiveTransfer } from '../../services/supabaseWrite'
 import { fetchProducts, getLocationUUID } from '../../services/supabaseRead'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ function SectionLabel({ children, count }) {
 }
 
 // ── Product Detail Bottom Sheet ───────────────────────────────────────────────
-function ProductDetailModal({ product, locQty, onAdjust, onClose }) {
+function ProductDetailModal({ product, locQty, onAdjust, onTransfer, onClose }) {
   const loc01 = locQty(product, 'loc_01')
   const loc02 = locQty(product, 'loc_02')
 
@@ -98,7 +98,7 @@ function ProductDetailModal({ product, locQty, onAdjust, onClose }) {
         </div>
 
         {/* Stock cards — horizontal row */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           {[
             { name: 'Miracle Mall 01', qty: loc01 },
             { name: 'Perfume Passage', qty: loc02 },
@@ -119,12 +119,185 @@ function ProductDetailModal({ product, locQty, onAdjust, onClose }) {
           ))}
         </div>
 
-        {/* Adjust button */}
-        <button onClick={() => onAdjust(product)} style={{
-          width: '100%', padding: '11px', borderRadius: 10, fontSize: 13, fontWeight: 700,
-          background: C.blue, color: '#fff', border: 'none', cursor: 'pointer',
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => onTransfer(product)} style={{
+            flex: 1, padding: '11px 8px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+            background: `${C.purple}15`, color: C.purple, border: `1px solid ${C.purple}40`, cursor: 'pointer',
+          }}>↔ Transfer</button>
+          <button onClick={() => onAdjust(product)} style={{
+            flex: 1, padding: '11px 8px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+            background: C.blue, color: '#fff', border: 'none', cursor: 'pointer',
+          }}>✏ Adjust</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Transfer Bottom Sheet ─────────────────────────────────────────────────────
+function TransferModal({ product, locQty, onClose, onDone }) {
+  const [fromLoc, setFromLoc] = useState('loc_01')
+  const toLoc    = fromLoc === 'loc_01' ? 'loc_02' : 'loc_01'
+  const fromName = LOCS.find(l => l.id === fromLoc)?.name || fromLoc
+  const toName   = LOCS.find(l => l.id === toLoc)?.name   || toLoc
+  const fromIcon = LOCS.find(l => l.id === fromLoc)?.icon || ''
+  const toIcon   = LOCS.find(l => l.id === toLoc)?.icon   || ''
+  const fromQty  = locQty(product, fromLoc)
+  const toQty    = locQty(product, toLoc)
+
+  const [qty,    setQty]    = useState(1)
+  const [saving, setSaving] = useState(false)
+  const [err,    setErr]    = useState('')
+
+  const safeQty = Math.min(Math.max(1, qty), fromQty)
+
+  function swap() { setFromLoc(l => l === 'loc_01' ? 'loc_02' : 'loc_01'); setQty(1) }
+
+  async function submit() {
+    if (fromQty === 0) { setErr(`No stock at ${fromName}.`); return }
+    if (safeQty < 1)   { setErr('Qty must be at least 1.'); return }
+    setSaving(true)
+    setErr('')
+    try {
+      const fromUUID = getLocationUUID(fromLoc)
+      const toUUID   = getLocationUUID(toLoc)
+
+      // Optimistic local update
+      const all     = loadAllProducts()
+      const updated = all.map(p => {
+        if (p.id !== product.id) return p
+        const byLoc = p.qtyByLoc || {}
+        const newByLoc = {
+          ...byLoc,
+          [fromLoc]: Math.max(0, (byLoc[fromLoc] ?? fromQty) - safeQty),
+          [toLoc]:   (byLoc[toLoc] ?? toQty) + safeQty,
+        }
+        return { ...p, qtyByLoc: newByLoc }
+      })
+      saveAllProducts(updated)
+
+      // Supabase: send then immediately receive (owner authorises both sides)
+      if (fromUUID && toUUID) {
+        const transferId = await sendTransfer({
+          productId:        product.id,
+          productName:      product.name,
+          barcode:          product.barcode || '',
+          qty:              safeQty,
+          fromLocationUUID: fromUUID,
+          fromLocationName: fromName,
+          toLocationUUID:   toUUID,
+          toLocationName:   toName,
+          sentBy:           'Dashboard Owner',
+          note:             'Transferred via Dashboard',
+        })
+        if (transferId) {
+          await receiveTransfer({
+            id:             transferId,
+            product_id:     product.id,
+            to_location_id: toUUID,
+            qty:            safeQty,
+          })
+        }
+      }
+
+      onDone(`Transferred ${safeQty}× ${product.name}: ${fromName.split(' ')[0]} → ${toName.split(' ')[0]}`)
+      onClose()
+    } catch (e) {
+      setErr(e.message || 'Unexpected error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 3000,
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: C.bg, borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480,
+        padding: '6px 18px 50px', boxShadow: '0 -4px 24px rgba(0,0,0,0.2)',
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ width: 36, height: 4, background: C.border, borderRadius: 2, margin: '8px auto 14px' }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>Transfer Stock</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.muted, padding: 0 }}>✕</button>
+        </div>
+        <div style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>{product.name}</div>
+
+        {/* FROM ⇄ TO */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <div style={{
+            flex: 1, background: C.card, borderRadius: 10, padding: '12px 8px',
+            border: `1px solid ${C.purple}40`, textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.purple, letterSpacing: 0.5, marginBottom: 4 }}>FROM</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 4 }}>{fromIcon} {fromName.split(' ')[0]}</div>
+            <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1, color: fromQty === 0 ? C.red : fromQty <= LOW_STOCK ? C.amber : C.green }}>{fromQty}</div>
+          </div>
+
+          <button onClick={swap} style={{
+            flexShrink: 0, width: 38, height: 38, borderRadius: '50%',
+            background: `${C.purple}15`, border: `1px solid ${C.purple}30`,
+            cursor: 'pointer', fontSize: 18, color: C.purple,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>⇄</button>
+
+          <div style={{
+            flex: 1, background: C.card, borderRadius: 10, padding: '12px 8px',
+            border: `1px solid ${C.border}`, textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 0.5, marginBottom: 4 }}>TO</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 4 }}>{toIcon} {toName.split(' ')[0]}</div>
+            <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1, color: C.text }}>{toQty}</div>
+          </div>
+        </div>
+
+        {/* Qty control */}
+        <div style={{ background: C.card, borderRadius: 12, padding: '12px 16px', marginBottom: 14, border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: 0.5, textAlign: 'center', marginBottom: 10 }}>QTY TO TRANSFER</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+            <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{
+              width: 44, height: 44, borderRadius: 12, fontSize: 24, fontWeight: 900,
+              border: `1px solid ${C.border}`, background: C.bg, cursor: 'pointer', color: C.red,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>−</button>
+            <input
+              type="number" value={qty}
+              onChange={e => setQty(Math.max(1, Math.min(fromQty, parseInt(e.target.value) || 1)))}
+              style={{
+                width: 80, textAlign: 'center', padding: '10px 8px',
+                borderRadius: 10, border: `1px solid ${C.border}`,
+                fontSize: 20, fontWeight: 800, color: C.text, background: C.bg, outline: 'none',
+              }}
+            />
+            <button onClick={() => setQty(q => Math.min(fromQty, q + 1))} style={{
+              width: 44, height: 44, borderRadius: 12, fontSize: 24, fontWeight: 900,
+              border: `1px solid ${C.border}`, background: C.bg, cursor: 'pointer', color: C.green,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>+</button>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 11, color: C.muted, marginTop: 8 }}>
+            Max: {fromQty} unit{fromQty !== 1 ? 's' : ''} available at {fromName.split(' ')[0]}
+          </div>
+        </div>
+
+        {fromQty === 0 && (
+          <div style={{ color: C.red, fontSize: 12, marginBottom: 12, fontWeight: 600 }}>
+            ⚠ No stock available at {fromName}. Tap ⇄ to reverse direction.
+          </div>
+        )}
+        {err && <div style={{ color: C.red, fontSize: 12, marginBottom: 12, fontWeight: 600 }}>⚠ {err}</div>}
+
+        <button onClick={submit} disabled={saving || fromQty === 0} style={{
+          width: '100%', padding: 14, borderRadius: 12, fontSize: 14, fontWeight: 700,
+          background: saving || fromQty === 0 ? C.dim : C.purple,
+          color: '#fff', border: 'none',
+          cursor: saving || fromQty === 0 ? 'not-allowed' : 'pointer',
         }}>
-          ✏ Adjust Inventory
+          {saving ? 'Transferring…' : `↔ Transfer ${safeQty} to ${toName.split(' ')[0]}`}
         </button>
       </div>
     </div>
@@ -466,6 +639,7 @@ export default function InventoryTab() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [selectedCount,   setSelectedCount]   = useState(null)
   const [adjProduct, setAdjProduct]           = useState(null)
+  const [transferProduct, setTransferProduct] = useState(null)
   const [message,  setMessage]                = useState(null)
   const [showAllNotifs, setShowAllNotifs]     = useState(false)
   const [syncing, setSyncing]                 = useState(false)
@@ -777,11 +951,12 @@ export default function InventoryTab() {
       </div>
 
       {/* Modals — rendered via portal to escape WebkitOverflowScrolling stacking context */}
-      {selectedProduct && !adjProduct && createPortal(
+      {selectedProduct && !adjProduct && !transferProduct && createPortal(
         <ProductDetailModal
           product={selectedProduct}
           locQty={locQty}
           onAdjust={p => { setAdjProduct(p); setSelectedProduct(null) }}
+          onTransfer={p => { setTransferProduct(p); setSelectedProduct(null) }}
           onClose={() => setSelectedProduct(null)}
         />,
         document.body
@@ -803,6 +978,16 @@ export default function InventoryTab() {
           count={selectedCount}
           onClose={() => { setSelectedCount(null); reload() }}
           onDone={msg => { reload(); flash(msg); setSelectedCount(null) }}
+        />,
+        document.body
+      )}
+
+      {transferProduct && createPortal(
+        <TransferModal
+          product={transferProduct}
+          locQty={locQty}
+          onClose={() => setTransferProduct(null)}
+          onDone={msg => { reload(); flash(msg) }}
         />,
         document.body
       )}
