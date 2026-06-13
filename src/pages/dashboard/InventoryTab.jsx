@@ -5,7 +5,7 @@
  * review with admin actions, and owner inventory adjustments with mandatory reason.
  */
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { loadAllProducts, saveAllProducts } from '../../utils/productsStorage'
 import {
@@ -15,7 +15,7 @@ import {
   deriveCountStatus,
 } from '../../utils/dailyCountsStorage'
 import { writeStockAdjustment } from '../../services/supabaseWrite'
-import { getLocationUUID } from '../../services/supabaseRead'
+import { fetchProducts, getLocationUUID } from '../../services/supabaseRead'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const LOW_STOCK = 3
@@ -468,9 +468,33 @@ export default function InventoryTab() {
   const [adjProduct, setAdjProduct]           = useState(null)
   const [message,  setMessage]                = useState(null)
   const [showAllNotifs, setShowAllNotifs]     = useState(false)
+  const [syncing, setSyncing]                 = useState(false)
+
+  // Fetch from Supabase on mount so qtyByLoc is populated per location
+  useEffect(() => {
+    setSyncing(true)
+    fetchProducts()
+      .then(remote => {
+        if (remote?.length) {
+          saveAllProducts(remote)
+          setProducts(remote)
+        }
+      })
+      .finally(() => setSyncing(false))
+  }, [])
 
   const reload = useCallback(() => {
-    setProducts(loadAllProducts())
+    setSyncing(true)
+    fetchProducts()
+      .then(remote => {
+        if (remote?.length) {
+          saveAllProducts(remote)
+          setProducts(remote)
+        } else {
+          setProducts(loadAllProducts())
+        }
+      })
+      .finally(() => setSyncing(false))
     setCounts(loadDailyCounts())
   }, [])
 
@@ -585,9 +609,10 @@ export default function InventoryTab() {
           }}>{l.icon} {l.id === 'all' ? 'All' : l.name.split(' ')[0]}</button>
         ))}
         <button onClick={reload} style={{
-          padding: '6px 10px', borderRadius: 20, fontSize: 13, cursor: 'pointer',
+          padding: '6px 10px', borderRadius: 20, fontSize: 13, cursor: syncing ? 'wait' : 'pointer',
           border: `1px solid ${C.border}`, background: C.card, color: C.muted, marginLeft: 'auto',
-        }}>↻</button>
+          opacity: syncing ? 0.5 : 1,
+        }}>{syncing ? '⟳' : '↻'}</button>
       </div>
 
       {/* KPI Grid (2 rows × 3 cols) */}
