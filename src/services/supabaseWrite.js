@@ -225,6 +225,31 @@ export async function writeLocationConfigToSupabase(loc) {
   try {
     await awaitOrgSession()
     const orgId = await getOrgId()
+
+    // 1. Upsert into `locations` (required for FK references in inventory_transfers).
+    //    Uses on_conflict=organization_id,name so it's safe to call repeatedly.
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/locations?on_conflict=organization_id,name`,
+      {
+        method: 'POST',
+        headers: {
+          apikey:         SUPABASE_KEY,
+          Authorization:  `Bearer ${authBearer()}`,
+          'Content-Type': 'application/json',
+          Prefer:         'resolution=merge-duplicates,return=minimal',
+        },
+        body: JSON.stringify({
+          organization_id: orgId,
+          name:            loc.name,
+          address:         loc.address || '',
+          tax_rate:        loc.taxRate  || 8.5,
+          status:          loc.active === false ? 'inactive' : 'active',
+          updated_at:      loc.updatedAt || new Date().toISOString(),
+        }),
+      }
+    ).catch(() => {})  // non-fatal — location_configs is source of truth
+
+    // 2. Upsert into `location_configs` (full extended config blob)
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/location_configs?on_conflict=organization_id,location_id`,
       {
@@ -253,6 +278,124 @@ export async function writeLocationConfigToSupabase(loc) {
     return true
   } catch (err) {
     console.warn('[Fluxe] writeLocationConfigToSupabase error:', err.message)
+    return false
+  }
+}
+
+/**
+ * Create a transfer draft in inventory_transfers with status='draft'.
+ * Does NOT touch inventory_stock or inventory_movements.
+ *
+ * @returns {Promise<string|null>} draft UUID or null on failure
+ */
+export async function createTransferDraft({ productId, productName, barcode, qty, fromLocationUUID, fromLocationName, toLocationUUID, toLocationName, createdBy = 'Dashboard Owner', note = '' }) {
+  if (!isSupabaseConfigured()) return null
+  if (!fromLocationUUID || !toLocationUUID) return null
+  try {
+    await awaitOrgSession()
+    const orgId = await getOrgId()
+    const row   = await sbPost('/inventory_transfers', {
+      organization_id:    orgId,
+      from_location_id:   fromLocationUUID,
+      from_location_name: fromLocationName,
+      to_location_id:     toLocationUUID,
+      to_location_name:   toLocationName,
+      product_id:         productId,
+      product_name:       productName,
+      barcode:            barcode || '',
+      qty,
+      note:               note || '',
+      sent_by:            createdBy,
+      created_by:         createdBy,
+      status:             'draft',
+    }, 'return=representation')
+    return row?.id || null
+  } catch (err) {
+    console.warn('[Fluxe] createTransferDraft failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Complete a draft transfer: deduct from origin, add to destination, mark received.
+ * Reuses the same logic as sendTransfer + receiveTransfer.
+ *
+ * @param {object} draft  Row from inventory_transfers (must have id, product_id, qty, etc.)
+ * @returns {Promise<boolean>}
+ */
+export async function completeDraftTransfer(draft) {
+  if (!isSupabaseConfigured()) return false
+  try {
+    const { id, product_id, from_location_id, to_location_id, qty } = draft
+
+    // Fetch origin stock
+    const fromRows = await sbGet(
+      `/inventory_stock?product_id=eq.${product_id}&location_id=eq.${from_location_id}&select=qty&limit=1`
+    )
+    const fromBefore = fromRows?.[0]?.qty ?? 0
+    const fromAfter  = Math.max(0, fromBefore - qty)
+
+    // Fetch destination stock
+    const toRows = await sbGet(
+      `/inventory_stock?product_id=eq.${product_id}&location_id=eq.${to_location_id}&select=qty&limit=1`
+    )
+    const toBefore = toRows?.[0]?.qty ?? 0
+
+    const orgId = await getOrgId()
+
+    // Deduct from origin
+    await sbPatch(
+      `/inventory_stock?product_id=eq.${product_id}&location_id=eq.${from_location_id}`,
+      { qty: fromAfter }
+    )
+
+    // Add to destination
+    await sbPatch(
+      `/inventory_stock?product_id=eq.${product_id}&location_id=eq.${to_location_id}`,
+      { qty: toBefore + qty }
+    )
+
+    // Insert inventory_movements for origin side
+    await sbPost('/inventory_movements', [{
+      organization_id:    orgId,
+      product_id,
+      location_id:        from_location_id,
+      to_location_id,
+      type:               'transfer',
+      qty_before:         fromBefore,
+      qty_after:          fromAfter,
+      note:               `Transfer to ${draft.to_location_name || ''} — from Dashboard draft`,
+      product_name_snap:  draft.product_name || '',
+      barcode_snap:       draft.barcode      || '',
+      location_name_snap: draft.from_location_name || '',
+      performed_by_snap:  draft.created_by   || 'Dashboard Owner',
+    }], 'return=minimal')
+
+    // Mark as received
+    await sbPatch(`/inventory_transfers?id=eq.${id}`, {
+      status:      'received',
+      received_at: new Date().toISOString(),
+    })
+
+    return true
+  } catch (err) {
+    console.warn('[Fluxe] completeDraftTransfer failed:', err.message)
+    return false
+  }
+}
+
+/**
+ * Cancel a draft transfer (marks status='cancelled', no stock changes).
+ * @param {string} draftId
+ * @returns {Promise<boolean>}
+ */
+export async function cancelTransferDraft(draftId) {
+  if (!isSupabaseConfigured() || !draftId) return false
+  try {
+    await sbPatch(`/inventory_transfers?id=eq.${draftId}`, { status: 'cancelled' })
+    return true
+  } catch (err) {
+    console.warn('[Fluxe] cancelTransferDraft failed:', err.message)
     return false
   }
 }

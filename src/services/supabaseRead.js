@@ -125,6 +125,7 @@ export { getOrgId }
 // Used by supabaseWrite.js to resolve locationId before INSERT.
 
 let _legacyToUUID = {}  // { 'loc_01': 'uuid-...', 'loc_02': 'uuid-...' }
+let _nameToUUID   = {}  // { 'Warehouse': 'uuid-...' } — covers dynamically-created locations
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -137,6 +138,20 @@ export function getLocationUUID(legacyId) {
   if (!legacyId) return null
   if (_legacyToUUID[legacyId]) return _legacyToUUID[legacyId]
   if (UUID_RE.test(legacyId)) return legacyId
+  return null
+}
+
+/**
+ * Resolve a location display name to its Supabase UUID.
+ * Covers dynamically-created warehouse locations not present in LOCATIONS_CFG.
+ * Returns null if unknown (fetchLocationMap must have run first).
+ */
+export function getLocationUUIDByName(name) {
+  if (!name) return null
+  if (_nameToUUID[name]) return _nameToUUID[name]
+  // Fallback: check via LOCATIONS_CFG → _legacyToUUID path
+  const cfg = LOCATIONS_CFG.find(l => l.name === name)
+  if (cfg && _legacyToUUID[cfg.id]) return _legacyToUUID[cfg.id]
   return null
 }
 
@@ -269,6 +284,8 @@ async function fetchLocationMap(orgId) {
       reverseMap[row.id] = cfg.id
       _legacyToUUID[cfg.id] = row.id  // 'loc_01' → UUID  (write path: FK resolution)
     }
+    // Cache ALL locations by name (covers dynamically-created warehouse locations)
+    _nameToUUID[row.name] = row.id
   }
   return reverseMap
 }
@@ -496,6 +513,39 @@ export async function fetchRecentTransfers(limit = 20) {
     return rows || []
   } catch (err) {
     console.warn('[Fluxe] fetchRecentTransfers failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Fetch pending transfer drafts (status='draft') for the org.
+ * Returns normalized camelCase objects or null on failure.
+ */
+export async function fetchTransferDrafts() {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId = await getOrgId()
+    const rows  = await sbFetch(
+      `/inventory_transfers?select=*` +
+      `&organization_id=eq.${orgId}&status=eq.draft&order=created_at.desc&limit=100`
+    )
+    return rows.map(r => ({
+      id:               r.id,
+      productId:        r.product_id          || '',
+      productName:      r.product_name        || '',
+      barcode:          r.barcode             || '',
+      qty:              r.qty                ?? 0,
+      fromLocationId:   r.from_location_id   || '',
+      fromLocationName: r.from_location_name || '',
+      toLocationId:     r.to_location_id     || '',
+      toLocationName:   r.to_location_name   || '',
+      status:           r.status             || 'draft',
+      createdBy:        r.created_by         || '',
+      note:             r.note               || '',
+      createdAt:        r.created_at         || '',
+    }))
+  } catch (err) {
+    console.warn('[Fluxe] fetchTransferDrafts failed:', err.message)
     return null
   }
 }

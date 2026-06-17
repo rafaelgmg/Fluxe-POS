@@ -2,17 +2,28 @@
  * ForecastTab.jsx — Inventory Forecast & Reorder Suggestions
  * Dashboard App > Inventory > Forecast
  *
- * READ-ONLY. Does not modify stock, sales, or any storage.
- * Uses forecastEngine.js for all calculations.
+ * READ-ONLY forecast engine. Transfer drafts create a pending record only;
+ * no stock is moved until the draft is explicitly Completed.
  */
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { loadAllProducts } from '../../utils/productsStorage'
-import { fetchProducts, fetchSalesInRange } from '../../services/supabaseRead'
+import {
+  fetchProducts,
+  fetchSalesInRange,
+  fetchTransferDrafts,
+  getLocationUUID,
+  getLocationUUIDByName,
+} from '../../services/supabaseRead'
 import { getRetailLocations, getWarehouseLocations } from '../../utils/locationHelpers'
 import { computeForecast, forecastSummary } from '../../services/forecastEngine'
+import {
+  createTransferDraft,
+  completeDraftTransfer,
+  cancelTransferDraft,
+} from '../../services/supabaseWrite'
 
-// ── Design tokens (matches InventoryTab palette) ──────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
   bg: '#F8FAFC', card: '#FFFFFF', border: '#E5E7EB',
   text: '#111827', sub: '#374151', muted: '#6B7280', dim: '#9CA3AF',
@@ -21,10 +32,10 @@ const C = {
 }
 
 const URGENCY_CFG = {
-  critical: { label: 'Critical',  color: C.red,    bg: `${C.red}12`,    border: `${C.red}30`,    icon: '🔴' },
-  warning:  { label: 'Warning',   color: C.amber,  bg: `${C.amber}12`,  border: `${C.amber}30`,  icon: '🟡' },
-  monitor:  { label: 'Monitor',   color: C.blue,   bg: `${C.blue}12`,   border: `${C.blue}30`,   icon: '👁' },
-  healthy:  { label: 'Healthy',   color: C.green,  bg: `${C.green}12`,  border: `${C.green}30`,  icon: '✅' },
+  critical: { label: 'Critical', color: C.red,   bg: `${C.red}12`,   border: `${C.red}30`,   icon: '🔴' },
+  warning:  { label: 'Warning',  color: C.amber, bg: `${C.amber}12`, border: `${C.amber}30`, icon: '🟡' },
+  monitor:  { label: 'Monitor',  color: C.blue,  bg: `${C.blue}12`,  border: `${C.blue}30`,  icon: '👁' },
+  healthy:  { label: 'Healthy',  color: C.green, bg: `${C.green}12`, border: `${C.green}30`, icon: '✅' },
 }
 
 const ACTION_CFG = {
@@ -45,6 +56,13 @@ function fmtDays(d) {
   return `${Math.floor(d)}d`
 }
 
+function fmtDate(iso) {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  } catch { return iso }
+}
+
 // ── Local sales fallback ──────────────────────────────────────────────────────
 function loadLocalSalesLast30() {
   try {
@@ -56,9 +74,7 @@ function loadLocalSalesLast30() {
       const ts = new Date(s.timestamp || s.completedAt || s.createdAt).getTime()
       return ts >= cutoff
     })
-  } catch {
-    return []
-  }
+  } catch { return [] }
 }
 
 // ── Summary card ─────────────────────────────────────────────────────────────
@@ -80,8 +96,203 @@ function SummaryCard({ icon, label, value, color, active, onClick }) {
   )
 }
 
+// ── Pending transfer drafts ───────────────────────────────────────────────────
+function PendingTransfers({ drafts, onComplete, onCancel, submitting }) {
+  if (!drafts.length) return null
+  return (
+    <div style={{ marginBottom: 14, background: `${C.purple}08`, border: `1px solid ${C.purple}25`, borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ padding: '10px 14px 8px', borderBottom: `1px solid ${C.purple}20`, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: C.purple }}>↔ Pending Transfers</span>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 10, background: C.purple, color: '#fff' }}>
+          {drafts.length}
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {drafts.map((draft, i) => (
+          <div key={draft.id} style={{
+            padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8,
+            borderTop: i > 0 ? `1px solid ${C.purple}15` : 'none',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {draft.productName}
+              </div>
+              <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>
+                {draft.fromLocationName} → {draft.toLocationName}
+                <span style={{ marginLeft: 6, fontWeight: 700, color: C.purple }}>×{draft.qty}</span>
+              </div>
+              {draft.createdAt && (
+                <div style={{ fontSize: 9, color: C.dim, marginTop: 1 }}>{fmtDate(draft.createdAt)}</div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+              <button
+                disabled={submitting}
+                onClick={() => onComplete(draft)}
+                style={{
+                  padding: '5px 10px', borderRadius: 7, fontSize: 11, fontWeight: 700,
+                  cursor: submitting ? 'default' : 'pointer', border: 'none',
+                  background: submitting ? C.border : C.green, color: submitting ? C.muted : '#fff',
+                }}
+              >
+                ✓ Complete
+              </button>
+              <button
+                disabled={submitting}
+                onClick={() => onCancel(draft.id)}
+                style={{
+                  padding: '5px 8px', borderRadius: 7, fontSize: 11, fontWeight: 700,
+                  cursor: submitting ? 'default' : 'pointer',
+                  background: 'transparent', color: submitting ? C.dim : C.red,
+                  border: `1px solid ${submitting ? C.dim : `${C.red}40`}`,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Transfer draft creation modal ─────────────────────────────────────────────
+function TransferDraftModal({ row, warehouseLocs, onConfirm, onClose, submitting }) {
+  const [qty,    setQty]    = useState(row.suggestedTransfer || 1)
+  const [fromId, setFromId] = useState(warehouseLocs[0]?.id || '')
+  const [note,   setNote]   = useState('')
+
+  const fromLoc = warehouseLocs.find(l => l.id === fromId) || warehouseLocs[0]
+  const maxQty  = row.warehouseStock
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9999,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 440, background: C.card,
+          borderRadius: '16px 16px 0 0', padding: '20px 18px 32px',
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>Create Transfer Draft</div>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 20, lineHeight: 1, padding: 0 }}
+          >✕</button>
+        </div>
+
+        {/* Product */}
+        <div style={{ padding: '10px 12px', background: C.bg, borderRadius: 10, marginBottom: 14, border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{row.product.name}</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>
+            {row.product.category}{row.product.size ? ` · ${row.product.size}` : ''}
+            {row.product.barcode ? ` · #${row.product.barcode}` : ''}
+          </div>
+        </div>
+
+        {/* From / To */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 20px 1fr', gap: 6, marginBottom: 14, alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, marginBottom: 4 }}>FROM</div>
+            {warehouseLocs.length > 1 ? (
+              <select
+                value={fromId}
+                onChange={e => setFromId(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, fontWeight: 600, background: C.card, color: C.text, outline: 'none' }}
+              >
+                {warehouseLocs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            ) : (
+              <div style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.purple}40`, background: `${C.purple}08`, fontSize: 12, fontWeight: 700, color: C.purple }}>
+                📦 {fromLoc?.name || '—'}
+              </div>
+            )}
+          </div>
+          <div style={{ textAlign: 'center', color: C.dim, fontSize: 14, marginTop: 14 }}>→</div>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, marginBottom: 4 }}>TO</div>
+            <div style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${C.blue}40`, background: `${C.blue}08`, fontSize: 12, fontWeight: 700, color: C.blue }}>
+              📍 {row.location.name}
+            </div>
+          </div>
+        </div>
+
+        {/* Qty */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, marginBottom: 4 }}>
+            QUANTITY
+            <span style={{ fontWeight: 400, color: C.dim, marginLeft: 4 }}>(max {maxQty} in warehouse)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => setQty(q => Math.max(1, q - 1))}
+              style={{ width: 36, height: 36, borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, color: C.text, fontSize: 18, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}
+            >−</button>
+            <input
+              type="number"
+              min={1}
+              max={maxQty}
+              value={qty}
+              onChange={e => setQty(Math.max(1, Math.min(maxQty, parseInt(e.target.value) || 1)))}
+              style={{ flex: 1, textAlign: 'center', padding: '8px', border: `1.5px solid ${C.purple}60`, borderRadius: 8, fontSize: 18, fontWeight: 700, color: C.text, outline: 'none' }}
+            />
+            <button
+              onClick={() => setQty(q => Math.min(maxQty, q + 1))}
+              style={{ width: 36, height: 36, borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, color: C.text, fontSize: 18, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}
+            >+</button>
+          </div>
+        </div>
+
+        {/* Note */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, marginBottom: 4 }}>NOTE (optional)</div>
+          <input
+            type="text"
+            placeholder="e.g. Low stock at kiosk"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            style={{ width: '100%', padding: '8px 10px', border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, color: C.text, outline: 'none', background: C.card, boxSizing: 'border-box' }}
+          />
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={onClose}
+            style={{ flex: 1, padding: '12px', borderRadius: 10, border: `1px solid ${C.border}`, background: C.bg, fontSize: 13, fontWeight: 700, color: C.muted, cursor: 'pointer' }}
+          >
+            Cancel
+          </button>
+          <button
+            disabled={submitting || qty < 1}
+            onClick={() => onConfirm({ fromLoc: fromLoc || warehouseLocs[0], qty, note })}
+            style={{
+              flex: 2, padding: '12px', borderRadius: 10, border: 'none',
+              background: submitting ? C.border : C.purple,
+              color: submitting ? C.muted : '#fff',
+              fontSize: 13, fontWeight: 800, cursor: submitting ? 'default' : 'pointer',
+            }}
+          >
+            {submitting ? '⟳ Creating…' : '↔ Create Draft'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Forecast row card ─────────────────────────────────────────────────────────
-function ForecastCard({ row }) {
+function ForecastCard({ row, onCreateTransfer }) {
   const [expanded, setExpanded] = useState(false)
   const urg = URGENCY_CFG[row.urgency]
   const act = ACTION_CFG[row.action]
@@ -117,7 +328,7 @@ function ForecastCard({ row }) {
       </div>
 
       {/* Row 2: stock + location */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 10, color: C.muted, fontWeight: 700 }}>📍 {row.location.name}</span>
         <span style={{ fontSize: 10, color: C.dim }}>·</span>
         <span style={{ fontSize: 10, fontWeight: 700, color: row.retailStock === 0 ? C.red : row.retailStock <= 3 ? C.amber : C.green }}>
@@ -137,8 +348,8 @@ function ForecastCard({ row }) {
       {/* Row 3: metrics strip */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         {[
-          { label: '30d sold', value: String(row.sold30d) },
-          { label: 'avg/day',  value: fmt1(row.avgDailySales) },
+          { label: '30d sold',  value: String(row.sold30d) },
+          { label: 'avg/day',   value: fmt1(row.avgDailySales) },
           { label: 'days left', value: fmtDays(row.daysUntilStockout), urgent: row.urgency === 'critical' },
         ].map(m => (
           <div key={m.label} style={{
@@ -151,30 +362,41 @@ function ForecastCard({ row }) {
         ))}
       </div>
 
-      {/* Row 4: action suggestion */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: act.bg, borderRadius: 8, padding: '7px 10px',
-      }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: act.color }}>{act.label}</span>
-        {row.action === 'transfer' && (
-          <span style={{ fontSize: 12, color: C.sub }}>
-            Move <strong>{row.suggestedTransfer}</strong> unit{row.suggestedTransfer !== 1 ? 's' : ''} from Storage
-          </span>
-        )}
-        {row.action === 'reorder' && (
-          <span style={{ fontSize: 12, color: C.sub }}>
-            Order <strong>{row.suggestedReorder}</strong> unit{row.suggestedReorder !== 1 ? 's' : ''}
-            {row.supplier ? ` · ${row.supplier}` : ''}
-          </span>
-        )}
-        {row.action === 'monitor' && (
-          <span style={{ fontSize: 11, color: C.muted }}>
-            {row.reorderStatus === 'seasonal' ? 'Seasonal — review manually' : 'Low velocity — monitor'}
-          </span>
-        )}
-        {row.action === 'ok' && (
-          <span style={{ fontSize: 11, color: C.muted }}>~{fmtDays(row.daysUntilStockout)} remaining</span>
+      {/* Row 4: action suggestion + Create Draft button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: act.bg, borderRadius: 8, padding: '7px 10px' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: act.color, flexShrink: 0 }}>{act.label}</span>
+          {row.action === 'transfer' && (
+            <span style={{ fontSize: 12, color: C.sub }}>
+              Move <strong>{row.suggestedTransfer}</strong> unit{row.suggestedTransfer !== 1 ? 's' : ''} from Storage
+            </span>
+          )}
+          {row.action === 'reorder' && (
+            <span style={{ fontSize: 12, color: C.sub }}>
+              Order <strong>{row.suggestedReorder}</strong> unit{row.suggestedReorder !== 1 ? 's' : ''}
+              {row.supplier ? ` · ${row.supplier}` : ''}
+            </span>
+          )}
+          {row.action === 'monitor' && (
+            <span style={{ fontSize: 11, color: C.muted }}>
+              {row.reorderStatus === 'seasonal' ? 'Seasonal — review manually' : 'Low velocity — monitor'}
+            </span>
+          )}
+          {row.action === 'ok' && (
+            <span style={{ fontSize: 11, color: C.muted }}>~{fmtDays(row.daysUntilStockout)} remaining</span>
+          )}
+        </div>
+        {row.action === 'transfer' && onCreateTransfer && (
+          <button
+            onClick={e => { e.stopPropagation(); onCreateTransfer(row) }}
+            style={{
+              padding: '5px 10px', borderRadius: 7, border: 'none',
+              background: C.purple, color: '#fff', fontSize: 11, fontWeight: 700,
+              cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            + Draft
+          </button>
         )}
       </div>
 
@@ -211,52 +433,55 @@ function ForecastCard({ row }) {
 
 // ── Main ForecastTab ──────────────────────────────────────────────────────────
 export default function ForecastTab() {
-  const [products,  setProducts]  = useState(() => loadAllProducts())
-  const [sales,     setSales]     = useState(() => loadLocalSalesLast30())
-  const [loading,   setLoading]   = useState(true)
-  const [fetchedAt, setFetchedAt] = useState(null)
+  const [products,   setProducts]   = useState(() => loadAllProducts())
+  const [sales,      setSales]      = useState(() => loadLocalSalesLast30())
+  const [loading,    setLoading]    = useState(true)
+  const [fetchedAt,  setFetchedAt]  = useState(null)
+  const [drafts,     setDrafts]     = useState([])
+  const [draftModal, setDraftModal] = useState(null)  // ForecastRow | null
+  const [submitting, setSubmitting] = useState(false)
 
   // Filters
-  const [urgencyFilter, setUrgencyFilter] = useState('all')  // all|critical|warning|monitor
-  const [locFilter,     setLocFilter]     = useState('all')  // all | loc id
+  const [urgencyFilter, setUrgencyFilter] = useState('all')
+  const [locFilter,     setLocFilter]     = useState('all')
   const [catFilter,     setCatFilter]     = useState('all')
   const [search,        setSearch]        = useState('')
 
   const retailLocs    = useMemo(() => getRetailLocations(),    [])
   const warehouseLocs = useMemo(() => getWarehouseLocations(), [])
 
-  // Fetch fresh data on mount
+  // Fetch fresh data + drafts on mount
   useEffect(() => {
     const from = new Date(Date.now() - 30 * 86_400_000)
     const to   = new Date()
     Promise.all([
       fetchProducts(),
       fetchSalesInRange(from, to),
-    ]).then(([remoteProducts, remoteSales]) => {
+      fetchTransferDrafts(),
+    ]).then(([remoteProducts, remoteSales, remoteDrafts]) => {
       if (remoteProducts?.length) setProducts(remoteProducts)
       if (remoteSales?.length)    setSales(remoteSales)
-      else setSales(loadLocalSalesLast30())
+      else                        setSales(loadLocalSalesLast30())
+      if (remoteDrafts?.length)   setDrafts(remoteDrafts)
       setFetchedAt(new Date())
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  // Compute forecast
+  // Forecast computation
   const allRows = useMemo(() => computeForecast({
     products,
     sales,
-    retailLocations:   retailLocs,
+    retailLocations:    retailLocs,
     warehouseLocations: warehouseLocs,
   }), [products, sales, retailLocs, warehouseLocs])
 
   const summary = useMemo(() => forecastSummary(allRows), [allRows])
 
-  // Build category list for filter
   const categories = useMemo(() => {
     const cats = new Set(allRows.map(r => r.product.category).filter(Boolean))
     return [...cats].sort()
   }, [allRows])
 
-  // Apply filters
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return allRows.filter(r => {
@@ -272,6 +497,91 @@ export default function ForecastTab() {
 
   const hasWarehouse = warehouseLocs.length > 0
 
+  // ── Transfer draft handlers ─────────────────────────────────────────────────
+
+  const handleCreateDraft = useCallback(async ({ fromLoc, qty, note }) => {
+    if (!draftModal) return
+    setSubmitting(true)
+    try {
+      const row = draftModal
+
+      // Resolve UUIDs: name-based first (covers dynamic warehouse), fallback to legacy ID
+      const fromUUID = getLocationUUIDByName(fromLoc.name) || getLocationUUID(fromLoc.id)
+      const toUUID   = getLocationUUID(row.location.id)    || getLocationUUIDByName(row.location.name)
+
+      if (!fromUUID || !toUUID) {
+        console.warn('[ForecastTab] Could not resolve location UUIDs', { fromLoc, toLoc: row.location })
+        return
+      }
+
+      const draftId = await createTransferDraft({
+        productId:        row.product.id,
+        productName:      row.product.name,
+        barcode:          row.product.barcode || '',
+        qty,
+        fromLocationUUID: fromUUID,
+        fromLocationName: fromLoc.name,
+        toLocationUUID:   toUUID,
+        toLocationName:   row.location.name,
+        note,
+      })
+
+      if (draftId) {
+        // Optimistically prepend to local list
+        setDrafts(prev => [{
+          id:               draftId,
+          productId:        row.product.id,
+          productName:      row.product.name,
+          barcode:          row.product.barcode || '',
+          qty,
+          fromLocationId:   fromUUID,
+          fromLocationName: fromLoc.name,
+          toLocationId:     toUUID,
+          toLocationName:   row.location.name,
+          status:           'draft',
+          createdBy:        'Dashboard Owner',
+          note,
+          createdAt:        new Date().toISOString(),
+        }, ...prev])
+        setDraftModal(null)
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }, [draftModal])
+
+  const handleCompleteDraft = useCallback(async (draft) => {
+    setSubmitting(true)
+    try {
+      // completeDraftTransfer expects snake_case fields matching the DB row
+      const ok = await completeDraftTransfer({
+        id:                 draft.id,
+        product_id:         draft.productId,
+        from_location_id:   draft.fromLocationId,
+        to_location_id:     draft.toLocationId,
+        qty:                draft.qty,
+        product_name:       draft.productName,
+        barcode:            draft.barcode,
+        from_location_name: draft.fromLocationName,
+        to_location_name:   draft.toLocationName,
+        created_by:         draft.createdBy,
+      })
+      if (ok) setDrafts(prev => prev.filter(d => d.id !== draft.id))
+    } finally {
+      setSubmitting(false)
+    }
+  }, [])
+
+  const handleCancelDraft = useCallback(async (draftId) => {
+    setSubmitting(true)
+    try {
+      const ok = await cancelTransferDraft(draftId)
+      if (ok) setDrafts(prev => prev.filter(d => d.id !== draftId))
+    } finally {
+      setSubmitting(false)
+    }
+  }, [])
+
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif" }}>
 
@@ -280,7 +590,9 @@ export default function ForecastTab() {
         <div>
           <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>Forecast & Reorder</div>
           <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>
-            {loading ? '⟳ Loading…' : fetchedAt ? `Updated ${fetchedAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}` : 'Local data'}
+            {loading ? '⟳ Loading…' : fetchedAt
+              ? `Updated ${fetchedAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+              : 'Local data'}
             {' · '}{sales.length} sales (30d)
             {!hasWarehouse && ' · No warehouse configured'}
           </div>
@@ -292,7 +604,15 @@ export default function ForecastTab() {
         )}
       </div>
 
-      {/* Summary cards — 2 rows × 2 cols */}
+      {/* Pending Transfer Drafts */}
+      <PendingTransfers
+        drafts={drafts}
+        onComplete={handleCompleteDraft}
+        onCancel={handleCancelDraft}
+        submitting={submitting}
+      />
+
+      {/* Summary cards — 2 × 2 grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
         <SummaryCard icon="🔴" label="Critical"        value={summary.critical}       color={C.red}    active={urgencyFilter === 'critical'} onClick={() => setUrgencyFilter(v => v === 'critical' ? 'all' : 'critical')} />
         <SummaryCard icon="🟡" label="Warning"         value={summary.warning}        color={C.amber}  active={urgencyFilter === 'warning'}  onClick={() => setUrgencyFilter(v => v === 'warning'  ? 'all' : 'warning')} />
@@ -307,7 +627,7 @@ export default function ForecastTab() {
           placeholder="Search product, supplier, category…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ width: '100%', padding: '9px 32px 9px 32px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 13, color: C.text, outline: 'none' }}
+          style={{ width: '100%', padding: '9px 32px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 13, color: C.text, outline: 'none', boxSizing: 'border-box' }}
         />
         {search && (
           <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 15, padding: 0 }}>✕</button>
@@ -317,18 +637,17 @@ export default function ForecastTab() {
       {/* Filter pills — urgency */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 8, overflowX: 'auto', paddingBottom: 2 }}>
         {[
-          { id: 'all',      label: `All (${allRows.length})`,           color: C.muted },
-          { id: 'critical', label: `Critical (${summary.critical})`,    color: C.red   },
-          { id: 'warning',  label: `Warning (${summary.warning})`,      color: C.amber },
-          { id: 'monitor',  label: `Monitor (${summary.monitor})`,      color: C.blue  },
+          { id: 'all',      label: `All (${allRows.length})`,        color: C.muted },
+          { id: 'critical', label: `Critical (${summary.critical})`, color: C.red   },
+          { id: 'warning',  label: `Warning (${summary.warning})`,   color: C.amber },
+          { id: 'monitor',  label: `Monitor (${summary.monitor})`,   color: C.blue  },
         ].map(f => (
           <button key={f.id} onClick={() => setUrgencyFilter(f.id)} style={{
             padding: '5px 12px', borderRadius: 16, fontSize: 11, fontWeight: 700,
-            whiteSpace: 'nowrap', cursor: 'pointer', border: '1px solid',
+            whiteSpace: 'nowrap', cursor: 'pointer', border: '1px solid', flexShrink: 0,
             borderColor: urgencyFilter === f.id ? f.color : C.border,
             background:  urgencyFilter === f.id ? `${f.color}18` : C.card,
             color:       urgencyFilter === f.id ? f.color : C.muted,
-            flexShrink: 0,
           }}>{f.label}</button>
         ))}
       </div>
@@ -381,12 +700,27 @@ export default function ForecastTab() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map((row, i) => (
-            <ForecastCard key={`${row.product.id}-${row.location.id}-${i}`} row={row} />
+            <ForecastCard
+              key={`${row.product.id}-${row.location.id}-${i}`}
+              row={row}
+              onCreateTransfer={hasWarehouse ? () => setDraftModal(row) : null}
+            />
           ))}
         </div>
       )}
 
       <div style={{ height: 24 }} />
+
+      {/* Transfer Draft Modal */}
+      {draftModal && (
+        <TransferDraftModal
+          row={draftModal}
+          warehouseLocs={warehouseLocs}
+          onConfirm={handleCreateDraft}
+          onClose={() => { if (!submitting) setDraftModal(null) }}
+          submitting={submitting}
+        />
+      )}
     </div>
   )
 }
