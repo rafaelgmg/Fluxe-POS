@@ -239,6 +239,7 @@ export async function writeLocationConfigToSupabase(loc) {
           organization_id: orgId,
           location_id:     loc.id,
           location_name:   loc.name,
+          location_type:   loc.location_type || 'retail',
           config:          loc,
           updated_at:      loc.updatedAt || new Date().toISOString(),
         }),
@@ -851,16 +852,22 @@ export async function writeProductToSupabase(product) {
   try {
     const orgId = await getOrgId()
     const row = await sbPost('/products', {
-      organization_id: orgId,
-      name:            product.name,
-      description:     product.description || '',
-      barcode:         product.barcode,
-      size:            product.size        || '',
-      system_price:    product.systemPrice,
-      min_price:       product.minPrice    ?? 0,
-      cost_price:      product.costPrice   ?? 0,
-      supplier_name:   product.supplierName || '',
-      status:          product.status      || 'active',
+      organization_id:     orgId,
+      name:                product.name,
+      description:         product.description  || '',
+      barcode:             product.barcode,
+      size:                product.size         || '',
+      system_price:        product.systemPrice,
+      min_price:           product.minPrice     ?? 0,
+      cost_price:          product.costPrice    ?? 0,
+      supplier_name:       product.supplierName || '',
+      status:              product.status       || 'active',
+      reorder_status:      product.reorderStatus      || 'reorderable',
+      core_product:        product.coreProduct        ?? false,
+      min_stock_target:    product.minStockTarget      ?? null,
+      reorder_point:       product.reorderPoint       ?? null,
+      target_days_of_stock: product.targetDaysOfStock ?? 14,
+      lead_time_days:      product.leadTimeDays        ?? 7,
     }, 'return=representation')
 
     if (!row?.id) return null
@@ -910,15 +917,21 @@ export async function updateProductInSupabase(product) {
     const orgId = await getOrgId()
 
     await sbPatch(`/products?id=eq.${product.id}`, {
-      name:          product.name,
-      description:   product.description  || '',
-      barcode:       product.barcode,
-      size:          product.size         || '',
-      system_price:  product.systemPrice,
-      min_price:     product.minPrice     ?? 0,
-      cost_price:    product.costPrice    ?? 0,
-      supplier_name: product.supplierName || '',
-      status:        product.status       || 'active',
+      name:                product.name,
+      description:         product.description  || '',
+      barcode:             product.barcode,
+      size:                product.size         || '',
+      system_price:        product.systemPrice,
+      min_price:           product.minPrice     ?? 0,
+      cost_price:          product.costPrice    ?? 0,
+      supplier_name:       product.supplierName || '',
+      status:              product.status       || 'active',
+      reorder_status:      product.reorderStatus      || 'reorderable',
+      core_product:        product.coreProduct        ?? false,
+      min_stock_target:    product.minStockTarget      ?? null,
+      reorder_point:       product.reorderPoint       ?? null,
+      target_days_of_stock: product.targetDaysOfStock ?? 14,
+      lead_time_days:      product.leadTimeDays        ?? 7,
     })
 
     const stockRows = Object.entries(product.qtyByLoc || {})

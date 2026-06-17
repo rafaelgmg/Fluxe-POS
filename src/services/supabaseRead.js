@@ -185,6 +185,8 @@ function fromSupabaseSale(row) {
   const snapshotPayments = Array.isArray(row.payments_snapshot) ? row.payments_snapshot : []
   return {
     ...row,
+    // Preserve the Supabase UUID so voidSaleInSupabase skips the extra lookup query
+    supabaseId:    row.id,
     // Field renames: Supabase → frontend canonical shape
     timestamp:     row.sold_at,
     location:      row.location_name   || '',
@@ -210,15 +212,21 @@ function fromSupabaseProduct(row, locationMap) {
   }
   return normalizeProduct({
     ...row,
-    systemPrice:  row.system_price  ?? 0,
-    minPrice:     row.min_price     ?? 0,
-    costPrice:    row.cost_price    ?? 0,
-    supplierName: row.supplier_name || '',
-    categoryId:   row.category_id   ?? null,
-    updatedAt:    row.updated_at,
-    createdAt:    row.created_at,
-    qty:          totalQty,
+    systemPrice:       row.system_price        ?? 0,
+    minPrice:          row.min_price           ?? 0,
+    costPrice:         row.cost_price          ?? 0,
+    supplierName:      row.supplier_name       || '',
+    categoryId:        row.category_id         ?? null,
+    updatedAt:         row.updated_at,
+    createdAt:         row.created_at,
+    qty:               totalQty,
     qtyByLoc,
+    reorderStatus:     row.reorder_status      ?? 'reorderable',
+    coreProduct:       row.core_product        ?? false,
+    minStockTarget:    row.min_stock_target     ?? null,
+    reorderPoint:      row.reorder_point       ?? null,
+    targetDaysOfStock: row.target_days_of_stock ?? 14,
+    leadTimeDays:      row.lead_time_days       ?? 7,
   })
 }
 

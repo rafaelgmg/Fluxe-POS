@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo, useCallback, useEffect } from 'react'
-import { LOCATIONS_CFG } from '../config/branding'
+import { LOCATIONS_CFG, RETAIL_LOCATIONS } from '../config/branding'
 import { fetchTodayClockRecords } from '../services/supabaseRead'
 import { fetchLeadsInRange } from '../services/supabaseDashboard'
 import {
@@ -198,10 +198,10 @@ export default function Dashboard({ onClose, sales = [] }) {
 
   const handleRefresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
-  // ── Location options ────────────────────────────────────────────────────────
+  // ── Location options (sales = retail only; inventory tabs use LOCATIONS_CFG) ──
   const locationOptions = [
     { id: 'all', name: 'All Locations' },
-    ...LOCATIONS_CFG.map(l => ({ id: l.name, name: l.name })),
+    ...RETAIL_LOCATIONS.map(l => ({ id: l.name, name: l.name })),
   ]
 
   return (

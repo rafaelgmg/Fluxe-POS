@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { LOCATIONS_CFG } from '../config/branding'
+import { RETAIL_LOCATIONS } from '../config/branding'
 import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
 import { upsertEODNotes } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
@@ -76,7 +76,7 @@ const TD = ({ children, right, muted, mono }) => (
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function AdminEODReport({ onClose }) {
-  const locationNames = LOCATIONS_CFG.map(l => l.name)
+  const locationNames = RETAIL_LOCATIONS.map(l => l.name)
 
   const [selectedLoc,  setSelectedLoc]  = useState(locationNames[0] || '')
   const [selectedDate, setSelectedDate] = useState(() => dateToInput(new Date()))

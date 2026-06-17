@@ -15,7 +15,8 @@
  * @property {number}              spareCommissionRate  percent (e.g. 30)
  * @property {'fixed'|'tiered'}    spareCommissionMode
  * @property {SpareCommissionTier[]} spareTiers
- * @property {'active'|'inactive'} status
+ * @property {'active'|'inactive'}      status
+ * @property {'retail'|'warehouse'}     location_type  retail=POS/sales; warehouse=inventory/transfers only
  */
 
 /**
@@ -47,4 +48,5 @@ export const LOCATION_DEFAULTS = {
   spareCommissionMode:    'fixed',
   spareTiers:             [],
   status:                 'active',
+  location_type:          'retail',
 }

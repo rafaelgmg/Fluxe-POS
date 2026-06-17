@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  ACCOUNTS, REGIONS, LOCATION_MAP, LOGIN_PASSWORD, LOGIN_CHECKBOX,
+  ACCOUNTS, REGIONS, RETAIL_LOCATION_MAP, LOGIN_PASSWORD, LOGIN_CHECKBOX,
   BUSINESS, BUSINESS_SHORT, SYSTEM_NAME, SYSTEM_TAG, CREATOR,
   LOCATIONS_CFG,
 } from '../config/branding'
@@ -26,23 +26,21 @@ function clearRememberedLocation() {
   localStorage.removeItem(REMEMBER_KEY)
 }
 
-// Returns active location names for a region, merging saved settings with branding config
+// Returns active retail-only location names for a region
 function loadActiveLocationNames(region) {
   try {
     const raw = localStorage.getItem(LOC_KEY)
     if (raw) {
       const saved = JSON.parse(raw)
-      // Use saved list if it has entries for this region
       const regionLocs = saved.filter(l => l.region === region)
       if (regionLocs.length > 0) {
         return regionLocs
-          .filter(l => l.status !== 'inactive')
+          .filter(l => l.status !== 'inactive' && l.location_type !== 'warehouse')
           .map(l => l.name)
       }
     }
   } catch {}
-  // Fallback to branding static config
-  return LOCATION_MAP[region] || []
+  return RETAIL_LOCATION_MAP[region] || []
 }
 
 function Clock() {
@@ -63,7 +61,7 @@ function Clock() {
 export default function LoginScreen({ onLogin, onBack }) {
   const [account,          setAccount]          = useState(ACCOUNTS[0])
   const [region,           setRegion]           = useState(REGIONS[0])
-  const [location,         setLocation]         = useState(LOCATION_MAP[REGIONS[0]][0])
+  const [location,         setLocation]         = useState(RETAIL_LOCATION_MAP[REGIONS[0]]?.[0] || '')
   const [password,         setPassword]         = useState('')
   const [onlyThis,         setOnlyThis]         = useState(() => loadRememberedLocation()?.rememberLocation === true)
   const [locationRestored, setLocationRestored] = useState(false)

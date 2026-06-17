@@ -15,15 +15,27 @@
  * @property {'active'|'inactive'}   status
  * @property {string}                supplierName
  * @property {string|null}           updatedAt     ISO string
+ * @property {'reorderable'|'do_not_reorder'|'seasonal'|'discontinued'|'test_product'} reorderStatus
+ * @property {boolean}               coreProduct   always keep in stock
+ * @property {number|null}           minStockTarget
+ * @property {number|null}           reorderPoint
+ * @property {number}                targetDaysOfStock  default 14
+ * @property {number}                leadTimeDays       default 7
  */
 
 export const PRODUCT_DEFAULTS = {
-  description:  '',
-  costPrice:    0,
-  qty:          0,
-  qtyByLoc:     {},
-  status:       'active',
-  supplierName: '',
-  updatedAt:    null,
-  minPrice:     0,
+  description:       '',
+  costPrice:         0,
+  qty:               0,
+  qtyByLoc:          {},
+  status:            'active',
+  supplierName:      '',
+  updatedAt:         null,
+  minPrice:          0,
+  reorderStatus:     'reorderable',
+  coreProduct:       false,
+  minStockTarget:    null,
+  reorderPoint:      null,
+  targetDaysOfStock: 14,
+  leadTimeDays:      7,
 }

@@ -4,12 +4,13 @@
  * Accessed via Admin → Inventory → Daily Counts.
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { loadAllProducts, saveAllProducts } from '../utils/productsStorage'
-import { loadDailyCounts, updateDailyCount, updateDailyCountItem, deriveCountStatus } from '../utils/dailyCountsStorage'
+import { loadDailyCounts, updateDailyCount, updateDailyCountItem, deriveCountStatus, saveDailyCounts } from '../utils/dailyCountsStorage'
 import { writeStockAdjustment } from '../services/supabaseWrite'
 import { getLocationUUID } from '../services/supabaseRead'
+import { fetchDailyCounts } from '../services/supabaseDailyCounts'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG     = 'var(--c-bg)'
@@ -281,9 +282,16 @@ function OpenCountModal({ count: initialCount, currentUser, onClose }) {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
+function mergeCounts(remote, local) {
+  const remoteIds = new Set(remote.map(c => c._sbId).filter(Boolean))
+  const localOnly = local.filter(c => !c._sbId || !remoteIds.has(c._sbId))
+  return [...remote, ...localOnly].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+}
+
 export default function DailyCountsAdmin({ currentUser }) {
-  const [counts, setCounts]       = useState(loadDailyCounts)
+  const [counts,    setCounts]    = useState(loadDailyCounts)
   const [openCount, setOpenCount] = useState(null)
+  const [loading,   setLoading]   = useState(false)
 
   // Filters
   const [fromDate,     setFromDate]     = useState('')
@@ -292,13 +300,27 @@ export default function DailyCountsAdmin({ currentUser }) {
   const [filterUser,   setFilterUser]   = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
 
-  function refresh() {
-    setCounts(loadDailyCounts())
-    if (openCount) {
-      const fresh = loadDailyCounts().find(c => c.id === openCount.id)
-      if (fresh) setOpenCount(fresh)
+  async function refresh() {
+    setLoading(true)
+    try {
+      const remote = await fetchDailyCounts()
+      if (remote) {
+        const merged = mergeCounts(remote, loadDailyCounts())
+        saveDailyCounts(merged)
+        setCounts(merged)
+        if (openCount) {
+          const fresh = merged.find(c => c.id === openCount.id)
+          if (fresh) setOpenCount(fresh)
+        }
+      } else {
+        setCounts(loadDailyCounts())
+      }
+    } finally {
+      setLoading(false)
     }
   }
+
+  useEffect(() => { refresh() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
     return counts.filter(c => {
@@ -339,8 +361,8 @@ export default function DailyCountsAdmin({ currentUser }) {
             </div>
           ))}
         </div>
-        <button onClick={refresh} style={{ marginLeft: 'auto', padding: '6px 14px', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 6, color: MUTED, fontSize: 12, cursor: 'pointer' }}>
-          ⟳ Refresh
+        <button onClick={refresh} disabled={loading} style={{ marginLeft: 'auto', padding: '6px 14px', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 6, color: MUTED, fontSize: 12, cursor: loading ? 'wait' : 'pointer' }}>
+          {loading ? '⟳ Syncing…' : '⟳ Refresh'}
         </button>
       </div>
 

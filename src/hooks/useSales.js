@@ -34,7 +34,17 @@ export function useSales() {
     if (isDemoMode()) return
     const hydrate = () =>
       fetchSales().then(remote => {
-        if (remote) setSales(remote.filter(s => s.location !== 'Fluxe Demo Store'))
+        if (!remote) return
+        setSales(prev => {
+          // Don't let the poll un-void a sale that was voided locally but whose
+          // PATCH hasn't propagated to Supabase yet (race condition window).
+          const localVoided = new Set(
+            prev.filter(s => s.status === 'voided').map(s => String(s.number))
+          )
+          return remote
+            .filter(s => s.location !== 'Fluxe Demo Store')
+            .map(s => localVoided.has(String(s.number)) ? { ...s, status: 'voided' } : s)
+        })
       })
     hydrate()
     const id = setInterval(hydrate, 30_000)

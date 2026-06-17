@@ -242,16 +242,31 @@ function DeactivateModal({ product, sales = [], onConfirm, onClose }) {
 }
 
 // ─── Edit Product Panel ───────────────────────────────────────────────────────
+const REORDER_STATUS_OPTIONS = [
+  { value: 'reorderable',    label: 'Reorderable'     },
+  { value: 'do_not_reorder', label: 'Do Not Reorder'  },
+  { value: 'seasonal',       label: 'Seasonal'        },
+  { value: 'discontinued',   label: 'Discontinued'    },
+  { value: 'test_product',   label: 'Test Product'    },
+]
+
 function EditProductPanel({ product, onSave, onClose, onDeactivate, onReactivate }) {
   const [form, setForm] = useState({
-    name:        product.name        || '',
-    description: product.description || '',
-    size:        product.size        || '',
-    barcode:     product.barcode     || '',
-    category:    product.category    || CATEGORIES[0],
-    costPrice:   product.costPrice   || '',
-    systemPrice: product.systemPrice || '',
-    minPrice:    product.minPrice    || '',
+    name:              product.name              || '',
+    description:       product.description       || '',
+    size:              product.size              || '',
+    barcode:           product.barcode           || '',
+    category:          product.category          || CATEGORIES[0],
+    costPrice:         product.costPrice         || '',
+    systemPrice:       product.systemPrice       || '',
+    minPrice:          product.minPrice          || '',
+    supplierName:      product.supplierName      || '',
+    reorderStatus:     product.reorderStatus     || 'reorderable',
+    coreProduct:       product.coreProduct       ?? false,
+    minStockTarget:    product.minStockTarget  != null ? String(product.minStockTarget)  : '',
+    reorderPoint:      product.reorderPoint    != null ? String(product.reorderPoint)    : '',
+    targetDaysOfStock: product.targetDaysOfStock != null ? String(product.targetDaysOfStock) : '14',
+    leadTimeDays:      product.leadTimeDays      != null ? String(product.leadTimeDays)      : '7',
   })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const inp = { padding: '7px 10px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
@@ -260,9 +275,13 @@ function EditProductPanel({ product, onSave, onClose, onDeactivate, onReactivate
   const handleSave = () => {
     onSave({
       ...form,
-      costPrice:   parseFloat(form.costPrice)   || 0,
-      systemPrice: parseFloat(form.systemPrice) || 0,
-      minPrice:    parseFloat(form.minPrice)    || 0,
+      costPrice:         parseFloat(form.costPrice)   || 0,
+      systemPrice:       parseFloat(form.systemPrice) || 0,
+      minPrice:          parseFloat(form.minPrice)    || 0,
+      minStockTarget:    form.minStockTarget    !== '' ? parseInt(form.minStockTarget,    10) : null,
+      reorderPoint:      form.reorderPoint      !== '' ? parseInt(form.reorderPoint,      10) : null,
+      targetDaysOfStock: form.targetDaysOfStock !== '' ? parseInt(form.targetDaysOfStock, 10) : 14,
+      leadTimeDays:      form.leadTimeDays      !== '' ? parseInt(form.leadTimeDays,      10) : 7,
     })
   }
 
@@ -291,6 +310,83 @@ function EditProductPanel({ product, onSave, onClose, onDeactivate, onReactivate
         <div>
           {lbl('MIN PRICE ($) — hidden from sellers')}
           <input type="number" value={form.minPrice} onChange={e => set('minPrice', e.target.value)} style={{ ...inp, borderColor: 'rgba(245,158,11,0.4)' }} onFocus={e => { e.target.style.borderColor = AMBER }} onBlur={e => { e.target.style.borderColor = 'rgba(245,158,11,0.4)' }} />
+        </div>
+
+        {/* ── Reorder Settings ─────────────────────────────────── */}
+        <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, marginTop: 2 }}>
+          {/* Section header + status badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}>📦 REORDER SETTINGS</span>
+            {form.reorderStatus === 'discontinued' && (
+              <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, letterSpacing: 0.3, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: RED }}>DISCONTINUED</span>
+            )}
+            {form.reorderStatus === 'test_product' && (
+              <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, letterSpacing: 0.3, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: AMBER }}>TEST PRODUCT</span>
+            )}
+          </div>
+
+          {/* Reorder Status */}
+          <div style={{ marginBottom: 10 }}>
+            {lbl('REORDER STATUS')}
+            <select value={form.reorderStatus} onChange={e => set('reorderStatus', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              {REORDER_STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+
+          {/* Core Product toggle */}
+          <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div>
+              {lbl('CORE PRODUCT')}
+              <span style={{ color: DIM, fontSize: 10 }}>Always keep in stock</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => set('coreProduct', !form.coreProduct)}
+              style={{
+                width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+                background: form.coreProduct ? BLUE : 'rgba(100,116,139,0.25)',
+                position: 'relative', flexShrink: 0, transition: 'background 0.2s',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3,
+                left: form.coreProduct ? 23 : 3,
+                width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                display: 'block',
+              }} />
+            </button>
+          </div>
+
+          {/* Min Stock Target + Reorder Point */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+            <div>
+              {lbl('MIN STOCK TARGET')}
+              <input type="number" min="0" value={form.minStockTarget} placeholder="—" onChange={e => set('minStockTarget', e.target.value)} style={inp} onFocus={e => { e.target.style.borderColor = BLUE }} onBlur={e => { e.target.style.borderColor = BORDER }} />
+            </div>
+            <div>
+              {lbl('REORDER POINT')}
+              <input type="number" min="0" value={form.reorderPoint} placeholder="—" onChange={e => set('reorderPoint', e.target.value)} style={inp} onFocus={e => { e.target.style.borderColor = BLUE }} onBlur={e => { e.target.style.borderColor = BORDER }} />
+            </div>
+          </div>
+
+          {/* Target Days + Lead Time */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+            <div>
+              {lbl('TARGET DAYS OF STOCK')}
+              <input type="number" min="1" value={form.targetDaysOfStock} onChange={e => set('targetDaysOfStock', e.target.value)} style={inp} onFocus={e => { e.target.style.borderColor = BLUE }} onBlur={e => { e.target.style.borderColor = BORDER }} />
+            </div>
+            <div>
+              {lbl('LEAD TIME (DAYS)')}
+              <input type="number" min="0" value={form.leadTimeDays} onChange={e => set('leadTimeDays', e.target.value)} style={inp} onFocus={e => { e.target.style.borderColor = BLUE }} onBlur={e => { e.target.style.borderColor = BORDER }} />
+            </div>
+          </div>
+
+          {/* Supplier */}
+          <div>
+            {lbl('SUPPLIER')}
+            <input value={form.supplierName} placeholder="Supplier name…" onChange={e => set('supplierName', e.target.value)} style={inp} onFocus={e => { e.target.style.borderColor = BLUE }} onBlur={e => { e.target.style.borderColor = BORDER }} />
+          </div>
         </div>
       </div>
 

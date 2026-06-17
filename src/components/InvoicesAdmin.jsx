@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { LOCATIONS_CFG } from '../config/branding'
+import { RETAIL_LOCATIONS as LOCATIONS_CFG } from '../config/branding'
 import { printReceipt }   from '../utils/printReceipt'
 
 // ── Semantic colors (theme-neutral, kept as constants) ────────────────────────

@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo, useEffect } from 'react'
-import { LOCATIONS_CFG } from '../config/branding'
+import { RETAIL_LOCATIONS as LOCATIONS_CFG } from '../config/branding'
 import { loadAllProducts } from '../utils/productsStorage'
 import { fetchProducts } from '../services/supabaseRead'
 

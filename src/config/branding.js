@@ -32,7 +32,8 @@ const branding = {
       address:       '3663 Las Vegas Blvd, Las Vegas, Nevada',
       region:        'Las Vegas',
       phone:         '',
-      business_type: 'retail',   // 'retail' | 'service'
+      business_type:  'retail',     // 'retail' | 'service' — routes to POS vs ServiceApp
+      location_type:  'retail',     // 'retail' | 'warehouse' — retail=POS/sales, warehouse=storage only
     },
     {
       id:            'loc_02',
@@ -40,7 +41,8 @@ const branding = {
       address:       'Las Vegas, Nevada',
       region:        'Las Vegas',
       phone:         '',
-      business_type: 'retail',   // 'retail' | 'service'
+      business_type:  'retail',     // 'retail' | 'service'
+      location_type:  'retail',     // 'retail' | 'warehouse'
     },
   ],
 
@@ -103,11 +105,16 @@ export const LOGO          = branding.business.logo
 export const TAX_RATE      = branding.finance.taxRate
 export const CURRENCY      = branding.finance.currencySymbol
 export const COLORS        = branding.colors
-export const LOCATIONS_CFG = branding.locations
-export const DEFAULT_LOCATION = branding.locations[0].name
-export const REGIONS       = [...new Set(branding.locations.map(l => l.region))]
-export const LOCATION_MAP  = REGIONS.reduce((acc, r) => {
+export const LOCATIONS_CFG    = branding.locations
+export const RETAIL_LOCATIONS = branding.locations.filter(l => l.location_type !== 'warehouse')
+export const DEFAULT_LOCATION = RETAIL_LOCATIONS[0]?.name || branding.locations[0].name
+export const REGIONS          = [...new Set(branding.locations.map(l => l.region))]
+export const LOCATION_MAP     = REGIONS.reduce((acc, r) => {
   acc[r] = branding.locations.filter(l => l.region === r).map(l => l.name)
+  return acc
+}, {})
+export const RETAIL_LOCATION_MAP = REGIONS.reduce((acc, r) => {
+  acc[r] = RETAIL_LOCATIONS.filter(l => l.region === r).map(l => l.name)
   return acc
 }, {})
 export const ACCOUNTS      = [branding.business.account]

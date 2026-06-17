@@ -1,5 +1,5 @@
 ﻿import { useState, useMemo, useEffect, useCallback } from 'react'
-import { LOCATIONS_CFG } from '../config/branding'
+import { RETAIL_LOCATIONS as LOCATIONS_CFG } from '../config/branding'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { getLoyaltyStars, starsLabel, calcCRMScore } from '../utils/loyaltyEngine'
 import { getCustomerAppointments, upsertAppointment, deleteAppointment } from '../utils/appointmentsStorage'

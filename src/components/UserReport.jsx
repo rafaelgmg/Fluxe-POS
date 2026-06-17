@@ -423,6 +423,7 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
     else updateSale(invoice.number, { status: 'voided' })
     setConfirm(null)
     showToast(`Invoice #${invoice.number} marked as refunded`)
+    setTimeout(onClose, 1200)
   }
 
   const handleChangeDate = () => {

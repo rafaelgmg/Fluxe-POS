@@ -8,14 +8,10 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { loadAllProducts, saveAllProducts } from '../../utils/productsStorage'
-import {
-  loadDailyCounts,
-  updateDailyCount,
-  updateDailyCountItem,
-  deriveCountStatus,
-} from '../../utils/dailyCountsStorage'
+import { loadDailyCounts, deriveCountStatus } from '../../utils/dailyCountsStorage'
 import { writeStockAdjustment, sendTransfer, receiveTransfer } from '../../services/supabaseWrite'
 import { fetchProducts, getLocationUUID } from '../../services/supabaseRead'
+import { fetchDailyCounts, patchDailyCountStatus, patchDailyCountItemStatus } from '../../services/supabaseDailyCounts'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const LOW_STOCK = 3
@@ -458,17 +454,15 @@ function CountReviewModal({ count: initialCount, onClose, onDone }) {
   const [count,  setCount]  = useState(initialCount)
   const [saving, setSaving] = useState(false)
 
-  function reload() {
-    const fresh = loadDailyCounts().find(c => c.id === initialCount.id)
-    if (fresh) setCount(fresh)
-  }
-
   async function applyFix(item) {
     if (saving) return
     setSaving(true)
     try {
-      const products      = loadAllProducts()
-      const locationUUID  = getLocationUUID(count.locationId)
+      const now          = new Date().toISOString()
+      const products     = loadAllProducts()
+      const locationUUID = getLocationUUID(count.locationId)
+
+      // Local product cache update
       const updated = products.map(p => {
         if (p.id !== item.productId) return p
         const qtyBefore   = p.qtyByLoc?.[count.locationId] ?? p.qty
@@ -477,6 +471,8 @@ function CountReviewModal({ count: initialCount, onClose, onDone }) {
         return { ...p, qty: Math.max(0, p.qty + (qtyAfter - qtyBefore)), qtyByLoc: newQtyByLoc }
       })
       saveAllProducts(updated)
+
+      // Stock adjustment → Supabase
       const prod      = products.find(p => p.id === item.productId)
       const qtyBefore = prod ? (prod.qtyByLoc?.[count.locationId] ?? prod.qty) : item.systemQty
       if (locationUUID) {
@@ -485,19 +481,24 @@ function CountReviewModal({ count: initialCount, onClose, onDone }) {
           { type: 'adjustment', note: `Daily count ${count.countNumber} — approved via Dashboard`, performedById: null }
         )
       }
-      updateDailyCountItem(count.id, item.productId, {
-        itemStatus: 'applied',
-        appliedAt: new Date().toISOString(),
-        appliedBy: 'Dashboard Owner',
-      })
-      const fresh     = loadDailyCounts().find(c => c.id === count.id)
-      const newStatus = deriveCountStatus(fresh)
-      updateDailyCount(count.id, {
-        status: newStatus,
-        appliedBy: 'Dashboard Owner',
-        appliedAt: new Date().toISOString(),
-      })
-      reload()
+
+      // Optimistic local state
+      const updatedItems = count.items.map(it =>
+        it.productId === item.productId
+          ? { ...it, itemStatus: 'applied', appliedAt: now, appliedBy: 'Dashboard Owner' }
+          : it
+      )
+      const patchedCount = { ...count, items: updatedItems }
+      const newStatus    = deriveCountStatus(patchedCount)
+      const finalCount   = { ...patchedCount, status: newStatus, appliedBy: 'Dashboard Owner', appliedAt: now }
+      setCount(finalCount)
+
+      // Supabase patches
+      if (count._sbId) {
+        const updatedItem = updatedItems.find(it => it.productId === item.productId)
+        await patchDailyCountItemStatus(count._sbId, updatedItem || item, { itemStatus: 'applied', appliedAt: now, appliedBy: 'Dashboard Owner' })
+        await patchDailyCountStatus(count._sbId, { status: newStatus, appliedBy: 'Dashboard Owner', appliedAt: now })
+      }
     } catch (e) {
       console.warn('[InventoryTab] applyFix error:', e)
     } finally {
@@ -512,20 +513,14 @@ function CountReviewModal({ count: initialCount, onClose, onDone }) {
   }
 
   function markReviewed() {
-    updateDailyCount(count.id, {
-      status: 'reviewed',
-      reviewedBy: 'Dashboard Owner',
-      reviewedAt: new Date().toISOString(),
-    })
-    reload()
+    const now = new Date().toISOString()
+    setCount(c => ({ ...c, status: 'reviewed', reviewedBy: 'Dashboard Owner', reviewedAt: now }))
+    if (count._sbId) patchDailyCountStatus(count._sbId, { status: 'reviewed', reviewedBy: 'Dashboard Owner', reviewedAt: now }).catch(() => {})
   }
 
   function reject() {
-    updateDailyCount(count.id, {
-      status: 'rejected',
-      reviewedBy: 'Dashboard Owner',
-      reviewedAt: new Date().toISOString(),
-    })
+    const now = new Date().toISOString()
+    if (count._sbId) patchDailyCountStatus(count._sbId, { status: 'rejected', reviewedBy: 'Dashboard Owner', reviewedAt: now }).catch(() => {})
     onDone(`Count ${count.countNumber} rejected.`)
     onClose()
   }
@@ -644,32 +639,30 @@ export default function InventoryTab() {
   const [showAllNotifs, setShowAllNotifs]     = useState(false)
   const [syncing, setSyncing]                 = useState(false)
 
-  // Fetch from Supabase on mount so qtyByLoc is populated per location
+  // Fetch products + counts from Supabase on mount
   useEffect(() => {
     setSyncing(true)
-    fetchProducts()
-      .then(remote => {
-        if (remote?.length) {
-          saveAllProducts(remote)
-          setProducts(remote)
-        }
-      })
-      .finally(() => setSyncing(false))
+    Promise.all([
+      fetchProducts(),
+      fetchDailyCounts(),
+    ]).then(([remoteProducts, remoteCounts]) => {
+      if (remoteProducts?.length) { saveAllProducts(remoteProducts); setProducts(remoteProducts) }
+      if (remoteCounts) setCounts(remoteCounts)
+      else setCounts(loadDailyCounts())
+    }).finally(() => setSyncing(false))
   }, [])
 
   const reload = useCallback(() => {
     setSyncing(true)
-    fetchProducts()
-      .then(remote => {
-        if (remote?.length) {
-          saveAllProducts(remote)
-          setProducts(remote)
-        } else {
-          setProducts(loadAllProducts())
-        }
-      })
-      .finally(() => setSyncing(false))
-    setCounts(loadDailyCounts())
+    Promise.all([
+      fetchProducts(),
+      fetchDailyCounts(),
+    ]).then(([remoteProducts, remoteCounts]) => {
+      if (remoteProducts?.length) { saveAllProducts(remoteProducts); setProducts(remoteProducts) }
+      else setProducts(loadAllProducts())
+      if (remoteCounts) setCounts(remoteCounts)
+      else setCounts(loadDailyCounts())
+    }).finally(() => setSyncing(false))
   }, [])
 
   function flash(text, color = C.green) {

@@ -17,6 +17,7 @@ import { useState, useMemo } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { loadUsers } from '../utils/usersStorage'
 import { writeLocationConfigToSupabase } from '../services/supabaseWrite'
+import { locationHasSales } from '../utils/locationHelpers'
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 const LOC_KEY = 'fluxe-locations-v1'
@@ -159,6 +160,9 @@ function defaultExt(loc) {
       { id: 3, threshold: 200, rate: 35 },
     ],
 
+    // ── type
+    location_type: loc.location_type || 'retail',  // 'retail' | 'warehouse'
+
     // ── meta
     createdAt: new Date().toISOString(),
     updatedAt: null,
@@ -281,8 +285,10 @@ function Placeholder({ icon, label, description }) {
 }
 
 // ─── Tab content ──────────────────────────────────────────────────────────────
-function TabInformation({ form, set, isExisting }) {
+function TabInformation({ form, set, isExisting, originalLocationType, isExistingLocation, locationName }) {
   const textArea = { ...inp(), resize: 'vertical', fontFamily: 'inherit', minHeight: 60 }
+  const switchingToWarehouse = isExistingLocation && originalLocationType === 'retail' && form.location_type === 'warehouse'
+  const hasSales = switchingToWarehouse && locationName ? locationHasSales(locationName) : false
 
   return (
     <div>
@@ -310,6 +316,39 @@ function TabInformation({ form, set, isExisting }) {
                 }}>{lbl}</button>
               ))}
             </div>
+          </Field>
+        </Row>
+        <Row>
+          <Field label="LOCATION TYPE">
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[['retail', 'Retail / Kiosk', BLUE], ['warehouse', 'Warehouse / Storage', AMBER]].map(([val, lbl, color]) => (
+                <button key={val} onClick={() => set('location_type', val)} style={{
+                  flex: 1, padding: '7px', borderRadius: 4, border: `1px solid ${form.location_type === val ? color : BORDER}`,
+                  background: form.location_type === val ? `${color}18` : 'transparent',
+                  color: form.location_type === val ? color : MUTED,
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                }}>{lbl}</button>
+              ))}
+            </div>
+            <p style={{ color: MUTED, fontSize: 10, marginTop: 4 }}>
+              Retail: appears in POS, sales, EOD &amp; Competition. Warehouse: appears in Inventory &amp; Transfers only.
+            </p>
+            {switchingToWarehouse && hasSales && (
+              <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6 }}>
+                <p style={{ color: RED, fontSize: 11, fontWeight: 700, marginBottom: 3 }}>⚠️ This location has recorded sales</p>
+                <p style={{ color: 'var(--c-text-sub)', fontSize: 10, lineHeight: 1.5 }}>
+                  Historical invoices will still appear in reports under this location name. Changing to Warehouse only affects the POS login selector and EOD — it does not delete or modify any existing sales data.
+                </p>
+              </div>
+            )}
+            {switchingToWarehouse && !hasSales && (
+              <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6 }}>
+                <p style={{ color: AMBER, fontSize: 11, fontWeight: 700, marginBottom: 3 }}>Converting to Warehouse</p>
+                <p style={{ color: 'var(--c-text-sub)', fontSize: 10, lineHeight: 1.5 }}>
+                  This location will be hidden from POS login, EOD, and Competition. It will remain available in Inventory and Transfers.
+                </p>
+              </div>
+            )}
           </Field>
         </Row>
         <Row>
@@ -1913,6 +1952,9 @@ function EditLocation({ location, onSave, onCancel, allLocations }) {
   const [form,   setForm]   = useState({ ...location })
   const [saved,  setSaved]  = useState(false)
 
+  const originalLocationType = location.location_type || 'retail'
+  const isExistingLocation   = !!location.createdAt
+
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }))
 
   const handleSave = () => {
@@ -1930,8 +1972,11 @@ function EditLocation({ location, onSave, onCancel, allLocations }) {
       {/* Sub-header */}
       <div style={{ padding: '10px 20px', background: CARD, borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <button onClick={onCancel} style={{ background: 'none', border: 'none', color: MUTED, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>←</button>
-        <span style={{ color: LOC_COLOR, fontSize: 14 }}>📍</span>
+        <span style={{ color: LOC_COLOR, fontSize: 14 }}>{form.location_type === 'warehouse' ? '📦' : '📍'}</span>
         <span style={{ color: TEXT, fontWeight: 700, fontSize: 14 }}>{form.name || 'New Location'}</span>
+        {form.location_type === 'warehouse' && (
+          <span style={{ padding: '2px 8px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, color: AMBER, fontSize: 10, fontWeight: 700 }}>WAREHOUSE</span>
+        )}
         {form.active
           ? <span style={{ padding: '2px 8px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 10, color: GREEN, fontSize: 10, fontWeight: 700 }}>ACTIVE</span>
           : <span style={{ padding: '2px 8px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, color: RED, fontSize: 10, fontWeight: 700 }}>INACTIVE</span>
@@ -1963,7 +2008,7 @@ function EditLocation({ location, onSave, onCancel, allLocations }) {
 
       {/* Tab body */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 40px' }}>
-        {tab === 'info'        && <TabInformation form={form} set={set} isExisting={isExisting} />}
+        {tab === 'info'        && <TabInformation form={form} set={set} isExisting={isExisting} originalLocationType={originalLocationType} isExistingLocation={isExistingLocation} locationName={location.name} />}
         {tab === 'prefs'       && <TabPreferences  form={form} set={set} allLocations={allLocations} />}
         {tab === 'merchant'    && <TabMerchant      form={form} set={set} />}
         {tab === 'features'    && <TabFeatures      form={form} set={set} allLocations={allLocations} />}
@@ -2062,8 +2107,11 @@ function LocationList({ locations, onEdit, onAdd }) {
                   <td style={{ ...tdS, textAlign: 'center', color: 'var(--c-text-dim)', fontSize: 10 }}>{i + 1}</td>
                   <td style={{ ...tdS }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 14 }}>📍</span>
+                      <span style={{ fontSize: 14 }}>{loc.location_type === 'warehouse' ? '📦' : '📍'}</span>
                       <span style={{ color: TEXT, fontWeight: 600 }}>{loc.name}</span>
+                      {loc.location_type === 'warehouse' && (
+                        <span style={{ padding: '1px 6px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, color: AMBER, fontSize: 9, fontWeight: 700 }}>WH</span>
+                      )}
                     </div>
                   </td>
                   <td style={{ ...tdS, maxWidth: 180 }}>
@@ -2120,11 +2168,12 @@ export default function LocationSettings({ onBack }) {
 
   const handleAdd = () => {
     const newLoc = defaultExt({
-      id:      nextLocId(locations),
-      name:    '',
-      address: '',
-      region:  'Las Vegas',
-      phone:   '',
+      id:            nextLocId(locations),
+      name:          '',
+      address:       '',
+      region:        'Las Vegas',
+      phone:         '',
+      location_type: 'retail',
     })
     newLoc.createdAt = new Date().toISOString()
     newLoc.active    = true
