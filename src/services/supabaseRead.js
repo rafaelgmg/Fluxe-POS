@@ -298,6 +298,32 @@ export async function fetchProducts() {
 }
 
 /**
+ * Fetch sales with items in a date range (for forecast / velocity calculations).
+ * @param {Date} from
+ * @param {Date} to
+ * @returns {Promise<import('../domain/models/sale').Sale[] | null>}
+ */
+export async function fetchSalesInRange(from, to) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId  = await getOrgId()
+    const fromTs = from.toISOString()
+    const toTs   = to.toISOString()
+    const rows   = await sbFetch(
+      `/sales?select=*,sale_items(*)` +
+      `&organization_id=eq.${orgId}` +
+      `&sold_at=gte.${fromTs}&sold_at=lte.${toTs}` +
+      `&status=neq.voided` +
+      `&order=sold_at.desc&limit=5000`
+    )
+    return rows.map(r => normalizeSale(fromSupabaseSale(r)))
+  } catch (err) {
+    console.warn('[Fluxe] fetchSalesInRange failed:', err.message)
+    return null
+  }
+}
+
+/**
  * Fetch all sales with items and payments (latest 2000, sorted desc).
  * @returns {Promise<import('../domain/models/sale').Sale[] | null>}
  */

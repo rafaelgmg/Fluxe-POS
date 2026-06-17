@@ -8,7 +8,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { fetchDashboardData, computeMetrics } from '../services/supabaseDashboard'
-import InventoryTab from './dashboard/InventoryTab'
+import InventoryTab  from './dashboard/InventoryTab'
+import ForecastTab  from './dashboard/ForecastTab'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || '1234'
@@ -964,6 +965,7 @@ const TABS = [
   { id: 'payments',  label: 'Payments',  icon: '💳' },
   { id: 'products',  label: 'Products',  icon: '🧴' },
   { id: 'inventory', label: 'Inventory', icon: '📦' },
+  { id: 'forecast',  label: 'Forecast',  icon: '🔮' },
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1046,6 +1048,7 @@ export default function Dashboard() {
       case 'payments': return <PaymentsTab current={filteredCurrent} />
       case 'products':  return <ProductsTab current={filteredCurrent} />
       case 'inventory': return <InventoryTab />
+      case 'forecast':  return <ForecastTab />
       default:          return null
     }
   })()
