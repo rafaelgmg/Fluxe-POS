@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { fetchDashboardData, computeMetrics } from '../services/supabaseDashboard'
 import InventoryTab  from './dashboard/InventoryTab'
 import ForecastTab  from './dashboard/ForecastTab'
-import ReorderTab   from './dashboard/ReorderTab'
+import PurchasePlanTab from './dashboard/PurchasePlanTab'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || '1234'
@@ -969,8 +969,8 @@ const PRIMARY_TABS = [
 const MORE_TABS = [
   { id: 'payments', label: 'Payments', icon: '💳' },
   { id: 'products', label: 'Products', icon: '🧴' },
-  { id: 'forecast', label: 'Forecast', icon: '🔮' },
-  { id: 'reorder',  label: 'Reorder',  icon: '🛒' },
+  { id: 'forecast',  label: 'Forecast',  icon: '🔮' },
+  { id: 'purchase',  label: 'Purchase',  icon: '🛍️' },
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1058,7 +1058,7 @@ export default function Dashboard() {
       case 'products':  return <ProductsTab current={filteredCurrent} />
       case 'inventory': return <InventoryTab />
       case 'forecast':  return <ForecastTab />
-      case 'reorder':   return <ReorderTab />
+      case 'purchase':  return <PurchasePlanTab />
       default:          return null
     }
   })()
