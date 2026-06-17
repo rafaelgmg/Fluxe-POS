@@ -959,21 +959,25 @@ function ProductsTab({ current }) {
 }
 
 // ── Tab bar ───────────────────────────────────────────────────────────────────
-const TABS = [
+const PRIMARY_TABS = [
   { id: 'today',     label: 'Today',     icon: '📊' },
   { id: 'feed',      label: 'Feed',      icon: '⚡' },
   { id: 'sellers',   label: 'Sellers',   icon: '👥' },
-  { id: 'payments',  label: 'Payments',  icon: '💳' },
-  { id: 'products',  label: 'Products',  icon: '🧴' },
   { id: 'inventory', label: 'Inventory', icon: '📦' },
-  { id: 'forecast',  label: 'Forecast',  icon: '🔮' },
-  { id: 'reorder',   label: 'Reorder',   icon: '🛒' },
+]
+
+const MORE_TABS = [
+  { id: 'payments', label: 'Payments', icon: '💳' },
+  { id: 'products', label: 'Products', icon: '🧴' },
+  { id: 'forecast', label: 'Forecast', icon: '🔮' },
+  { id: 'reorder',  label: 'Reorder',  icon: '🛒' },
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [authed,         setAuthed]         = useState(isAuthed)
   const [tab,            setTab]            = useState('today')
+  const [showMore,       setShowMore]       = useState(false)
   const [data,           setData]           = useState(null)
   const [loading,        setLoading]        = useState(false)
   const [fetchedAt,      setFetchedAt]      = useState(null)
@@ -981,6 +985,9 @@ export default function Dashboard() {
   const [showLeads,      setShowLeads]      = useState(false)
   const [locationFilter, setLocationFilter] = useState('all')
   const [, setTick]                         = useState(0)
+
+  const isMoreTab    = MORE_TABS.some(t => t.id === tab)
+  const selectTab    = id => { setTab(id); setShowMore(false) }
 
   // Date range state
   const [preset, setPreset]       = useState('today')
@@ -1072,6 +1079,56 @@ export default function Dashboard() {
         <LeadsModal leads={filteredLeads} onClose={() => setShowLeads(false)} />
       )}
 
+      {/* More menu bottom-sheet */}
+      {showMore && (
+        <div
+          onClick={() => setShowMore(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: C.card, borderRadius: '20px 20px 0 0',
+              padding: '8px 20px env(safe-area-inset-bottom, 20px)',
+              boxShadow: '0 -4px 24px rgba(0,0,0,0.14)',
+            }}
+          >
+            {/* drag handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10, marginBottom: 14 }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 0.8, marginBottom: 14 }}>MORE</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 8 }}>
+              {MORE_TABS.map(t => {
+                const active = tab === t.id
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => selectTab(t.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '14px 16px', borderRadius: 14, cursor: 'pointer',
+                      border: `1.5px solid ${active ? C.blue : C.border}`,
+                      background: active ? `${C.blue}0F` : C.bg,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <span style={{ fontSize: 22 }}>{t.icon}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: active ? C.blue : C.text }}>
+                      {t.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Full-height flex column — owns its own scroll so body overflow:hidden doesn't matter */}
       <div style={{
         height: '100dvh', display: 'flex', flexDirection: 'column',
@@ -1117,27 +1174,51 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Bottom tab bar */}
+        {/* Bottom tab bar — 4 primary + More */}
         <div style={{
           display: 'flex', background: C.card, flexShrink: 0,
           borderTop: `1px solid ${C.border}`,
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           boxShadow: '0 -1px 8px rgba(0,0,0,0.06)',
         }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
+          {PRIMARY_TABS.map(t => {
+            const active = tab === t.id
+            return (
+              <button key={t.id} onClick={() => selectTab(t.id)} style={{
+                flex: 1, padding: '10px 4px 8px', background: 'none', border: 'none',
+                borderTop: `2px solid ${active ? C.blue : 'transparent'}`,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                cursor: 'pointer', transition: 'border-color 0.15s',
+              }}>
+                <span style={{ fontSize: 20 }}>{t.icon}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, color: active ? C.blue : C.dim }}>
+                  {t.label.toUpperCase()}
+                </span>
+              </button>
+            )
+          })}
+
+          {/* More button */}
+          <button
+            onClick={() => setShowMore(v => !v)}
+            style={{
               flex: 1, padding: '10px 4px 8px', background: 'none', border: 'none',
-              borderTop: `2px solid ${tab === t.id ? C.blue : 'transparent'}`,
+              borderTop: `2px solid ${isMoreTab || showMore ? C.blue : 'transparent'}`,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-              cursor: 'pointer', transition: 'border-color 0.15s',
-            }}>
-              <span style={{ fontSize: 20 }}>{t.icon}</span>
+              cursor: 'pointer', transition: 'border-color 0.15s', position: 'relative',
+            }}
+          >
+            <span style={{ fontSize: 20 }}>···</span>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, color: isMoreTab || showMore ? C.blue : C.dim }}>
+              MORE
+            </span>
+            {isMoreTab && (
               <span style={{
-                fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
-                color: tab === t.id ? C.blue : C.dim,
-              }}>{t.label.toUpperCase()}</span>
-            </button>
-          ))}
+                position: 'absolute', top: 8, right: 10,
+                width: 7, height: 7, borderRadius: '50%', background: C.blue,
+              }} />
+            )}
+          </button>
         </div>
 
       </div>
