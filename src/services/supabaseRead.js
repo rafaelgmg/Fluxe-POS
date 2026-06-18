@@ -277,14 +277,31 @@ function fromSupabaseCategory(row) {
 
 async function fetchLocationMap(orgId) {
   const rows = await sbFetch(`/locations?select=id,name&organization_id=eq.${orgId}`)
-  const reverseMap = {}  // UUID → 'loc_01'  (read path: qtyByLoc keys)
+
+  // Load user-created locations from localStorage (e.g. warehouse added via LocationSettings)
+  let dynLocs = []
+  try {
+    const raw = localStorage.getItem('fluxe-locations-v1')
+    if (raw) dynLocs = JSON.parse(raw)
+  } catch {}
+
+  const reverseMap = {}  // UUID → 'loc_01' / 'loc_03' …  (read path: qtyByLoc keys)
   for (const row of rows) {
+    // 1. Static branding locations (loc_01, loc_02)
     const cfg = LOCATIONS_CFG.find(l => l.name === row.name)
     if (cfg) {
       reverseMap[row.id] = cfg.id
-      _legacyToUUID[cfg.id] = row.id  // 'loc_01' → UUID  (write path: FK resolution)
+      _legacyToUUID[cfg.id] = row.id
+    } else {
+      // 2. Dynamically-created locations (warehouse / extra retail added via LocationSettings)
+      const dyn = dynLocs.find(l => l.name === row.name)
+      if (dyn) {
+        reverseMap[row.id] = dyn.id
+        _legacyToUUID[dyn.id] = row.id
+      }
+      // If neither matched: fromSupabaseProduct falls back to raw UUID as key (still visible)
     }
-    // Cache ALL locations by name (covers dynamically-created warehouse locations)
+    // Cache ALL locations by name for getLocationUUIDByName()
     _nameToUUID[row.name] = row.id
   }
   return reverseMap

@@ -12,6 +12,7 @@ import { loadDailyCounts, deriveCountStatus } from '../../utils/dailyCountsStora
 import { writeStockAdjustment, sendTransfer, receiveTransfer } from '../../services/supabaseWrite'
 import { fetchProducts, getLocationUUID } from '../../services/supabaseRead'
 import { fetchDailyCounts, patchDailyCountStatus, patchDailyCountItemStatus } from '../../services/supabaseDailyCounts'
+import { getInventoryLocations } from '../../utils/locationHelpers'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const LOW_STOCK = 3
@@ -23,11 +24,17 @@ const C = {
   amber: '#F59E0B', red: '#EF4444',
 }
 
+// Built from localStorage at module load — includes user-created warehouse locations
+function locIcon(loc) {
+  if (loc.location_type === 'warehouse') return '🏭'
+  if (loc.id === 'loc_01') return '🎰'
+  return '🏪'
+}
 const LOCS = [
-  { id: 'all',    name: 'All Locations',  icon: '🌐' },
-  { id: 'loc_01', name: 'Miracle Mall 01', icon: '🎰' },
-  { id: 'loc_02', name: 'Perfume Passage', icon: '🏪' },
+  { id: 'all', name: 'All Locations', icon: '🌐' },
+  ...getInventoryLocations().map(l => ({ id: l.id, name: l.name, icon: locIcon(l) })),
 ]
+const FIRST_LOC = LOCS[1]?.id || 'loc_01'
 
 const REASONS = [
   'New Order Received',
@@ -133,7 +140,7 @@ function ProductDetailModal({ product, locQty, onAdjust, onTransfer, onClose }) 
 
 // ── Transfer Bottom Sheet ─────────────────────────────────────────────────────
 function TransferModal({ product, locQty, onClose, onDone }) {
-  const [fromLoc, setFromLoc] = useState('loc_01')
+  const [fromLoc, setFromLoc] = useState(FIRST_LOC)
   const toLoc    = fromLoc === 'loc_01' ? 'loc_02' : 'loc_01'
   const fromName = LOCS.find(l => l.id === fromLoc)?.name || fromLoc
   const toName   = LOCS.find(l => l.id === toLoc)?.name   || toLoc
@@ -303,7 +310,7 @@ function TransferModal({ product, locQty, onClose, onDone }) {
 // ── Inventory Adjustment Bottom Sheet ────────────────────────────────────────
 function AdjustmentModal({ product, locFilter, locQty, onClose, onDone }) {
   const needLocPick = locFilter === 'all'
-  const [adjLoc, setAdjLoc] = useState(needLocPick ? 'loc_01' : locFilter)
+  const [adjLoc, setAdjLoc] = useState(needLocPick ? FIRST_LOC : locFilter)
   const [delta,  setDelta]  = useState(0)
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
