@@ -11,6 +11,7 @@ import { fetchDashboardData, computeMetrics } from '../services/supabaseDashboar
 import InventoryTab  from './dashboard/InventoryTab'
 import ForecastTab  from './dashboard/ForecastTab'
 import PurchasePlanTab from './dashboard/PurchasePlanTab'
+import AlertsTab from './dashboard/AlertsTab'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || '1234'
@@ -969,8 +970,9 @@ const PRIMARY_TABS = [
 const MORE_TABS = [
   { id: 'payments', label: 'Payments', icon: '💳' },
   { id: 'products', label: 'Products', icon: '🧴' },
-  { id: 'forecast',  label: 'Forecast',  icon: '🔮' },
-  { id: 'purchase',  label: 'Purchase',  icon: '🛍️' },
+  { id: 'forecast', label: 'Forecast', icon: '🔮' },
+  { id: 'purchase', label: 'Purchase', icon: '🛍️' },
+  { id: 'alerts',   label: 'Alerts',   icon: '🔔' },
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1059,6 +1061,7 @@ export default function Dashboard() {
       case 'inventory': return <InventoryTab />
       case 'forecast':  return <ForecastTab />
       case 'purchase':  return <PurchasePlanTab />
+      case 'alerts':    return <AlertsTab onNavigate={selectTab} />
       default:          return null
     }
   })()
@@ -1103,13 +1106,16 @@ export default function Dashboard() {
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 0.8, marginBottom: 14 }}>MORE</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 8 }}>
-              {MORE_TABS.map(t => {
-                const active = tab === t.id
+              {MORE_TABS.map((t, idx) => {
+                const active  = tab === t.id
+                const isLast  = idx === MORE_TABS.length - 1
+                const isOdd   = MORE_TABS.length % 2 !== 0
                 return (
                   <button
                     key={t.id}
                     onClick={() => selectTab(t.id)}
                     style={{
+                      gridColumn: isOdd && isLast ? '1 / -1' : undefined,
                       display: 'flex', alignItems: 'center', gap: 12,
                       padding: '14px 16px', borderRadius: 14, cursor: 'pointer',
                       border: `1.5px solid ${active ? C.blue : C.border}`,
