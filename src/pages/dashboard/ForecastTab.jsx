@@ -64,11 +64,11 @@ function fmtDate(iso) {
 }
 
 // ── Local sales fallback ──────────────────────────────────────────────────────
-function loadLocalSalesLast30() {
+function loadLocalSalesLast90() {
   try {
     const raw = localStorage.getItem('fluxe-sales-v1')
     if (!raw) return []
-    const cutoff = Date.now() - 30 * 86_400_000
+    const cutoff = Date.now() - 90 * 86_400_000
     return JSON.parse(raw).filter(s => {
       if (s.status === 'voided') return false
       const ts = new Date(s.timestamp || s.completedAt || s.createdAt).getTime()
@@ -348,9 +348,9 @@ function ForecastCard({ row, onCreateTransfer }) {
       {/* Row 3: metrics strip */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         {[
-          { label: '30d sold',  value: String(row.sold30d) },
-          { label: 'avg/day',   value: fmt1(row.avgDailySales) },
-          { label: 'days left', value: fmtDays(row.daysUntilStockout), urgent: row.urgency === 'critical' },
+          { label: '30d sold',   value: String(row.sold30d) },
+          { label: 'wtd avg/d',  value: fmt1(row.weightedAvgDailySales) },
+          { label: 'days left',  value: fmtDays(row.daysUntilStockout), urgent: row.urgency === 'critical' },
         ].map(m => (
           <div key={m.label} style={{
             flex: 1, background: m.urgent ? `${C.red}08` : C.bg, borderRadius: 8, padding: '6px 4px', textAlign: 'center',
@@ -361,6 +361,31 @@ function ForecastCard({ row, onCreateTransfer }) {
           </div>
         ))}
       </div>
+
+      {/* Row 3b: Data confidence badge */}
+      {(() => {
+        const conf = row.dataConfidence
+        const cfgMap = {
+          high:   { color: C.green,  bg: `${C.green}12`,  label: 'High Confidence',   desc: '90d data' },
+          medium: { color: C.amber,  bg: `${C.amber}12`,  label: 'Medium Confidence', desc: '30d data' },
+          low:    { color: C.muted,  bg: `${C.border}`,   label: 'Low Confidence',    desc: 'limited data' },
+        }
+        const cfg = cfgMap[conf]
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <span style={{
+              fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+              background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}40`,
+            }}>
+              ◉ {cfg.label}
+            </span>
+            <span style={{ fontSize: 9, color: C.dim }}>{cfg.desc}</span>
+            {row.sold90d > 0 && row.sold90d !== row.sold30d && (
+              <span style={{ fontSize: 9, color: C.muted, marginLeft: 'auto' }}>90d: {row.sold90d}</span>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Row 4: action suggestion + Create Draft button */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: act.bg, borderRadius: 8, padding: '7px 10px' }}>
@@ -403,10 +428,35 @@ function ForecastCard({ row, onCreateTransfer }) {
       {/* Expanded detail */}
       {expanded && (
         <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
+
+          {/* Velocity breakdown */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, letterSpacing: 0.5, marginBottom: 6 }}>SALES VELOCITY</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+              {[
+                { period: '7d',  sold: row.sold7d,  avg: row.avg7d  },
+                { period: '30d', sold: row.sold30d, avg: row.avg30d },
+                { period: '90d', sold: row.sold90d, avg: row.avg90d },
+              ].map(({ period, sold, avg }) => (
+                <div key={period} style={{
+                  background: C.bg, borderRadius: 8, padding: '7px 6px', textAlign: 'center',
+                  border: `1px solid ${C.border}`,
+                }}>
+                  <div style={{ fontSize: 8, fontWeight: 700, color: C.dim, letterSpacing: 0.4, marginBottom: 3 }}>{period}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: C.text, lineHeight: 1 }}>{sold}</div>
+                  <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{fmt1(avg)}/d</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 6, padding: '5px 10px', background: `${C.blue}08`, borderRadius: 7, border: `1px solid ${C.blue}20`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 10, color: C.muted }}>Weighted Avg/Day</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: C.blue }}>{fmt1(row.weightedAvgDailySales)}</span>
+            </div>
+          </div>
+
+          {/* Inventory details */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 11 }}>
             {[
-              ['7d sold',      String(row.sold7d)],
-              ['14d sold',     String(row.sold14d)],
               ['Target stock', String(row.targetStock)],
               ['Total stock',  String(row.totalStock)],
               ['Lead time',    `${row.leadTime}d`],
@@ -420,6 +470,7 @@ function ForecastCard({ row, onCreateTransfer }) {
               </div>
             ))}
           </div>
+
           {(row.suggestedTransfer > 0 && row.suggestedReorder > 0) && (
             <div style={{ marginTop: 8, padding: '6px 10px', background: `${C.amber}10`, borderRadius: 6, fontSize: 11, color: C.amber }}>
               ⚠ Partial warehouse coverage: transfer {row.suggestedTransfer} + order {row.suggestedReorder} more
@@ -434,7 +485,7 @@ function ForecastCard({ row, onCreateTransfer }) {
 // ── Main ForecastTab ──────────────────────────────────────────────────────────
 export default function ForecastTab() {
   const [products,   setProducts]   = useState(() => loadAllProducts())
-  const [sales,      setSales]      = useState(() => loadLocalSalesLast30())
+  const [sales,      setSales]      = useState(() => loadLocalSalesLast90())
   const [loading,    setLoading]    = useState(true)
   const [fetchedAt,  setFetchedAt]  = useState(null)
   const [drafts,     setDrafts]     = useState([])
@@ -452,7 +503,7 @@ export default function ForecastTab() {
 
   // Fetch fresh data + drafts on mount
   useEffect(() => {
-    const from = new Date(Date.now() - 30 * 86_400_000)
+    const from = new Date(Date.now() - 90 * 86_400_000)
     const to   = new Date()
     Promise.all([
       fetchProducts(),
@@ -461,7 +512,7 @@ export default function ForecastTab() {
     ]).then(([remoteProducts, remoteSales, remoteDrafts]) => {
       if (remoteProducts?.length) setProducts(remoteProducts)
       if (remoteSales?.length)    setSales(remoteSales)
-      else                        setSales(loadLocalSalesLast30())
+      else                        setSales(loadLocalSalesLast90())
       if (remoteDrafts?.length)   setDrafts(remoteDrafts)
       setFetchedAt(new Date())
     }).catch(() => {}).finally(() => setLoading(false))
@@ -473,6 +524,7 @@ export default function ForecastTab() {
     sales,
     retailLocations:    retailLocs,
     warehouseLocations: warehouseLocs,
+    salesWindowDays:    90,
   }), [products, sales, retailLocs, warehouseLocs])
 
   const summary = useMemo(() => forecastSummary(allRows), [allRows])

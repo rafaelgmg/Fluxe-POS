@@ -33,11 +33,11 @@ function fmt1(n) {
   return n < 1 ? n.toFixed(2) : n % 1 === 0 ? String(n) : n.toFixed(1)
 }
 
-function loadLocalSales30() {
+function loadLocalSales90() {
   try {
     const raw = localStorage.getItem('fluxe-sales-v1')
     if (!raw) return []
-    const cutoff = Date.now() - 30 * 86_400_000
+    const cutoff = Date.now() - 90 * 86_400_000
     return JSON.parse(raw).filter(s => {
       if (s.status === 'voided') return false
       const ts = new Date(s.timestamp || s.completedAt || s.createdAt).getTime()
@@ -291,7 +291,7 @@ function SupplierSection({ supplier, rows, qtyOverrides, onQtyChange }) {
 // ── Main PurchasePlanTab ──────────────────────────────────────────────────────
 export default function PurchasePlanTab() {
   const [products,     setProducts]     = useState(() => loadAllProducts())
-  const [sales,        setSales]        = useState(() => loadLocalSales30())
+  const [sales,        setSales]        = useState(() => loadLocalSales90())
   const [loading,      setLoading]      = useState(true)
   const [fetchedAt,    setFetchedAt]    = useState(null)
   const [qtyOverrides, setQtyOverrides] = useState({})
@@ -307,13 +307,13 @@ export default function PurchasePlanTab() {
   const warehouseLocs = useMemo(() => getWarehouseLocations(), [])
 
   useEffect(() => {
-    const from = new Date(Date.now() - 30 * 86_400_000)
+    const from = new Date(Date.now() - 90 * 86_400_000)
     const to   = new Date()
     Promise.all([fetchProducts(), fetchSalesInRange(from, to)])
       .then(([rp, rs]) => {
         if (rp?.length) setProducts(rp)
         if (rs?.length) setSales(rs)
-        else            setSales(loadLocalSales30())
+        else            setSales(loadLocalSales90())
         setFetchedAt(new Date())
       })
       .catch(() => {})
@@ -325,6 +325,7 @@ export default function PurchasePlanTab() {
     products, sales,
     retailLocations:    retailLocs,
     warehouseLocations: warehouseLocs,
+    salesWindowDays:    90,
   }), [products, sales, retailLocs, warehouseLocs])
 
   // Only rows needing external purchase

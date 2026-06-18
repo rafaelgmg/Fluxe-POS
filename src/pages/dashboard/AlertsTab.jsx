@@ -47,11 +47,11 @@ const FILTERS = [
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function loadLocalSales30() {
+function loadLocalSales90() {
   try {
     const raw = localStorage.getItem('fluxe-sales-v1')
     if (!raw) return []
-    const cutoff = Date.now() - 30 * 86_400_000
+    const cutoff = Date.now() - 90 * 86_400_000
     return JSON.parse(raw).filter(s => {
       if (s.status === 'voided') return false
       const ts = new Date(s.timestamp || s.completedAt || s.createdAt || 0).getTime()
@@ -422,7 +422,7 @@ function Chip({ label, count, color }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AlertsTab({ onNavigate }) {
   const [products,     setProducts]     = useState(() => loadAllProducts())
-  const [sales,        setSales]        = useState(() => loadLocalSales30())
+  const [sales,        setSales]        = useState(() => loadLocalSales90())
   const [loading,      setLoading]      = useState(true)
   const [fetchedAt,    setFetchedAt]    = useState(null)
   const [drafts,       setDrafts]       = useState([])
@@ -435,7 +435,7 @@ export default function AlertsTab({ onNavigate }) {
   const warehouseLoc = warehouseLocs[0] || null
 
   useEffect(() => {
-    const from = new Date(Date.now() - 30 * 86_400_000)
+    const from = new Date(Date.now() - 90 * 86_400_000)
     const to   = new Date()
     Promise.all([
       fetchProducts(),
@@ -462,6 +462,7 @@ export default function AlertsTab({ onNavigate }) {
       products, sales,
       retailLocations:    retailLocs,
       warehouseLocations: warehouseLocs,
+      salesWindowDays:    90,
     })
   }, [products, sales, retailLocs, warehouseLocs])
 
