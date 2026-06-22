@@ -7,7 +7,7 @@ import { loadInventoryHistory, saveInventoryHistory } from '../utils/inventoryHi
 import { loadAllSales } from '../utils/salesStorage'
 import { localId } from '../domain/utils/ids'
 import { fetchProducts, fetchInventoryMovements, fetchRecentTransfers, getLocationUUID } from '../services/supabaseRead'
-import { sendTransfer, receiveTransfer } from '../services/supabaseWrite'
+import { sendTransfer, receiveTransfer, writeStockAdjustment, updateProductInSupabase } from '../services/supabaseWrite'
 import DailyCountsAdmin from './DailyCountsAdmin'
 
 function addEntry(setHistory, entry) {
@@ -484,6 +484,16 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
     const newQtyByLoc = { ...(p.qtyByLoc || {}), [result.locId]: newLocQty }
     const newTotal = Object.values(newQtyByLoc).reduce((s, v) => s + (parseInt(v) || 0), 0)
     updateProduct(p.id, { qty: newTotal, qtyByLoc: newQtyByLoc })
+    // Sync to Supabase inventory_stock so POS picks up the change on next fetch
+    writeStockAdjustment([{
+      productId:    p.id,
+      productName:  p.name,
+      barcode:      p.barcode,
+      locationUUID: getLocationUUID(result.locId),
+      locationName: result.locName,
+      qtyBefore:    prev_qty,
+      qtyAfter:     newLocQty,
+    }], { type: 'adjustment', note: result.note || '' })
     addEntry(setHistory, { type: 'adjustment', productId: p.id, productName: p.name, barcode: p.barcode, locationId: result.locId, locationName: result.locName, before: prev_qty, after: newLocQty, delta, note: result.note || '' })
     showToast(`${result.mode === 'add' ? '+' : ''}${delta} units at ${result.locName}`)
     setAdjusting(null)
@@ -495,6 +505,16 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
     const newQtyByLoc = { ...(p.qtyByLoc || {}), [result.locId]: result.count }
     const newTotal = Object.values(newQtyByLoc).reduce((s, v) => s + (parseInt(v) || 0), 0)
     updateProduct(p.id, { qty: newTotal, qtyByLoc: newQtyByLoc })
+    // Sync to Supabase inventory_stock so POS picks up the change on next fetch
+    writeStockAdjustment([{
+      productId:    p.id,
+      productName:  p.name,
+      barcode:      p.barcode,
+      locationUUID: getLocationUUID(result.locId),
+      locationName: result.locName,
+      qtyBefore:    prev_qty,
+      qtyAfter:     result.count,
+    }], { type: 'count_set', note: result.note || '' })
     addEntry(setHistory, { type: 'count_set', productId: p.id, productName: p.name, barcode: p.barcode, locationId: result.locId, locationName: result.locName, before: prev_qty, after: result.count, delta: result.count - prev_qty, note: result.note || '' })
     showToast(`Count set to ${result.count} at ${result.locName}`)
     setCounting(null)
@@ -503,6 +523,8 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
   const handleEdit = (data) => {
     addEntry(setHistory, { type: 'product_update', productId: editing.id, productName: data.name, barcode: data.barcode, locationId: '', locationName: 'All', before: 0, after: 0, delta: 0, note: 'Updated product fields' })
     updateProduct(editing.id, data)
+    // Sync product metadata + stock to Supabase
+    updateProductInSupabase({ ...editing, ...data })
     showToast(`${data.name} updated`)
     setEditing(null)
   }
