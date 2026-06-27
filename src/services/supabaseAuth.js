@@ -83,6 +83,17 @@ function extractOrgId(accessToken) {
   }
 }
 
+/** Returns true if the JWT is missing or its exp claim is in the past. */
+function isTokenExpired(accessToken) {
+  if (!accessToken) return true
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return payload.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
+}
+
 async function doRefresh(refreshToken) {
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
@@ -158,6 +169,21 @@ export async function initOrgSession() {
     console.warn('[Fluxe] initOrgSession failed — app will run from localStorage:', err.message)
     return null
   }
+}
+
+// ── Visibility-change recovery ────────────────────────────────────────────────
+// Tablets and phones suspend setTimeout timers when the screen locks or the
+// browser goes to the background. When the device wakes up the scheduled
+// refresh may never have fired, leaving an expired token. Listening for
+// visibilitychange lets us detect this and re-authenticate immediately.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return
+    if (!isTokenExpired(getAccessToken())) return
+    console.log('[Fluxe] Tab visible with expired token — re-initializing session')
+    _sessionPromise = null   // reset singleton so initOrgSession runs fresh
+    awaitOrgSession()
+  })
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
