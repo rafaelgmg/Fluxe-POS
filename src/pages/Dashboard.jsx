@@ -12,6 +12,7 @@ import InventoryTab  from './dashboard/InventoryTab'
 import ForecastTab  from './dashboard/ForecastTab'
 import PurchasePlanTab from './dashboard/PurchasePlanTab'
 import AlertsTab from './dashboard/AlertsTab'
+import SuppliersTab from './dashboard/SuppliersTab'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || '1234'
@@ -968,11 +969,12 @@ const PRIMARY_TABS = [
 ]
 
 const MORE_TABS = [
-  { id: 'payments', label: 'Payments', icon: '💳' },
-  { id: 'products', label: 'Products', icon: '🧴' },
-  { id: 'forecast', label: 'Forecast', icon: '🔮' },
-  { id: 'purchase', label: 'Purchase', icon: '🛍️' },
-  { id: 'alerts',   label: 'Alerts',   icon: '🔔' },
+  { id: 'payments',   label: 'Payments',   icon: '💳' },
+  { id: 'products',   label: 'Products',   icon: '🧴' },
+  { id: 'forecast',   label: 'Forecast',   icon: '🔮' },
+  { id: 'purchase',   label: 'Purchase',   icon: '🛍️' },
+  { id: 'alerts',     label: 'Alerts',     icon: '🔔' },
+  { id: 'suppliers',  label: 'Suppliers',  icon: '🏭' },
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1061,7 +1063,8 @@ export default function Dashboard() {
       case 'inventory': return <InventoryTab />
       case 'forecast':  return <ForecastTab />
       case 'purchase':  return <PurchasePlanTab />
-      case 'alerts':    return <AlertsTab onNavigate={selectTab} />
+      case 'alerts':     return <AlertsTab onNavigate={selectTab} />
+      case 'suppliers':  return <SuppliersTab />
       default:          return null
     }
   })()
