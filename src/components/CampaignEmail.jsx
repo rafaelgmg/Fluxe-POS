@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { loadCampaigns, saveCampaign } from '../utils/campaignStorage'
 
-const SERVER_URL = 'http://localhost:3001'
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 const STORE_NAME = 'Perfume Passage'
 
 const BG     = '#030e1e'

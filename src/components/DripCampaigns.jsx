@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { loadDripRules, saveDripRule, deleteDripRule, loadDripLog, appendDripLog } from '../utils/dripStorage'
 
-const SERVER_URL = 'http://localhost:3001'
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
 const STORE_NAME = 'Perfume Passage'
 
 const BG     = '#030e1e'
