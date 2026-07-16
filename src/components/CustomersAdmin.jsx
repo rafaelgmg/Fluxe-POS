@@ -5,9 +5,10 @@ import { getLoyaltyStars, starsLabel, calcCRMScore } from '../utils/loyaltyEngin
 import { getCustomerAppointments, upsertAppointment, deleteAppointment } from '../utils/appointmentsStorage'
 import { writeCustomerToSupabase } from '../services/supabaseCRM'
 import { isSupabaseConfigured } from '../services/supabaseRead'
-import CampaignSMS    from './CampaignSMS'
-import CampaignEmail  from './CampaignEmail'
-import DripCampaigns  from './DripCampaigns'
+import CampaignSMS              from './CampaignSMS'
+import CampaignEmail             from './CampaignEmail'
+import DripCampaigns             from './DripCampaigns'
+import SmsAutomationTemplates    from './SmsAutomationTemplates'
 
 const FRAGRANCE_OPTIONS = [
   'Floral', 'Fresh / Aquatic', 'Woody', 'Oriental / Oud',
@@ -1082,6 +1083,7 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
     { id: 'sms',       label: 'SMS Campaign' },
     { id: 'drip',      label: 'Drip Campaigns' },
     { id: 'email',     label: 'Email Campaign' },
+    { id: 'auto-sms',  label: 'Auto-SMS Templates' },
   ]
 
   return (
@@ -1117,7 +1119,8 @@ export default function CustomersAdmin({ customers = [], onAddCustomer, onPatchC
       {activeTab === 'drip' && (
         <DripCampaigns customers={customers} posSession={posSession} />
       )}
-      {activeTab === 'email' && <CampaignEmail customers={customers} />}
+      {activeTab === 'email'    && <CampaignEmail customers={customers} />}
+      {activeTab === 'auto-sms' && <SmsAutomationTemplates />}
 
       {/* ── Customers Tab ── */}
       {activeTab === 'customers' && <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>

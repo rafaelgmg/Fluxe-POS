@@ -639,7 +639,7 @@ export async function writeSaleToSupabase(serialized) {
  * Write inventory_stock updates and inventory_movements to Supabase.
  * Called after writeSaleToSupabase resolves and returns a saleId.
  *
- * inventory_stock: PATCH qty for each (product_id, location_id) pair.
+ * inventory_stock: UPSERT qty for each (product_id, location_id) pair — creates row if missing.
  * inventory_movements: INSERT one row per item; type='sale' requires sale_id IS NOT NULL.
  * delta must NEVER be in the INSERT — it is GENERATED ALWAYS AS (qty_after - qty_before).
  *
@@ -660,13 +660,13 @@ export async function writeInventoryToSupabase(stockChanges, meta) {
     const valid = stockChanges.filter(sc => isUUID(sc.productId) && isUUID(sc.locationUUID))
     if (!valid.length) return
 
-    // Step 1: PATCH inventory_stock qty (parallel per product-location pair)
-    await Promise.all(valid.map(sc =>
-      sbPatch(
-        `/inventory_stock?product_id=eq.${sc.productId}&location_id=eq.${sc.locationUUID}`,
-        { qty: sc.qtyAfter }
-      )
-    ))
+    // Step 1: UPSERT inventory_stock qty — creates the row if it doesn't exist yet
+    await sbUpsert('/inventory_stock', valid.map(sc => ({
+      product_id:      sc.productId,
+      location_id:     sc.locationUUID,
+      organization_id: orgId,
+      qty:             sc.qtyAfter,
+    })))
 
     // Step 2: INSERT inventory_movements — requires sale_id for type='sale'
     if (!saleId) return
@@ -710,12 +710,12 @@ export async function writeStockAdjustment(stockChanges, { type = 'adjustment', 
     const valid = stockChanges.filter(sc => isUUID(sc.productId) && isUUID(sc.locationUUID))
     if (!valid.length) return
 
-    await Promise.all(valid.map(sc =>
-      sbPatch(
-        `/inventory_stock?product_id=eq.${sc.productId}&location_id=eq.${sc.locationUUID}`,
-        { qty: sc.qtyAfter }
-      )
-    ))
+    await sbUpsert('/inventory_stock', valid.map(sc => ({
+      product_id:      sc.productId,
+      location_id:     sc.locationUUID,
+      organization_id: orgId,
+      qty:             sc.qtyAfter,
+    })))
 
     const movementRows = valid.map(sc => ({
       organization_id:    orgId,
@@ -1020,7 +1020,7 @@ export async function writeProductToSupabase(product) {
         locUUID: getLocationUUID(legacyLocId),
         qty:     parseInt(qty) || 0,
       }))
-      .filter(s => s.locUUID && s.qty > 0)
+      .filter(s => s.locUUID)
       .map(s => ({
         product_id:      row.id,
         location_id:     s.locUUID,

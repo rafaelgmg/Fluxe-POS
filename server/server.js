@@ -20,7 +20,7 @@ const cors      = require('cors')
 const db        = require('./db')
 const scheduler = require('./scheduler')
 const sbClient  = require('./supabaseClient')
-const { buildScheduledMessages, buildManualMessage } = require('./messages')
+const { buildScheduledMessages, buildManualMessage, loadTemplates, saveTemplates } = require('./messages')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
@@ -458,6 +458,32 @@ app.post('/api/webhooks/twilio/sms', express.urlencoded({ extended: false }), as
     }
   } else {
     console.log(`[Webhook] Inbound from ${from} — customer not found in org`)
+  }
+})
+
+// ─── SMS Templates ────────────────────────────────────────────────────────────
+
+// GET /api/sms/templates — returns current auto-message templates
+app.get('/api/sms/templates', (_req, res) => {
+  res.json(loadTemplates())
+})
+
+// PUT /api/sms/templates — saves template overrides
+app.put('/api/sms/templates', (req, res) => {
+  const { thank_you, tip, comeback, birthday } = req.body || {}
+  const update = {}
+  if (thank_you !== undefined) update.thank_you = thank_you
+  if (tip       !== undefined) update.tip       = tip
+  if (comeback  !== undefined) update.comeback  = comeback
+  if (birthday  !== undefined) update.birthday  = birthday
+  if (Object.keys(update).length === 0) {
+    return res.status(400).json({ error: 'No template fields provided' })
+  }
+  try {
+    const saved = saveTemplates(update)
+    res.json(saved)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 

@@ -2,7 +2,7 @@
 import { DEFAULT_LOCATION } from '../config/branding'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { loadCRM } from '../utils/crmStorage'
-import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchEODNotes } from '../services/supabaseRead'
+import { fetchSalesByLocationAndDate, fetchClockRecordsByDate, fetchOpenClockRecords, fetchEODNotes } from '../services/supabaseRead'
 import { upsertEODNotes, patchClockOut } from '../services/supabaseWrite'
 import { byPaymentMethod } from '../services/dashboardService'
 import { printEODReceipt } from '../utils/printEODReceipt'
@@ -298,26 +298,40 @@ export default function EndOfDayReport({ onClose, sales = [], posSession, adminM
     : { dot: AMBER, text: 'Offline · Local' }
 
   // ── Print handler: auto clock-out open shifts before printing today's EOD ────
-  const handlePrint = () => {
-    if (isToday && clockRecords) {
-      const openRecords = clockRecords.filter(r => !r.clockOut)
+  // Fix 1: fetchOpenClockRecords (clock_out IS NULL) catches stale shifts from
+  //         previous days — fetchClockRecordsByDate only returns today's records.
+  // Fix 2: localStorage fallback when Supabase is unreachable (clockRecords=null).
+  // Fix 3: local-only records (no supabaseId) are also closed in localStorage.
+  const handlePrint = async () => {
+    if (printStatus === 'printing') return  // guard against double-click during async fetch
+    setPrintStatus('printing')
+    if (isToday) {
+      // Prefer Supabase for cross-device accuracy; fall back to localStorage
+      let openRecords = await fetchOpenClockRecords({ locationName: location })
+      if (openRecords === null) {
+        // Supabase unreachable — build open list from localStorage
+        openRecords = loadClockRecords()
+          .filter(r => !r.clockOut)
+          .map(r => ({ id: r.supabaseId || null, employee: r.employee, clockIn: r.clockIn, clockOut: null }))
+      }
+
       if (openRecords.length > 0) {
         const ts = new Date().toISOString()
-        // 1. Update component state so employee hours immediately reflect clock-out
-        setClockRecords(prev => prev.map(r => r.clockOut ? r : { ...r, clockOut: ts }))
-        // 2. Persist to localStorage (offline-first)
+        // 1. Update component state so hours reflect clock-out immediately
+        setClockRecords(prev => prev ? prev.map(r => r.clockOut ? r : { ...r, clockOut: ts }) : prev)
+        // 2. Persist to localStorage — match by supabaseId or employee name
         const stored  = loadClockRecords()
         const updated = stored.map(r => {
           if (r.clockOut) return r
-          const isOpen = openRecords.some(o =>
-            (r.supabaseId && o.id === r.supabaseId) ||
-            (!r.supabaseId && o.employee === r.employee)
+          const matched = openRecords.some(o =>
+            (r.supabaseId && o.id && r.supabaseId === o.id) ||
+            o.employee === r.employee
           )
-          return isOpen ? { ...r, clockOut: ts } : r
+          return matched ? { ...r, clockOut: ts } : r
         })
         saveClockRecords(updated)
-        // 3. Sync to Supabase (fire-and-forget)
-        openRecords.forEach(r => patchClockOut(r.id, ts))
+        // 3. Sync open records to Supabase (fire-and-forget; skips null ids)
+        openRecords.forEach(r => { if (r.id) patchClockOut(r.id, ts) })
         setAutoClocked(openRecords.length)
       }
     }

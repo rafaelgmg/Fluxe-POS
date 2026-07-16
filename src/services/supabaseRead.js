@@ -651,6 +651,39 @@ export async function fetchClockRecordsByDate({ locationName, date = new Date() 
 }
 
 /**
+ * Fetch all clock records that are still open (clock_out IS NULL) for a location.
+ * Used by EOD auto clock-out to catch stale shifts from previous days.
+ *
+ * @param {{ locationName?: string }}
+ * @returns {Promise<Array<{ id, employee, location, clockIn, clockOut }> | null>}
+ */
+export async function fetchOpenClockRecords({ locationName } = {}) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const orgId     = await getOrgId()
+    const locFilter = locationName
+      ? `&location_name=eq.${encodeURIComponent(locationName)}`
+      : ''
+    const rows = await sbFetch(
+      `/clock_records?organization_id=eq.${orgId}` +
+      locFilter +
+      `&clock_out=is.null` +
+      `&order=clock_in.asc`
+    )
+    return rows.map(r => ({
+      id:       r.id,
+      employee: r.employee_name || '',
+      location: r.location_name || '',
+      clockIn:  r.clock_in      || '',
+      clockOut: null,
+    }))
+  } catch (err) {
+    console.warn('[Fluxe] fetchOpenClockRecords failed:', err.message)
+    return null
+  }
+}
+
+/**
  * Fetch all location configs for the org.
  * Returns an array of rows { location_id, location_name, config, updated_at }
  * or null on failure.
