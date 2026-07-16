@@ -48,7 +48,8 @@ function appendLog(entry) {
 // Returns: 'ok-server' | 'ok' | 'ok-slip' | 'error'
 
 const KICK_BYTES = new Uint8Array([0x1B, 0x70, 0x00, 0x19, 0xFA])
-const SERVER_URL = `${import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'}/api/drawer/kick`
+// Cash drawer is local hardware — always call localhost regardless of VITE_SERVER_URL
+const SERVER_URL = 'http://localhost:3001/api/drawer/kick'
 
 async function kickViaServer(location) {
   const res  = await fetch(SERVER_URL, {
