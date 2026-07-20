@@ -1,5 +1,6 @@
-﻿import { useState, useMemo } from 'react'
-import { loadBonusRules, saveBonusRules, nextRuleId } from '../utils/bonusStorage'
+﻿import { useState, useMemo, useEffect } from 'react'
+import { loadBonusRules, saveBonusRules } from '../utils/bonusStorage'
+import { fetchBonusRules, createBonusRule, updateBonusRule, deleteBonusRule } from '../services/supabaseBonusRules'
 import { localDateKey } from '../utils/dateUtils'
 import { RETAIL_LOCATIONS } from '../config/branding'
 
@@ -304,9 +305,11 @@ function RuleCard({ rule, onSave, onDelete }) {
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function BonusRulesScreen({ onBack }) {
-  const [rules,   setRules]   = useState(loadBonusRules)
+  const [rules,   setRules]   = useState(loadBonusRules)   // optimistic: cache local imediato
   const [adding,  setAdding]  = useState(false)
   const [saved,   setSaved]   = useState(false)
+  const [syncErr, setSyncErr] = useState(null)
+  const [syncing, setSyncing] = useState(true)
   const [search,  setSearch]  = useState('')
 
   // New rule form state
@@ -315,37 +318,57 @@ export default function BonusRulesScreen({ onBack }) {
   const [newTiers,    setNewTiers]    = useState([])
   const [newErr,      setNewErr]      = useState({})
 
+  // Sync from Supabase on mount
+  useEffect(() => {
+    fetchBonusRules().then(fresh => {
+      if (fresh !== null) setRules(fresh)
+      setSyncing(false)
+    })
+  }, [])
+
   const flash = () => { setSaved(true); setTimeout(() => setSaved(false), 1800) }
 
-  const persist = (next) => {
-    saveBonusRules(next)
+  const showErr = (msg) => {
+    setSyncErr(msg)
+    setTimeout(() => setSyncErr(null), 3500)
+  }
+
+  const handleSaveRule = async (updated) => {
+    const result = await updateBonusRule(updated)
+    if (!result) { showErr('Falha ao salvar — verifique a conexão'); return }
+    const next = rules.map(r => r.id === result.id ? result : r)
     setRules(next)
+    saveBonusRules(next)
     flash()
   }
 
-  const handleSaveRule = (updated) => {
-    const next = rules.map(r => r.id === updated.id ? updated : r)
-    persist(next)
+  const handleDeleteRule = async (id) => {
+    const ok = await deleteBonusRule(id)
+    if (!ok) { showErr('Falha ao deletar — verifique a conexão'); return }
+    const next = rules.filter(r => r.id !== id)
+    setRules(next)
+    saveBonusRules(next)
+    flash()
   }
 
-  const handleDeleteRule = (id) => {
-    persist(rules.filter(r => r.id !== id))
-  }
-
-  const handleAddRule = () => {
+  const handleAddRule = async () => {
     const e = {}
-    if (!newDate)          e.date     = 'Required'
+    if (!newDate)            e.date     = 'Required'
     if (!newLocation.trim()) e.location = 'Required'
-    if (newTiers.length === 0) e.tiers = 'Add at least one tier'
+    if (newTiers.length === 0) e.tiers  = 'Add at least one tier'
     setNewErr(e)
     if (Object.keys(e).length > 0) return
 
-    // Warn if rule already exists for date+location
     const dup = rules.find(r => r.date === newDate && r.location === newLocation.trim())
     if (dup) { setNewErr({ location: 'Rule already exists for this date + location' }); return }
 
-    const next = [...rules, { id: nextRuleId(rules), date: newDate, location: newLocation.trim(), tiers: newTiers }]
-    persist(next)
+    const result = await createBonusRule({ date: newDate, location: newLocation.trim(), tiers: newTiers })
+    if (!result) { showErr('Falha ao criar regra — verifique a conexão'); return }
+
+    const next = [...rules, result]
+    setRules(next)
+    saveBonusRules(next)
+    flash()
     setAdding(false)
     setNewDate(todayStr())
     setNewLocation(LOCATION_NAMES[0] || '')
@@ -377,8 +400,14 @@ export default function BonusRulesScreen({ onBack }) {
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: MUTED, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>←</button>
         <span style={{ color: AMBER, fontWeight: 700, fontSize: 13 }}>💰 Users</span>
         <span style={{ color: MUTED, fontSize: 11 }}>Daily Bonus Rules</span>
-        {saved && (
+        {syncing && (
+          <span style={{ padding: '2px 10px', borderRadius: 12, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', color: BLUE, fontSize: 11 }}>Syncing…</span>
+        )}
+        {saved && !syncing && (
           <span style={{ padding: '2px 10px', borderRadius: 12, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: GREEN, fontSize: 11, fontWeight: 700 }}>✓ Saved</span>
+        )}
+        {syncErr && (
+          <span style={{ padding: '2px 10px', borderRadius: 12, background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.3)', color: RED, fontSize: 11 }}>{syncErr}</span>
         )}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           <input

@@ -11,6 +11,7 @@ import { loadUsers } from '../utils/usersStorage'
 import { calcDayCompetitionBonus } from '../utils/competitionBonusEngine'
 import { localDateKey } from '../utils/dateUtils'
 import { fetchClockRecordsByEmployee } from '../services/supabaseRead'
+import { fetchBonusRules }             from '../services/supabaseBonusRules'
 import { loadLocationConfig, resolveSpareRateForDay } from '../utils/locationConfig'
 import { sumItemSpare } from '../utils/spareUtils'
 import { verifyEmployeePin } from '../services/supabaseAuth'
@@ -797,6 +798,11 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
   const [bonusEditNote,    setBonusEditNote]      = useState('')
   const [bonusEditErr,     setBonusEditErr]       = useState('')
   const [bonusVersion,     setBonusVersion]       = useState(0)     // triggers dailySales recalc
+
+  // Sync bonus rules from Supabase on mount so findBonusRule() reads fresh cross-kiosk data
+  useEffect(() => {
+    fetchBonusRules().then(rules => { if (rules) setBonusVersion(v => v + 1) })
+  }, [])
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date(); d.setDate(1)
     return localDateStr(d)          // primeiro dia do mês em horário local
