@@ -1,6 +1,9 @@
 ﻿import { useState, useMemo } from 'react'
 import { loadBonusRules, saveBonusRules, nextRuleId } from '../utils/bonusStorage'
 import { localDateKey } from '../utils/dateUtils'
+import { RETAIL_LOCATIONS } from '../config/branding'
+
+const LOCATION_NAMES = RETAIL_LOCATIONS.map(l => l.name)
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const BG     = '#030e1e'
@@ -235,12 +238,15 @@ function RuleCard({ rule, onSave, onDelete }) {
               </div>
               <div>
                 <label style={{ color: MUTED, fontSize: 10, display: 'block', marginBottom: 3 }}>LOCATION</label>
-                <input
+                <select
                   value={location}
                   onChange={e => setLocation(e.target.value)}
-                  placeholder="e.g. Miracle Mall 01"
-                  style={{ padding: '5px 8px', background: BG, border: `1px solid ${err.location ? RED : BORDER}`, borderRadius: 4, color: TEXT, fontSize: 12, outline: 'none', width: 180 }}
-                />
+                  style={{ padding: '5px 8px', background: BG, border: `1px solid ${err.location ? RED : BORDER}`, borderRadius: 4, color: TEXT, fontSize: 12, outline: 'none', width: 180, cursor: 'pointer' }}
+                >
+                  {LOCATION_NAMES.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
                 {err.location && <p style={{ color: RED, fontSize: 10, marginTop: 2 }}>{err.location}</p>}
               </div>
             </div>
@@ -305,7 +311,7 @@ export default function BonusRulesScreen({ onBack }) {
 
   // New rule form state
   const [newDate,     setNewDate]     = useState(todayStr)
-  const [newLocation, setNewLocation] = useState('')
+  const [newLocation, setNewLocation] = useState(LOCATION_NAMES[0] || '')
   const [newTiers,    setNewTiers]    = useState([])
   const [newErr,      setNewErr]      = useState({})
 
@@ -342,7 +348,7 @@ export default function BonusRulesScreen({ onBack }) {
     persist(next)
     setAdding(false)
     setNewDate(todayStr())
-    setNewLocation('')
+    setNewLocation(LOCATION_NAMES[0] || '')
     setNewTiers([])
     setNewErr({})
   }
@@ -424,12 +430,15 @@ export default function BonusRulesScreen({ onBack }) {
                 </div>
                 <div style={{ flex: 2, minWidth: 200 }}>
                   <label style={{ color: MUTED, fontSize: 10, fontWeight: 700, display: 'block', marginBottom: 4 }}>LOCATION</label>
-                  <input
+                  <select
                     value={newLocation}
                     onChange={e => setNewLocation(e.target.value)}
-                    placeholder="e.g. Miracle Mall 01"
-                    style={{ padding: '7px 10px', background: BG, border: `1px solid ${newErr.location ? RED : BORDER}`, borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }}
-                  />
+                    style={{ padding: '7px 10px', background: BG, border: `1px solid ${newErr.location ? RED : BORDER}`, borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', cursor: 'pointer' }}
+                  >
+                    {LOCATION_NAMES.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
                   {newErr.location && <p style={{ color: RED, fontSize: 10, marginTop: 3 }}>{newErr.location}</p>}
                 </div>
               </div>
