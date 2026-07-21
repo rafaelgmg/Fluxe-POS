@@ -13,6 +13,7 @@ import ForecastTab  from './dashboard/ForecastTab'
 import PurchasePlanTab from './dashboard/PurchasePlanTab'
 import AlertsTab from './dashboard/AlertsTab'
 import SuppliersTab from './dashboard/SuppliersTab'
+import BonusTab     from './dashboard/BonusTab'
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 const DASHBOARD_PIN = import.meta.env.VITE_DASHBOARD_PIN || '1234'
@@ -975,6 +976,7 @@ const MORE_TABS = [
   { id: 'purchase',   label: 'Purchase',   icon: '🛍️' },
   { id: 'alerts',     label: 'Alerts',     icon: '🔔' },
   { id: 'suppliers',  label: 'Suppliers',  icon: '🏭' },
+  { id: 'bonus',      label: 'Bonus Rules', icon: '💰' },
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1065,6 +1067,7 @@ export default function Dashboard() {
       case 'purchase':  return <PurchasePlanTab />
       case 'alerts':     return <AlertsTab onNavigate={selectTab} />
       case 'suppliers':  return <SuppliersTab />
+      case 'bonus':      return <BonusTab />
       default:          return null
     }
   })()
