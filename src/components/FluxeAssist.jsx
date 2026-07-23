@@ -23,6 +23,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { parseCommand, runCommand, getCommandSuggestions } from '../utils/fluxeAssist'
+import { fetchBonusRules } from '../services/supabaseBonusRules'
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const PANEL  = '#0d1526'
@@ -116,6 +117,9 @@ export default function FluxeAssist({ onClose, sales, customers, empName, locati
   const inputRef = useRef(null)
 
   useEffect(() => { inputRef.current?.focus() }, [])
+
+  // Sync bonus rules from Supabase whenever Assist opens so findBonusRule() has fresh data
+  useEffect(() => { fetchBonusRules() }, [])
 
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose() }
