@@ -13,6 +13,7 @@ import { printReceipt } from './utils/printReceipt'
 import { awaitOrgSession } from './services/supabaseAuth'
 import { getNextInvoiceNumber, fetchLocationConfigs } from './services/supabaseRead'
 import { fetchBonusRules } from './services/supabaseBonusRules'
+import { fetchOrgSettings } from './services/supabaseOrgSettings'
 import { loadUsersAsync, loadActiveEmployees } from './utils/usersStorage'
 import { useCRM } from './hooks/useCRM'
 import { useSales, nextInvoiceNumber } from './hooks/useSales'
@@ -69,7 +70,7 @@ ensureCategoriesSeeded()
 // Module-level call starts before React renders — by the time useEffect()s
 // fire, the token may already be ready. Fire-and-forget; app runs from
 // localStorage if the sign-in hasn't completed yet.
-awaitOrgSession().then(() => fetchBonusRules())
+awaitOrgSession().then(() => { fetchOrgSettings(); fetchBonusRules() })
 
 export default function App() {
   const { mode, tokens, toggle } = useTheme()

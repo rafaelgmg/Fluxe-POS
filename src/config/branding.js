@@ -95,28 +95,70 @@ export default branding
 
 // ── Convenience exports ──────────────────────────────────────────────────────
 // Import these directly in components for cleaner code.
-
-export const BUSINESS      = branding.business.name
-export const BUSINESS_SHORT = branding.business.nameShort
-export const SYSTEM_NAME   = branding.system.name
-export const SYSTEM_TAG    = branding.system.tagline
-export const CREATOR       = branding.system.creator
-export const LOGO          = branding.business.logo
-export const TAX_RATE      = branding.finance.taxRate
-export const CURRENCY      = branding.finance.currencySymbol
-export const COLORS        = branding.colors
-export const LOCATIONS_CFG    = branding.locations
-export const RETAIL_LOCATIONS = branding.locations.filter(l => l.location_type !== 'warehouse')
-export const DEFAULT_LOCATION = RETAIL_LOCATIONS[0]?.name || branding.locations[0].name
-export const REGIONS          = [...new Set(branding.locations.map(l => l.region))]
-export const LOCATION_MAP     = REGIONS.reduce((acc, r) => {
-  acc[r] = branding.locations.filter(l => l.region === r).map(l => l.name)
-  return acc
-}, {})
-export const RETAIL_LOCATION_MAP = REGIONS.reduce((acc, r) => {
-  acc[r] = RETAIL_LOCATIONS.filter(l => l.region === r).map(l => l.name)
-  return acc
-}, {})
-export const ACCOUNTS      = [branding.business.account]
+// Static — never change per tenant:
+export const SYSTEM_NAME    = branding.system.name
+export const SYSTEM_TAG     = branding.system.tagline
+export const CREATOR        = branding.system.creator
+export const LOGO           = branding.business.logo
+export const COLORS         = branding.colors
+export const ACCOUNTS       = [branding.business.account]
 export const LOGIN_PASSWORD = branding.login.password
 export const LOGIN_CHECKBOX = branding.login.checkboxLabel
+
+// ── Live bindings (mutable per-tenant) ──────────────────────────────────────
+// These are `let` so applyOrgSettings() can reassign them after Supabase loads.
+// Importers always see the current value — ES module live bindings guarantee this.
+
+function _buildDerived(locs) {
+  const retail   = locs.filter(l => l.location_type !== 'warehouse')
+  const regions  = [...new Set(locs.map(l => l.region))]
+  const locMap   = regions.reduce((acc, r) => {
+    acc[r] = locs.filter(l => l.region === r).map(l => l.name)
+    return acc
+  }, {})
+  const retailMap = regions.reduce((acc, r) => {
+    acc[r] = retail.filter(l => l.region === r).map(l => l.name)
+    return acc
+  }, {})
+  return { retail, regions, locMap, retailMap }
+}
+
+const _init = _buildDerived(branding.locations)
+
+export let BUSINESS           = branding.business.name
+export let BUSINESS_SHORT     = branding.business.nameShort
+export let TAX_RATE           = branding.finance.taxRate
+export let CURRENCY           = branding.finance.currencySymbol
+export let RECEIPT_FOOTER     = branding.receipt.footer
+export let RECEIPT_LEGAL      = branding.receipt.legal
+export let SMS_SIGNATURE      = branding.crm.smsSignature
+export let LOCATIONS_CFG      = branding.locations
+export let RETAIL_LOCATIONS   = _init.retail
+export let DEFAULT_LOCATION   = _init.retail[0]?.name || branding.locations[0].name
+export let REGIONS            = _init.regions
+export let LOCATION_MAP       = _init.locMap
+export let RETAIL_LOCATION_MAP = _init.retailMap
+
+/**
+ * Apply org settings fetched from Supabase, updating all live bindings.
+ * Called once on boot (after awaitOrgSession) and when an admin saves settings.
+ */
+export function applyOrgSettings(settings) {
+  if (!settings) return
+  if (settings.business_name)    BUSINESS       = settings.business_name
+  if (settings.business_short)   BUSINESS_SHORT = settings.business_short
+  if (settings.tax_rate != null) TAX_RATE       = settings.tax_rate
+  if (settings.currency_symbol)  CURRENCY       = settings.currency_symbol
+  if (settings.receipt_footer)   RECEIPT_FOOTER = settings.receipt_footer
+  if (settings.receipt_legal)    RECEIPT_LEGAL  = settings.receipt_legal
+  if (settings.crm_sms_signature) SMS_SIGNATURE = settings.crm_sms_signature
+  if (Array.isArray(settings.locations) && settings.locations.length) {
+    LOCATIONS_CFG  = settings.locations
+    const d        = _buildDerived(settings.locations)
+    RETAIL_LOCATIONS    = d.retail
+    REGIONS             = d.regions
+    LOCATION_MAP        = d.locMap
+    RETAIL_LOCATION_MAP = d.retailMap
+    DEFAULT_LOCATION    = d.retail[0]?.name || settings.locations[0]?.name || DEFAULT_LOCATION
+  }
+}
