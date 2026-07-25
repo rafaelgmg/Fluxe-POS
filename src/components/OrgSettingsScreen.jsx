@@ -2,8 +2,8 @@
  * OrgSettingsScreen.jsx
  * Admin → General → Business Settings
  *
- * Edits org_settings in Supabase: business name, tax rate,
- * receipt footer, SMS signature.
+ * Edits org_settings in Supabase: business name and SMS signature.
+ * Tax rate and receipt text are configured per-location in LocationSettings.
  */
 
 import { useState, useEffect } from 'react'
@@ -48,8 +48,7 @@ function Section({ title, children }) {
 }
 
 const EMPTY = {
-  business_name: '', business_short: '', tax_rate: 8.5,
-  receipt_footer: '', receipt_legal: '', crm_sms_signature: '',
+  business_name: '', business_short: '', crm_sms_signature: '',
 }
 
 export default function OrgSettingsScreen({ onBack }) {
@@ -65,9 +64,6 @@ export default function OrgSettingsScreen({ onBack }) {
         if (s) setForm({
           business_name:     s.business_name     || '',
           business_short:    s.business_short    || '',
-          tax_rate:          s.tax_rate          ?? 8.5,
-          receipt_footer:    s.receipt_footer    || '',
-          receipt_legal:     s.receipt_legal     || '',
           crm_sms_signature: s.crm_sms_signature || '',
         })
       })
@@ -84,9 +80,6 @@ export default function OrgSettingsScreen({ onBack }) {
       await saveOrgSettings({
         business_name:     form.business_name.trim(),
         business_short:    form.business_short.trim() || form.business_name.toUpperCase().trim(),
-        tax_rate:          parseFloat(form.tax_rate) || 8.5,
-        receipt_footer:    form.receipt_footer.trim(),
-        receipt_legal:     form.receipt_legal.trim(),
         crm_sms_signature: form.crm_sms_signature.trim(),
       })
       setSaved(true)
@@ -130,41 +123,6 @@ export default function OrgSettingsScreen({ onBack }) {
             </Field>
             <Field label="BUSINESS SHORT NAME" hint="Uppercase display version used in compact headers. Leave blank to auto-generate.">
               <input value={form.business_short} onChange={e => set('business_short', e.target.value)} style={inp()} placeholder="e.g. PERFUME PASSAGE" />
-            </Field>
-          </Section>
-
-          <Section title="Tax">
-            <Field label="TAX RATE (%)" hint="Applied at checkout for all locations. Each location can override this via Location Settings.">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="number" step="0.001" min="0" max="100"
-                  value={form.tax_rate}
-                  onChange={e => set('tax_rate', e.target.value)}
-                  style={{ ...inp(), width: 110, color: '#f59e0b' }}
-                />
-                <span style={{ color: MUTED, fontSize: 12 }}>% → {(parseFloat(form.tax_rate) || 0).toFixed(3)}%</span>
-              </div>
-            </Field>
-          </Section>
-
-          <Section title="Receipt">
-            <Field label="RECEIPT FOOTER" hint="Printed at the bottom of every sale receipt.">
-              <textarea
-                value={form.receipt_footer}
-                onChange={e => set('receipt_footer', e.target.value)}
-                rows={2}
-                style={{ ...inp(), resize: 'vertical', minHeight: 50 }}
-                placeholder="e.g. No Refunds. Exchanges within 14 days."
-              />
-            </Field>
-            <Field label="RECEIPT LEGAL TEXT" hint="Secondary text below the footer (e.g. thank you message).">
-              <textarea
-                value={form.receipt_legal}
-                onChange={e => set('receipt_legal', e.target.value)}
-                rows={2}
-                style={{ ...inp(), resize: 'vertical', minHeight: 50 }}
-                placeholder="e.g. Thank you for your purchase!"
-              />
             </Field>
           </Section>
 
