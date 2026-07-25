@@ -17,6 +17,7 @@ import { useState, useMemo } from 'react'
 import { LOCATIONS_CFG } from '../config/branding'
 import { loadUsers } from '../utils/usersStorage'
 import { writeLocationConfigToSupabase } from '../services/supabaseWrite'
+import { saveOrgSettings } from '../services/supabaseOrgSettings'
 import { locationHasSales } from '../utils/locationHelpers'
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
@@ -2161,6 +2162,18 @@ export default function LocationSettings({ onBack }) {
         : [...prev, updated]
       saveLocations(next)
       writeLocationConfigToSupabase(updated)
+      // Keep org_settings.locations in sync so branding live bindings stay current
+      saveOrgSettings({
+        locations: next.map(l => ({
+          id:            l.id,
+          name:          l.name,
+          address:       l.address || '',
+          region:        l.region  || '',
+          phone:         l.phone   || '',
+          business_type: l.business_type  || 'retail',
+          location_type: l.location_type  || 'retail',
+        })),
+      }).catch(() => {})
       return next
     })
     setEditing(null)
