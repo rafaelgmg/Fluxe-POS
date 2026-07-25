@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { SYSTEM_NAME, SYSTEM_TAG, BUSINESS, CREATOR } from '../config/branding'
+import { SYSTEM_NAME, SYSTEM_TAG, BUSINESS, CREATOR, LOGIN_PASSWORD } from '../config/branding'
+
+const MACHINE_EMAIL = import.meta.env.VITE_ORG_MACHINE_EMAIL || ''
 
 const BLUE = '#3b82f6'
 
@@ -16,8 +18,9 @@ export default function AccountLoginScreen({ onLogin }) {
     }
     // Local auth — no backend required
     const validEmail = email.trim().toLowerCase()
-    const validPasswords = ['pass123']
-    const validEmails = ['admin@perfumepassage.com', 'rafael', 'admin']
+    const machineEmail = MACHINE_EMAIL.toLowerCase()
+    const validEmails = ['rafael', 'admin', ...(machineEmail ? [machineEmail] : [])]
+    const validPasswords = [LOGIN_PASSWORD, 'pass123'].filter(Boolean)
     if (!validEmails.includes(validEmail) || !validPasswords.includes(password)) {
       setError('Incorrect email or password.')
       return
@@ -113,7 +116,7 @@ export default function AccountLoginScreen({ onLogin }) {
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError('') }}
                 onKeyDown={handleKey}
-                placeholder="admin@perfumepassage.com"
+                placeholder={MACHINE_EMAIL || 'admin@yourbusiness.com'}
                 autoComplete="username"
                 style={inputStyle(!!error)}
                 onFocus={e => { if (!error) e.target.style.borderColor = BLUE }}
