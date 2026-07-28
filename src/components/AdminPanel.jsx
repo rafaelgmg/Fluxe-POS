@@ -19,6 +19,7 @@ import CRMAnalytics   from './CRMAnalytics'
 import AdminEODReport  from './AdminEODReport'
 import InvoicesAdmin   from './InvoicesAdmin'
 import OrgSettingsScreen from './OrgSettingsScreen'
+import ImportProductsScreen from './ImportProductsScreen'
 
 const PURPLE       = COLORS.admin
 const GOLD         = COLORS.accent
@@ -61,6 +62,7 @@ const MODULES = [
     id: 'products', icon: '🧴', label: 'Products', color: '#3498db',
     submenu: [
       { id: 'products-settings',  label: 'Settings',              screen: 'product-table' },
+      { id: 'products-import',    label: 'Import from Excel/CSV', screen: 'products-import' },
       { id: 'products-pricelists',label: 'Price Lists'            },
       { id: 'products-categories',label: 'Categories', screen: 'categories' },
       { id: 'products-wholesale', label: 'Wholesalers'            },
@@ -948,6 +950,15 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
       <div style={{ position: 'fixed', inset: 0, background: 'var(--c-bg)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Management" />
         <UsersScreen onBack={goBack} />
+      </div>
+    )
+  }
+
+  if (activeScreen?.screen === 'products-import') {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'var(--c-bg)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+        <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Products" />
+        <ImportProductsScreen onBack={goBack} />
       </div>
     )
   }
