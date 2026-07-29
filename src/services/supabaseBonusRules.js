@@ -7,27 +7,28 @@ import { getOrgId, isSupabaseConfigured } from './supabaseRead'
 import { getAccessToken }                  from './supabaseSession'
 import { saveBonusRules }                  from '../utils/bonusStorage'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL      || ''
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+import { getClientConfig } from './clientConfig'
+function _url() { return getClientConfig().supabaseUrl }
+function _key() { return getClientConfig().supabaseAnonKey }
 
-function authBearer() { return getAccessToken() || SUPABASE_KEY }
+function authBearer() { return getAccessToken() || _key() }
 
 function baseHeaders() {
   return {
-    apikey:         SUPABASE_KEY,
+    apikey:         _key(),
     Authorization:  `Bearer ${authBearer()}`,
     'Content-Type': 'application/json',
   }
 }
 
 async function sbGet(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, { headers: baseHeaders() })
+  const res = await fetch(`${_url()}/rest/v1${path}`, { headers: baseHeaders() })
   if (!res.ok) { const b = await res.text().catch(() => ''); throw new Error(`GET ${path} ${res.status}: ${b}`) }
   return res.json()
 }
 
 async function sbPost(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method: 'POST', headers: { ...baseHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(body),
   })
   if (!res.ok) { const b = await res.text().catch(() => ''); throw new Error(`POST ${path} ${res.status}: ${b}`) }
@@ -35,7 +36,7 @@ async function sbPost(path, body) {
 }
 
 async function sbPatch(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method: 'PATCH', headers: { ...baseHeaders(), Prefer: 'return=representation' }, body: JSON.stringify(body),
   })
   if (!res.ok) { const b = await res.text().catch(() => ''); throw new Error(`PATCH ${path} ${res.status}: ${b}`) }
@@ -43,7 +44,7 @@ async function sbPatch(path, body) {
 }
 
 async function sbDelete(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, { method: 'DELETE', headers: baseHeaders() })
+  const res = await fetch(`${_url()}/rest/v1${path}`, { method: 'DELETE', headers: baseHeaders() })
   if (!res.ok) { const b = await res.text().catch(() => ''); throw new Error(`DELETE ${path} ${res.status}: ${b}`) }
 }
 

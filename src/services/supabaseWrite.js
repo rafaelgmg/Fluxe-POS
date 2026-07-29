@@ -35,10 +35,11 @@ import { awaitOrgSession } from './supabaseAuth'
 
 // ── HTTP layer ────────────────────────────────────────────────────────────────
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL      || ''
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+import { getClientConfig } from './clientConfig'
+function _url() { return getClientConfig().supabaseUrl }
+function _key() { return getClientConfig().supabaseAnonKey }
 
-function authBearer() { return getAccessToken() || SUPABASE_KEY }
+function authBearer() { return getAccessToken() || _key() }
 
 /**
  * POST to a Supabase REST table endpoint.
@@ -46,10 +47,10 @@ function authBearer() { return getAccessToken() || SUPABASE_KEY }
  * prefer='return=minimal'        → returns nothing (201, empty body).
  */
 async function sbPost(path, body, prefer = 'return=minimal') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method:  'POST',
     headers: {
-      apikey:          SUPABASE_KEY,
+      apikey:          _key(),
       Authorization:   `Bearer ${authBearer()}`,
       'Content-Type':  'application/json',
       Prefer:          prefer,
@@ -95,10 +96,10 @@ async function insertPayments(paymentRows) {
  * Uses `return=minimal` — no body expected on success.
  */
 async function sbPatch(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method: 'PATCH',
     headers: {
-      apikey:          SUPABASE_KEY,
+      apikey:          _key(),
       Authorization:   `Bearer ${authBearer()}`,
       'Content-Type':  'application/json',
       Prefer:          'return=minimal',
@@ -128,10 +129,10 @@ export async function upsertEODNotes({ locationName, date, notes, updatedBy = nu
     await awaitOrgSession()
     const orgId   = await getOrgId()
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/eod_notes?on_conflict=organization_id,location_name,report_date`, {
+    const res = await fetch(`${_url()}/rest/v1/eod_notes?on_conflict=organization_id,location_name,report_date`, {
       method: 'POST',
       headers: {
-        apikey:         SUPABASE_KEY,
+        apikey:         _key(),
         Authorization:  `Bearer ${authBearer()}`,
         'Content-Type': 'application/json',
         Prefer:         'resolution=merge-duplicates,return=minimal',
@@ -182,11 +183,11 @@ export async function syncAllCategoriesToSupabase(cats) {
       notes:           cat.notes           || '',
     }))
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/categories?on_conflict=organization_id,name`,
+      `${_url()}/rest/v1/categories?on_conflict=organization_id,name`,
       {
         method: 'POST',
         headers: {
-          apikey:         SUPABASE_KEY,
+          apikey:         _key(),
           Authorization:  `Bearer ${authBearer()}`,
           'Content-Type': 'application/json',
           Prefer:         'resolution=merge-duplicates,return=representation',
@@ -229,11 +230,11 @@ export async function writeLocationConfigToSupabase(loc) {
     // 1. Upsert into `locations` (required for FK references in inventory_transfers).
     //    Uses on_conflict=organization_id,name so it's safe to call repeatedly.
     await fetch(
-      `${SUPABASE_URL}/rest/v1/locations?on_conflict=organization_id,name`,
+      `${_url()}/rest/v1/locations?on_conflict=organization_id,name`,
       {
         method: 'POST',
         headers: {
-          apikey:         SUPABASE_KEY,
+          apikey:         _key(),
           Authorization:  `Bearer ${authBearer()}`,
           'Content-Type': 'application/json',
           Prefer:         'resolution=merge-duplicates,return=minimal',
@@ -251,11 +252,11 @@ export async function writeLocationConfigToSupabase(loc) {
 
     // 2. Upsert into `location_configs` (full extended config blob)
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/location_configs?on_conflict=organization_id,location_id`,
+      `${_url()}/rest/v1/location_configs?on_conflict=organization_id,location_id`,
       {
         method: 'POST',
         headers: {
-          apikey:         SUPABASE_KEY,
+          apikey:         _key(),
           Authorization:  `Bearer ${authBearer()}`,
           'Content-Type': 'application/json',
           Prefer:         'resolution=merge-duplicates,return=minimal',
@@ -838,9 +839,9 @@ export async function receiveTransfer(transfer) {
 // ── Internal GET helper ───────────────────────────────────────────────────────
 
 async function sbGet(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     headers: {
-      apikey:        SUPABASE_KEY,
+      apikey:        _key(),
       Authorization: `Bearer ${authBearer()}`,
     },
   })
@@ -968,10 +969,10 @@ export { getOrgId }
 // ── Product CRUD ──────────────────────────────────────────────────────────────
 
 async function sbUpsert(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method: 'POST',
     headers: {
-      apikey:          SUPABASE_KEY,
+      apikey:          _key(),
       Authorization:   `Bearer ${authBearer()}`,
       'Content-Type':  'application/json',
       Prefer:          'resolution=merge-duplicates,return=minimal',
@@ -1115,10 +1116,10 @@ export async function uploadUserAvatar(supabaseUserId, file) {
     await awaitOrgSession().catch(() => null)
     const orgId = await getOrgId()
     const path  = `${orgId}/${supabaseUserId}.webp`
-    const res   = await fetch(`${SUPABASE_URL}/storage/v1/object/avatars/${path}`, {
+    const res   = await fetch(`${_url()}/storage/v1/object/avatars/${path}`, {
       method:  'PUT',
       headers: {
-        apikey:         SUPABASE_KEY,
+        apikey:         _key(),
         Authorization:  `Bearer ${authBearer()}`,
         'Content-Type': 'image/webp',
         'x-upsert':     'true',
@@ -1129,7 +1130,7 @@ export async function uploadUserAvatar(supabaseUserId, file) {
       const text = await res.text().catch(() => '')
       throw new Error(`Storage PUT ${res.status}: ${text}`)
     }
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}?v=${Date.now()}`
+    const publicUrl = `${_url()}/storage/v1/object/public/avatars/${path}?v=${Date.now()}`
     await sbPatch(`/users?id=eq.${supabaseUserId}`, { avatar_url: publicUrl })
     return publicUrl
   } catch (err) {
@@ -1148,10 +1149,10 @@ export async function deleteUserAvatar(supabaseUserId) {
     await awaitOrgSession().catch(() => null)
     const orgId = await getOrgId()
     const path  = `${orgId}/${supabaseUserId}.webp`
-    await fetch(`${SUPABASE_URL}/storage/v1/object/avatars`, {
+    await fetch(`${_url()}/storage/v1/object/avatars`, {
       method:  'DELETE',
       headers: {
-        apikey:         SUPABASE_KEY,
+        apikey:         _key(),
         Authorization:  `Bearer ${authBearer()}`,
         'Content-Type': 'application/json',
       },

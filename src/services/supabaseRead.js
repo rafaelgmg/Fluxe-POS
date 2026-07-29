@@ -5,7 +5,7 @@
  * null = caller must fall back to localStorage. No exceptions bubble up.
  *
  * Required env vars (.env or .env.local):
- *   VITE_SUPABASE_URL       e.g. https://abcdef.supabase.co
+ *   VITE__url()       e.g. https://abcdef.supabase.co
  *   VITE_SUPABASE_ANON_KEY  anon/public key from Supabase Dashboard → Settings → API
  *
  * Optional:
@@ -19,11 +19,13 @@ import { LOCATIONS_CFG }      from '../config/branding'
 import { getAccessToken }     from './supabaseSession'
 import { KEY_INVOICE_COUNTER } from '../utils/storageKeys'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL     || ''
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+import { getClientConfig } from './clientConfig'
+
+function _url() { return getClientConfig().supabaseUrl }
+function _key() { return getClientConfig().supabaseAnonKey }
 
 export function isSupabaseConfigured() {
-  return Boolean(SUPABASE_URL && SUPABASE_KEY)
+  return Boolean(_url() && _key())
 }
 
 // ── Auth header helper ────────────────────────────────────────────────────────
@@ -31,16 +33,16 @@ export function isSupabaseConfigured() {
 // Falls back to the anon key when initOrgSession() hasn't run yet (offline/dev).
 
 function authBearer() {
-  return getAccessToken() || SUPABASE_KEY
+  return getAccessToken() || _key()
 }
 
 // ── Base fetch + RPC ─────────────────────────────────────────────────────────
 
 async function sbRpc(fnName, params = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+  const res = await fetch(`${_url()}/rest/v1/rpc/${fnName}`, {
     method:  'POST',
     headers: {
-      apikey:         SUPABASE_KEY,
+      apikey:         _key(),
       Authorization:  `Bearer ${authBearer()}`,
       'Content-Type': 'application/json',
     },
@@ -54,9 +56,9 @@ async function sbRpc(fnName, params = {}) {
 }
 
 async function sbFetch(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     headers: {
-      apikey:          SUPABASE_KEY,
+      apikey:          _key(),
       Authorization:   `Bearer ${authBearer()}`,
       'Content-Type':  'application/json',
     },
@@ -70,12 +72,12 @@ async function sbFetch(path) {
 
 // ── Org ID resolution ─────────────────────────────────────────────────────────
 
-let _orgId = import.meta.env.VITE_SUPABASE_ORG_ID || ''
+let _orgId = ''
 
 async function getOrgId() {
+  if (!_orgId) _orgId = getClientConfig().orgId || ''
   if (_orgId) return _orgId
-  // Fallback: query the database. With RLS active this requires an authenticated token.
-  // If VITE_SUPABASE_ORG_ID is set (required in Phase 9 production), this never runs.
+  // Fallback: auto-detect from DB (requires anon key access to organizations table).
   const rows = await sbFetch('/organizations?select=id&limit=1')
   if (!rows.length) throw new Error('No organization found in Supabase')
   _orgId = rows[0].id

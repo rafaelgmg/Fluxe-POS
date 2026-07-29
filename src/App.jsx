@@ -22,6 +22,8 @@ import { useProducts } from './hooks/useProducts'
 import { COLORS, DEFAULT_LOCATION, SYSTEM_NAME, LOCATIONS_CFG } from './config/branding'
 import ServiceApp from './components/service/ServiceApp'
 import AccountLoginScreen from './components/AccountLoginScreen'
+import SetupScreen        from './components/SetupScreen'
+import { isClientConfigured } from './services/clientConfig'
 import LoginScreen from './components/LoginScreen'
 import LoginModal from './components/LoginModal'
 import EditItemModal from './components/EditItemModal'
@@ -523,6 +525,10 @@ export default function App() {
   const sorted = sortOrder === 'az' ? [...filtered].sort((a, b) => a.name.localeCompare(b.name))
                : sortOrder === 'za' ? [...filtered].sort((a, b) => b.name.localeCompare(a.name))
                : filtered
+
+  if (!isClientConfigured()) {
+    return <SetupScreen />
+  }
 
   if (!accountSession) {
     return <AccountLoginScreen onLogin={(session) => {

@@ -7,20 +7,21 @@
 import { getOrgId, isSupabaseConfigured } from './supabaseRead'
 import { getAccessToken }                 from './supabaseSession'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL      || ''
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+import { getClientConfig } from './clientConfig'
+function _url() { return getClientConfig().supabaseUrl }
+function _key() { return getClientConfig().supabaseAnonKey }
 
-function authBearer() { return getAccessToken() || SUPABASE_KEY }
+function authBearer() { return getAccessToken() || _key() }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
 
 async function sbPost(path, body, prefer = 'return=minimal') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method: 'POST',
     headers: {
-      apikey: SUPABASE_KEY, Authorization: `Bearer ${authBearer()}`,
+      apikey: _key(), Authorization: `Bearer ${authBearer()}`,
       'Content-Type': 'application/json', Prefer: prefer,
     },
     body: JSON.stringify(body),
@@ -37,10 +38,10 @@ async function sbPost(path, body, prefer = 'return=minimal') {
 }
 
 async function sbPatch(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method: 'PATCH',
     headers: {
-      apikey: SUPABASE_KEY, Authorization: `Bearer ${authBearer()}`,
+      apikey: _key(), Authorization: `Bearer ${authBearer()}`,
       'Content-Type': 'application/json', Prefer: 'return=minimal',
     },
     body: JSON.stringify(body),
@@ -52,9 +53,9 @@ async function sbPatch(path, body) {
 }
 
 async function sbFetch(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     headers: {
-      apikey: SUPABASE_KEY, Authorization: `Bearer ${authBearer()}`,
+      apikey: _key(), Authorization: `Bearer ${authBearer()}`,
       'Content-Type': 'application/json',
     },
   })

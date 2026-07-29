@@ -18,8 +18,9 @@ import CRMSettings    from './CRMSettings'
 import CRMAnalytics   from './CRMAnalytics'
 import AdminEODReport  from './AdminEODReport'
 import InvoicesAdmin   from './InvoicesAdmin'
-import OrgSettingsScreen from './OrgSettingsScreen'
+import OrgSettingsScreen    from './OrgSettingsScreen'
 import ImportProductsScreen from './ImportProductsScreen'
+import SystemSetupScreen    from './SystemSetupScreen'
 
 const PURPLE       = COLORS.admin
 const GOLD         = COLORS.accent
@@ -115,6 +116,7 @@ const MODULES = [
     id: 'general', icon: '⚙️', label: 'General', color: '#64748b',
     submenu: [
       { id: 'gen-business', label: 'Business Settings', screen: 'business-settings' },
+      { id: 'gen-system',   label: 'System / Reset Setup', screen: 'system-setup' },
     ],
   },
   {
@@ -968,6 +970,15 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
       <div style={{ position: 'fixed', inset: 0, background: 'var(--c-bg)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← General" />
         <OrgSettingsScreen onBack={goBack} />
+      </div>
+    )
+  }
+
+  if (activeScreen?.screen === 'system-setup') {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'var(--c-bg)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
+        <AdminHeader goBack={goBack} onClose={onClose} backLabel="← General" />
+        <SystemSetupScreen onBack={goBack} />
       </div>
     )
   }

@@ -14,19 +14,20 @@
 
 import { getAccessToken } from './supabaseSession'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL      || ''
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+import { getClientConfig } from './clientConfig'
+function _url() { return getClientConfig().supabaseUrl }
+function _key() { return getClientConfig().supabaseAnonKey }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isUUID(v) { return typeof v === 'string' && UUID_RE.test(v) }
 
-function authBearer() { return getAccessToken() || SUPABASE_KEY }
+function authBearer() { return getAccessToken() || _key() }
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
 
 function headers(extra = {}) {
   return {
-    apikey:         SUPABASE_KEY,
+    apikey:         _key(),
     Authorization:  `Bearer ${authBearer()}`,
     'Content-Type': 'application/json',
     ...extra,
@@ -34,13 +35,13 @@ function headers(extra = {}) {
 }
 
 async function restGet(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, { headers: headers() })
+  const res = await fetch(`${_url()}/rest/v1${path}`, { headers: headers() })
   if (!res.ok) throw new Error(`GET ${path} ${res.status}`)
   return res.json()
 }
 
 async function restPost(path, body, prefer = 'return=representation') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method: 'POST',
     headers: headers({ Prefer: prefer }),
     body: JSON.stringify(body),
@@ -53,7 +54,7 @@ async function restPost(path, body, prefer = 'return=representation') {
 }
 
 async function restPatch(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     method: 'PATCH',
     headers: headers({ Prefer: 'return=representation' }),
     body: JSON.stringify(body),
@@ -140,7 +141,7 @@ function toPayload(local, orgId, userId, locationId) {
  * Returns array of camelCase customer objects (with supabaseId).
  */
 export async function fetchCustomers(orgId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !orgId) return []
+  if (!_url() || !_key() || !orgId) return []
   const rows = await restGet(
     `/customers?organization_id=eq.${orgId}&order=created_at.desc&limit=2000`
   )
@@ -162,7 +163,7 @@ export async function fetchCustomers(orgId) {
  * @returns {Promise<{ supabaseId: string, isNew: boolean }>}
  */
 export async function writeCustomerToSupabase(local, orgId, userId, locationId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !orgId) return null
+  if (!_url() || !_key() || !orgId) return null
 
   const phoneNorm = (local.phone || '').replace(/\D/g, '')
   const emailNorm = (local.email || '').trim().toLowerCase()
@@ -201,7 +202,7 @@ export async function writeCustomerToSupabase(local, orgId, userId, locationId) 
  * Only updates non-null / non-empty fields from `local`.
  */
 export async function patchCustomerInSupabase(supabaseId, local, orgId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !supabaseId) return null
+  if (!_url() || !_key() || !supabaseId) return null
 
   const phoneNorm = (local.phone || '').replace(/\D/g, '')
   const patch = {
@@ -232,7 +233,7 @@ export async function patchCustomerInSupabase(supabaseId, local, orgId) {
  * Soft-delete (archive) a customer in Supabase.
  */
 export async function archiveCustomerInSupabase(supabaseId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !supabaseId) return null
+  if (!_url() || !_key() || !supabaseId) return null
   const rows = await restPatch(`/customers?id=eq.${supabaseId}`, {
     archived:    true,
     archived_at: new Date().toISOString(),
@@ -244,7 +245,7 @@ export async function archiveCustomerInSupabase(supabaseId) {
  * Restore a customer from archived state.
  */
 export async function restoreCustomerInSupabase(supabaseId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !supabaseId) return null
+  if (!_url() || !_key() || !supabaseId) return null
   const rows = await restPatch(`/customers?id=eq.${supabaseId}`, {
     archived:    false,
     archived_at: null,
@@ -259,7 +260,7 @@ export async function restoreCustomerInSupabase(supabaseId) {
  * Returns newest-first array of message objects.
  */
 export async function fetchMessageHistory(supabaseCustomerId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !supabaseCustomerId) return []
+  if (!_url() || !_key() || !supabaseCustomerId) return []
   try {
     const rows = await restGet(
       `/customer_messages?customer_id=eq.${supabaseCustomerId}&order=created_at.desc&limit=50`
@@ -283,7 +284,7 @@ export async function fetchMessageHistory(supabaseCustomerId) {
  * source should be 'manual' when triggered by a staff action.
  */
 export async function updateSmsConsentInSupabase(supabaseId, status, source = 'manual') {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !supabaseId) return null
+  if (!_url() || !_key() || !supabaseId) return null
   const patch = { sms_consent_status: status, sms_consent_source: source }
   if (status === 'opted_out') patch.sms_opted_out_at = new Date().toISOString()
   if (status === 'opted_in')  patch.sms_opted_out_at = null

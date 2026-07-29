@@ -7,15 +7,16 @@ import { initOrgSession } from './supabaseAuth'
 import { getAccessToken }  from './supabaseSession'
 import { loadActiveEmployees } from '../utils/usersStorage'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL      || ''
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+import { getClientConfig } from './clientConfig'
+function _url() { return getClientConfig().supabaseUrl }
+function _key() { return getClientConfig().supabaseAnonKey }
 
-function authBearer() { return getAccessToken() || SUPABASE_KEY }
+function authBearer() { return getAccessToken() || _key() }
 
 async function sbFetch(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     headers: {
-      apikey:         SUPABASE_KEY,
+      apikey:         _key(),
       Authorization:  `Bearer ${authBearer()}`,
       'Content-Type': 'application/json',
     },

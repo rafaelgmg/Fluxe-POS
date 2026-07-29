@@ -20,8 +20,8 @@
  *   1. Create a Supabase Auth user: pos-machine@perfumepassage.local
  *   2. Set app_metadata.org_id to your org UUID (see phase9_rls.sql for SQL)
  *   3. Add to .env:
- *        VITE_ORG_MACHINE_EMAIL=pos-machine@perfumepassage.local
- *        VITE_ORG_MACHINE_PASSWORD=<strong-password>
+ *        VITE_ORG__email()=pos-machine@perfumepassage.local
+ *        VITE_ORG__pass()=<strong-password>
  *        VITE_SUPABASE_ORG_ID=<org-uuid>   ← required when RLS is active
  */
 
@@ -30,21 +30,23 @@ import { setAccessToken, clearAccessToken, getAccessToken } from './supabaseSess
 import { loadActiveEmployees, loadUsers, saveUsers } from '../utils/usersStorage'
 import { LOCATIONS_CFG } from '../config/branding'
 
-const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL          || ''
-const SUPABASE_KEY    = import.meta.env.VITE_SUPABASE_ANON_KEY     || ''
-const MACHINE_EMAIL   = import.meta.env.VITE_ORG_MACHINE_EMAIL     || ''
-const MACHINE_PASSWORD = import.meta.env.VITE_ORG_MACHINE_PASSWORD || ''
+import { getClientConfig } from './clientConfig'
+
+function _url()   { return getClientConfig().supabaseUrl }
+function _key()   { return getClientConfig().supabaseAnonKey }
+function _email() { return getClientConfig().machineEmail }
+function _pass()  { return getClientConfig().machinePassword }
 
 // ── HTTP helpers (Phase 6 originals — still use anon key for RPC/auth endpoints) ─
 
 async function rpcPost(fnName, params) {
   // RPC uses the machine account token when available (so SECURITY DEFINER functions
   // receive the correct role context). Falls back to anon for offline/dev.
-  const bearer = getAccessToken() || SUPABASE_KEY
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+  const bearer = getAccessToken() || _key()
+  const res = await fetch(`${_url()}/rest/v1/rpc/${fnName}`, {
     method: 'POST',
     headers: {
-      apikey:          SUPABASE_KEY,
+      apikey:          _key(),
       Authorization:   `Bearer ${bearer}`,
       'Content-Type':  'application/json',
     },
@@ -58,10 +60,10 @@ async function rpcPost(fnName, params) {
 }
 
 async function restGet(path) {
-  const bearer = getAccessToken() || SUPABASE_KEY
-  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+  const bearer = getAccessToken() || _key()
+  const res = await fetch(`${_url()}/rest/v1${path}`, {
     headers: {
-      apikey:        SUPABASE_KEY,
+      apikey:        _key(),
       Authorization: `Bearer ${bearer}`,
     },
   })
@@ -96,9 +98,9 @@ function isTokenExpired(accessToken) {
 
 async function doRefresh(refreshToken) {
   try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    const res = await fetch(`${_url()}/auth/v1/token?grant_type=refresh_token`, {
       method: 'POST',
-      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      headers: { apikey: _key(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken }),
     })
     if (!res.ok) throw new Error(`Refresh ${res.status}`)
@@ -142,12 +144,12 @@ export function awaitOrgSession() {
 }
 
 export async function initOrgSession() {
-  if (!isSupabaseConfigured() || !MACHINE_EMAIL || !MACHINE_PASSWORD) return null
+  if (!isSupabaseConfigured() || !_email() || !_pass()) return null
   try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    const res = await fetch(`${_url()}/auth/v1/token?grant_type=password`, {
       method: 'POST',
-      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: MACHINE_EMAIL, password: MACHINE_PASSWORD }),
+      headers: { apikey: _key(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: _email(), password: _pass() }),
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')

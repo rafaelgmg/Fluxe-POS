@@ -8,18 +8,19 @@ import { isSupabaseConfigured } from './supabaseRead'
 import { getAccessToken }       from './supabaseSession'
 import { applyOrgSettings }     from '../config/branding'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL     || ''
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+import { getClientConfig } from './clientConfig'
+function _url() { return getClientConfig().supabaseUrl }
+function _key() { return getClientConfig().supabaseAnonKey }
 
 function authBearer() {
   const token = getAccessToken()
-  return token ? `Bearer ${token}` : `Bearer ${SUPABASE_KEY}`
+  return token ? `Bearer ${token}` : `Bearer ${_key()}`
 }
 
 async function sbGet(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  const res = await fetch(`${_url()}/rest/v1/${path}`, {
     headers: {
-      apikey:        SUPABASE_KEY,
+      apikey:        _key(),
       Authorization: authBearer(),
       Accept:        'application/json',
     },
@@ -32,10 +33,10 @@ async function sbGet(path) {
 }
 
 async function sbPatch(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  const res = await fetch(`${_url()}/rest/v1/${path}`, {
     method: 'PATCH',
     headers: {
-      apikey:          SUPABASE_KEY,
+      apikey:          _key(),
       Authorization:   authBearer(),
       'Content-Type':  'application/json',
       Prefer:          'return=representation',
@@ -101,7 +102,7 @@ export async function fetchOrgSettings() {
  */
 export async function saveOrgSettings(partial) {
   if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
-  const orgId = import.meta.env.VITE_SUPABASE_ORG_ID
+  const orgId = getClientConfig().orgId
   const rows = await sbPatch(
     `org_settings?organization_id=eq.${orgId}`,
     { ...partial, updated_at: new Date().toISOString() },
