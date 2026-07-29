@@ -49,11 +49,28 @@ async function sbPatch(path, body) {
   return res.json()
 }
 
+const DEMO_ORG_SETTINGS = {
+  business_name:     'Fluxe Demo Store',
+  business_short:    'FLUXE DEMO',
+  industry:          'retail',
+  tax_rate:          8.5,
+  currency_symbol:   '$',
+  locations:         [{ id: 'loc_demo', name: 'Fluxe Demo Store', address: 'Las Vegas, NV', region: 'demo', business_type: 'retail', location_type: 'retail' }],
+  receipt_footer:    'Thank you for shopping with us!',
+  receipt_legal:     'This receipt confirms your purchase.',
+  crm_sms_signature: '— Fluxe Demo',
+}
+
 /**
  * Fetch org settings from Supabase and apply to the branding live bindings.
  * Returns the settings object, or null if Supabase is not configured / offline.
  */
 export async function fetchOrgSettings() {
+  // Demo mode: use isolated branding, never touch production Supabase org settings
+  if (localStorage.getItem('fluxe-demo-mode') === '1') {
+    applyOrgSettings(DEMO_ORG_SETTINGS)
+    return DEMO_ORG_SETTINGS
+  }
   if (!isSupabaseConfigured()) return null
   try {
     const rows = await sbGet('org_settings?select=*&limit=1')

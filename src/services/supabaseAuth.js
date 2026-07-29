@@ -205,6 +205,11 @@ if (typeof document !== 'undefined') {
  * @returns {Promise<{id: string|number, name: string, role: string, photo: string|null} | null>}
  */
 export async function verifyEmployeePin(employeeName, pin) {
+  // Demo mode: skip Supabase RPC, validate directly from seeded localStorage
+  if (localStorage.getItem('fluxe-demo-mode') === '1') {
+    const emp = loadActiveEmployees().find(e => e.name === employeeName)
+    return (emp && emp.pin === pin) ? { id: null, name: emp.name, role: emp.role, photo: emp.photo } : null
+  }
   if (isSupabaseConfigured()) {
     try {
       const orgId = await getOrgId()

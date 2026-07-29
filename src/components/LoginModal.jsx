@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { verifyEmployeePin } from '../services/supabaseAuth'
+import { isDemoMode } from '../demo/demoSeed'
 
 export default function LoginModal({ onLogin, onCancel, requiredRole = null, title = 'Employee Sign In', subtitle = 'Enter your PIN to continue', filterRoles = null }) {
   const employees = filterRoles
@@ -129,6 +130,22 @@ export default function LoginModal({ onLogin, onCancel, requiredRole = null, tit
           />
           {error && <p style={{ color: '#ef4444', fontSize: 11, marginTop: 5 }}>{error}</p>}
         </div>
+
+        {/* Demo mode PIN hint */}
+        {isDemoMode() && (
+          <div style={{
+            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: 6, padding: '8px 12px', marginBottom: 14,
+          }}>
+            <p style={{ color: '#fbbf24', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3 }}>DEMO — SAMPLE PINs</p>
+            <p style={{ color: 'var(--c-text-muted)', fontSize: 11, lineHeight: 1.8 }}>
+              Alex Morgan: <strong style={{ color: 'var(--c-text)' }}>1111</strong> &nbsp;·&nbsp;
+              Sophia Carter: <strong style={{ color: 'var(--c-text)' }}>2222</strong><br />
+              Daniel Lee: <strong style={{ color: 'var(--c-text)' }}>3333</strong> &nbsp;·&nbsp;
+              Emma Brooks: <strong style={{ color: 'var(--c-text)' }}>4444</strong>
+            </p>
+          </div>
+        )}
 
         {/* Numpad */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7, marginBottom: 18 }}>

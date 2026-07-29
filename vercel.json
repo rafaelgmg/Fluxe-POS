@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/demo", "destination": "/?demo=true", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
