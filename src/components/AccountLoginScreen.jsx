@@ -16,12 +16,16 @@ export default function AccountLoginScreen({ onLogin }) {
       setError('Email and password are required.')
       return
     }
-    // Local auth — no backend required
-    const validEmail = email.trim().toLowerCase()
+    // Local auth — no backend required.
+    // Accept bare username ("admin") OR email format ("admin@anything.com") — strips @domain.
+    // Machine email must match exactly (full address).
+    const raw          = email.trim().toLowerCase()
+    const username     = raw.includes('@') ? raw.split('@')[0] : raw
     const machineEmail = MACHINE_EMAIL.toLowerCase()
-    const validEmails = ['rafael', 'admin', ...(machineEmail ? [machineEmail] : [])]
+    const validUsernames = ['rafael', 'admin']
     const validPasswords = [LOGIN_PASSWORD, 'pass123'].filter(Boolean)
-    if (!validEmails.includes(validEmail) || !validPasswords.includes(password)) {
+    const emailOk = validUsernames.includes(username) || (machineEmail && raw === machineEmail)
+    if (!emailOk || !validPasswords.includes(password)) {
       setError('Incorrect email or password.')
       return
     }
