@@ -167,6 +167,119 @@ function DonutChart({ segments }) {
   )
 }
 
+// ─── SVG Products Bar Chart ───────────────────────────────────────────────────
+function ProductsBarChart({ data }) {
+  if (!data.length) return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 12 }}>
+      No products sold
+    </div>
+  )
+  const visible = data.slice(0, 20)
+  const W = 560, H = 240
+  const pad = { t: 24, r: 120, b: 80, l: 40 }
+  const innerW = W - pad.l - pad.r
+  const innerH = H - pad.t - pad.b
+  const maxQty = Math.max(...visible.map(d => d.qty), 1)
+  const maxAvg = Math.max(...visible.map(d => d.avgNet), 0.01)
+  const barW   = Math.max(8, (innerW / visible.length) * 0.55)
+  const xOf    = (i) => pad.l + (i + 0.5) * (innerW / visible.length)
+  const yOfAvg = (v) => pad.t + innerH - (v / maxAvg) * innerH
+  return (
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
+      {[0, 0.5, 1].map(t => {
+        const y = pad.t + innerH * (1 - t)
+        return (
+          <g key={t}>
+            <line x1={pad.l} x2={W - pad.r} y1={y} y2={y} stroke={BORDER} strokeWidth={1} strokeDasharray={t === 0 ? 'none' : '3,3'} />
+            <text x={pad.l - 4} y={y + 4} textAnchor="end" fill={MUTED} fontSize={9}>{Math.round(maxQty * t)}</text>
+          </g>
+        )
+      })}
+      {visible.map((d, i) => {
+        const x    = xOf(i)
+        const barH = Math.max(2, (d.qty / maxQty) * innerH)
+        return (
+          <g key={i}>
+            <rect x={x - barW / 2} y={pad.t + innerH - barH} width={barW} height={barH} fill={GREEN} fillOpacity={0.7} rx={2} />
+            <text x={x} y={pad.t + innerH - barH - 4} textAnchor="middle" fill={GREEN} fontSize={8} fontWeight={700}>{d.qty}</text>
+          </g>
+        )
+      })}
+      {visible.map((d, i) => (
+        <g key={i}>
+          <circle cx={xOf(i)} cy={yOfAvg(d.avgNet)} r={3.5} fill={RED} stroke={PANEL} strokeWidth={1.5} />
+          <text x={xOf(i)} y={yOfAvg(d.avgNet) - 6} textAnchor="middle" fill={RED} fontSize={8}>${d.avgNet.toFixed(0)}</text>
+        </g>
+      ))}
+      {visible.map((d, i) => {
+        const x    = xOf(i)
+        const name = d.name.length > 15 ? d.name.slice(0, 15) + '…' : d.name
+        return (
+          <text key={i} x={x} y={pad.t + innerH + 8} textAnchor="end" fill={MUTED} fontSize={8} transform={`rotate(-38,${x},${pad.t + innerH + 8})`}>{name}</text>
+        )
+      })}
+      {/* Legend */}
+      <rect x={W - pad.r + 10} y={pad.t} width={9} height={9} fill={GREEN} fillOpacity={0.7} rx={1} />
+      <text x={W - pad.r + 23} y={pad.t + 8} fill={MUTED} fontSize={9}>Quantity</text>
+      <circle cx={W - pad.r + 14} cy={pad.t + 22} r={3.5} fill={RED} />
+      <text x={W - pad.r + 23} y={pad.t + 26} fill={MUTED} fontSize={9}>Average Price</text>
+    </svg>
+  )
+}
+
+// ─── SVG Employee Bar Chart ────────────────────────────────────────────────────
+function EmployeesBarChart({ data }) {
+  if (!data.length) return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: 12 }}>
+      No employee data
+    </div>
+  )
+  const W = 520, H = 240
+  const pad = { t: 28, r: 20, b: 44, l: 64 }
+  const innerW = W - pad.l - pad.r
+  const innerH = H - pad.t - pad.b
+  const maxVal = Math.max(...data.map(d => d.totalNet), 0.01)
+  const barW   = Math.max(28, Math.min(60, (innerW / data.length) * 0.6))
+  const xOf    = (i) => pad.l + (i + 0.5) * (innerW / data.length)
+  return (
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
+      <defs>
+        <linearGradient id="empBarGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="#ef4444" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#ef4444" stopOpacity="0.35" />
+        </linearGradient>
+      </defs>
+      {[0, 0.25, 0.5, 0.75, 1].map(t => {
+        const y = pad.t + innerH * (1 - t)
+        return (
+          <g key={t}>
+            <line x1={pad.l} x2={W - pad.r} y1={y} y2={y} stroke={BORDER} strokeWidth={1} strokeDasharray={t === 0 ? 'none' : '3,3'} />
+            <text x={pad.l - 5} y={y + 4} textAnchor="end" fill={MUTED} fontSize={9}>${(maxVal * t / 1000).toFixed(1)}k</text>
+          </g>
+        )
+      })}
+      {data.map((d, i) => {
+        const x    = xOf(i)
+        const barH = Math.max(2, (d.totalNet / maxVal) * innerH)
+        const lbl  = d.totalNet >= 1000 ? `$${(d.totalNet / 1000).toFixed(1)}k` : `$${d.totalNet.toFixed(0)}`
+        return (
+          <g key={i}>
+            <rect x={x - barW / 2} y={pad.t + innerH - barH} width={barW} height={barH} fill="url(#empBarGrad)" rx={3} />
+            <text x={x} y={pad.t + innerH - barH - 6} textAnchor="middle" fill={TEXT} fontSize={10} fontWeight={700}>{lbl}</text>
+          </g>
+        )
+      })}
+      {data.map((d, i) => {
+        const x    = xOf(i)
+        const name = d.name.length > 12 ? d.name.slice(0, 12) + '…' : d.name
+        return (
+          <text key={i} x={x} y={pad.t + innerH + 16} textAnchor="middle" fill={MUTED} fontSize={10}>{name}</text>
+        )
+      })}
+    </svg>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function LocationReport({ onClose, sales = [] }) {
   const [products, setProducts] = useState(loadAllProducts)
@@ -283,6 +396,34 @@ export default function LocationReport({ onClose, sales = [] }) {
     })).sort((a, b) => b.value - a.value),
     [payBreakdown]
   )
+
+  // ── Products sold breakdown ────────────────────────────────────────────────
+  const productsSold = useMemo(() => {
+    const map = {}
+    locSales.forEach(s => {
+      ;(s.items || []).forEach(item => {
+        const name = item.name || item.productName || 'Unknown'
+        if (!map[name]) map[name] = { name, qty: 0, totalNet: 0 }
+        map[name].qty      += item.qty || 1
+        map[name].totalNet += (item.salePrice || 0) * (item.qty || 1)
+      })
+    })
+    return Object.values(map)
+      .map(p => ({ ...p, avgNet: p.qty > 0 ? p.totalNet / p.qty : 0 }))
+      .sort((a, b) => b.qty - a.qty)
+  }, [locSales])
+
+  // ── Employee sales breakdown ───────────────────────────────────────────────
+  const employeeSales = useMemo(() => {
+    const map = {}
+    locSales.forEach(s => {
+      const name = s.employee || 'Unknown'
+      if (!map[name]) map[name] = { name, totalNet: 0, count: 0 }
+      map[name].totalNet += s.subtotal || 0
+      map[name].count    += 1
+    })
+    return Object.values(map).sort((a, b) => b.totalNet - a.totalNet)
+  }, [locSales])
 
   // ─────────────────────────────────────────────────────────────────────────────
   const inp = { padding: '5px 10px', background: CARD, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 12, outline: 'none',  }
@@ -496,6 +637,77 @@ export default function LocationReport({ onClose, sales = [] }) {
                   <p style={{ color: MUTED, fontSize: 11 }}>No transactions</p>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Products Sold ─────────────────────────────────────────────── */}
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}` }}>
+            <p style={{ color: TEXT, fontWeight: 700, fontSize: 14 }}>Location Products Sold</p>
+            <p style={{ color: MUTED, fontSize: 11, marginTop: 2 }}>{productsSold.length} product{productsSold.length !== 1 ? 's' : ''} · {locCfg?.name}</p>
+          </div>
+          <div style={{ display: 'flex', gap: 0 }}>
+            <div style={{ width: 300, flexShrink: 0, borderRight: `1px solid ${BORDER}`, overflowY: 'auto', maxHeight: 280 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead style={{ position: 'sticky', top: 0 }}>
+                  <tr style={{ background: 'var(--c-bg-stripe)' }}>
+                    {['Product Name', 'Qty Sold', 'Avg Net Price'].map(h => (
+                      <th key={h} style={{ padding: '6px 10px', color: MUTED, fontWeight: 600, fontSize: 10, textAlign: h === 'Product Name' ? 'left' : 'right', borderBottom: `1px solid ${BORDER}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {productsSold.length === 0 && (
+                    <tr><td colSpan={3} style={{ padding: 24, textAlign: 'center', color: 'var(--c-text-dim)', fontSize: 12 }}>No products in this period</td></tr>
+                  )}
+                  {productsSold.map((p, i) => (
+                    <tr key={p.name} style={{ background: i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)', borderBottom: `1px solid var(--c-border-row)` }}>
+                      <td style={{ padding: '6px 10px', color: DIM, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</td>
+                      <td style={{ padding: '6px 10px', color: GREEN, fontWeight: 700, textAlign: 'right' }}>{p.qty}</td>
+                      <td style={{ padding: '6px 10px', color: TEXT, fontWeight: 600, textAlign: 'right' }}>{fmt$(p.avgNet)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ flex: 1, padding: '16px 20px', display: 'flex', alignItems: 'center', minWidth: 0, overflowX: 'auto' }}>
+              <ProductsBarChart data={productsSold} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Employee Sales ────────────────────────────────────────────────── */}
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BORDER}` }}>
+            <p style={{ color: TEXT, fontWeight: 700, fontSize: 14 }}>Location Employee Sales</p>
+            <p style={{ color: MUTED, fontSize: 11, marginTop: 2 }}>{locCfg?.name} · {fromDate} → {toDate}</p>
+          </div>
+          <div style={{ display: 'flex', gap: 0 }}>
+            <div style={{ width: 260, flexShrink: 0, borderRight: `1px solid ${BORDER}`, overflowY: 'auto', maxHeight: 280 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead style={{ position: 'sticky', top: 0 }}>
+                  <tr style={{ background: 'var(--c-bg-stripe)' }}>
+                    {['Employee Name', 'Total Net Sales'].map(h => (
+                      <th key={h} style={{ padding: '6px 10px', color: MUTED, fontWeight: 600, fontSize: 10, textAlign: h === 'Employee Name' ? 'left' : 'right', borderBottom: `1px solid ${BORDER}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {employeeSales.length === 0 && (
+                    <tr><td colSpan={2} style={{ padding: 24, textAlign: 'center', color: 'var(--c-text-dim)', fontSize: 12 }}>No employee data in this period</td></tr>
+                  )}
+                  {employeeSales.map((e, i) => (
+                    <tr key={e.name} style={{ background: i === 0 ? 'rgba(245,158,11,0.06)' : i % 2 === 0 ? 'transparent' : 'var(--c-bg-stripe)', borderBottom: `1px solid var(--c-border-row)` }}>
+                      <td style={{ padding: '6px 10px', color: i === 0 ? AMBER : DIM, fontWeight: i === 0 ? 700 : 400 }}>{e.name}</td>
+                      <td style={{ padding: '6px 10px', color: i === 0 ? AMBER : TEXT, fontWeight: 700, textAlign: 'right' }}>{fmt$(e.totalNet)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ flex: 1, padding: '16px 20px', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+              <EmployeesBarChart data={employeeSales} />
             </div>
           </div>
         </div>

@@ -357,6 +357,20 @@ export default function UsersScreen({ onBack }) {
         const final = [...merged, ...localOnly]
         saveUsers(final)
         setUsers(final)
+        if (localOnly.length > 0) {
+          import('../services/supabaseWrite').then(({ upsertUserToSupabase }) => {
+            localOnly.forEach(async (u) => {
+              const id = await upsertUserToSupabase(u).catch(() => null)
+              if (id) {
+                setUsers(prev => {
+                  const updated = prev.map(x => x.id === u.id ? { ...x, supabaseId: id } : x)
+                  saveUsers(updated)
+                  return updated
+                })
+              }
+            })
+          }).catch(() => {})
+        }
       }).catch(() => {})
     )
   }, [])
@@ -575,9 +589,18 @@ export default function UsersScreen({ onBack }) {
 
                     {/* Name */}
                     <td style={{ padding: '10px 12px' }}>
-                      <p style={{ color: 'var(--c-text)', fontWeight: 600, fontSize: 13 }}>
-                        {u.firstName} {u.lastName}
-                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <p style={{ color: 'var(--c-text)', fontWeight: 600, fontSize: 13 }}>
+                          {u.firstName} {u.lastName}
+                        </p>
+                        {!u.supabaseId && u.status === 'active' && (
+                          <span title="Employee not synced to cloud — sales may not appear in reports. Will sync automatically on next app restart." style={{
+                            fontSize: 9, padding: '1px 5px', borderRadius: 3,
+                            background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)',
+                            color: '#fbbf24', fontWeight: 700, letterSpacing: 0.4, whiteSpace: 'nowrap',
+                          }}>NOT SYNCED</span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Position */}

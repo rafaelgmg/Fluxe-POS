@@ -157,6 +157,23 @@ export async function loadUsersAsync() {
     )
     const final = [...merged, ...localOnly]
     saveUsers(final)
+
+    // Background retry: push any local-only users to Supabase so they get a UUID.
+    // Without this, employees created while offline stay UUID-less indefinitely and
+    // their sales are stored with employee_id: null, breaking user reports.
+    if (localOnly.length > 0) {
+      import('../services/supabaseWrite').then(({ upsertUserToSupabase }) => {
+        localOnly.forEach(async (u) => {
+          const id = await upsertUserToSupabase(u).catch(() => null)
+          if (id) {
+            const current = loadUsers()
+            const updated = current.map(x => x.id === u.id ? { ...x, supabaseId: id } : x)
+            saveUsers(updated)
+          }
+        })
+      }).catch(() => {})
+    }
+
     return final
   } catch {}
   return loadUsers()
