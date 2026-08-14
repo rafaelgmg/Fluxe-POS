@@ -1,4 +1,5 @@
-﻿import { useState, useMemo, useEffect } from 'react'
+﻿import { useState, useMemo, useEffect, useCallback } from 'react'
+import { RefundModal } from './RefundModal'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { loadCRM } from '../utils/crmStorage'
 import { LOCATIONS_CFG } from '../config/branding'
@@ -371,9 +372,10 @@ function InvoiceCommissionSection({ invoice }) {
 }
 
 // ─── Invoice Detail Modal ─────────────────────────────────────────────────────
-function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, voidSale }) {
+function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, voidSale, refundSale }) {
   const [invoice, setInvoice]       = useState(initialInvoice)
-  const [confirmAction, setConfirm] = useState(null) // 'delete' | 'refund'
+  const [confirmAction, setConfirm] = useState(null) // 'delete'
+  const [showRefundModal, setShowRefundModal] = useState(false)
   const [changingDate, setChangingDate] = useState(false)
   const [newDate, setNewDate]           = useState(toLocalInputVal(initialInvoice.timestamp))
   const [emailMode, setEmailMode]       = useState(false)
@@ -382,6 +384,7 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
 
   const isRefunded = invoice.status === 'refunded'
   const isDeleted  = invoice.status === 'voided'
+  const hasPartialRefunds = Array.isArray(invoice.refunds) && invoice.refunds.length > 0 && invoice.status !== 'refunded'
 
   const showToast = (msg) => {
     setToast(msg)
@@ -416,16 +419,24 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
     setTimeout(onClose, 1200)
   }
 
-  const handleRefund = () => {
-    // Supabase only has 'voided' — unify both actions to voided.
-    // UI shows 'refunded' label but backend stores 'voided'.
-    setInvoice(prev => ({ ...prev, status: 'voided' }))
-    if (voidSale) voidSale(invoice)
-    else updateSale(invoice.number, { status: 'voided' })
-    setConfirm(null)
-    showToast(`Invoice #${invoice.number} marked as refunded`)
-    setTimeout(onClose, 1200)
-  }
+  const handleRefundConfirm = useCallback((refundData) => {
+    setShowRefundModal(false)
+    if (refundSale) {
+      refundSale(invoice, refundData)
+    } else if (voidSale && refundData.type === 'full') {
+      voidSale(invoice)
+    } else {
+      updateSale(invoice.number, { status: refundData.type === 'full' ? 'voided' : invoice.status })
+    }
+    if (refundData.type === 'full') {
+      setInvoice(prev => ({ ...prev, status: 'refunded', refunds: [refundData] }))
+      showToast(`Invoice #${invoice.number} refunded — ${refundData.refundMethod}`)
+      setTimeout(onClose, 1400)
+    } else {
+      setInvoice(prev => ({ ...prev, refunds: [...(prev.refunds || []), refundData] }))
+      showToast(`Partial refund processed — ${refundData.items.length} item${refundData.items.length !== 1 ? 's' : ''}`)
+    }
+  }, [invoice, refundSale, voidSale, updateSale, onClose])
 
   const handleChangeDate = () => {
     const ts = new Date(newDate).toISOString()
@@ -527,7 +538,7 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
             {actionBtn('Email',       '📧', BLUE,   () => setEmailMode(m => !m), false)}
             {actionBtn('Location',    '📍', DIM,    () => showToast(`${invoice.location}${locCfg?.address ? ` — ${locCfg.address}` : ''}`), false)}
             {actionBtn('Change Date', '📅', AMBER,  () => { setChangingDate(m => !m); setConfirm(null) }, isDeleted)}
-            {actionBtn('Refund',      '↩️', AMBER,  () => { setConfirm('refund'); setChangingDate(false) }, isRefunded || isDeleted)}
+            {actionBtn('Refund',      '↩️', AMBER,  () => { setShowRefundModal(true); setChangingDate(false); setConfirm(null) }, isRefunded || isDeleted)}
             {actionBtn('Delete',      '🗑️', RED,    () => { setConfirm('delete'); setChangingDate(false) }, isDeleted)}
           </div>
 
@@ -584,34 +595,51 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
             </div>
           )}
 
-          {/* Confirm delete / refund */}
-          {confirmAction && (
+          {/* Confirm delete */}
+          {confirmAction === 'delete' && (
             <div style={{
-              background: confirmAction === 'delete' ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)',
-              border: `1px solid ${confirmAction === 'delete' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 8, padding: '12px 16px', display: 'flex', gap: 12, alignItems: 'center',
             }}>
-              <span style={{ color: confirmAction === 'delete' ? '#fca5a5' : AMBER, fontSize: 12, flex: 1 }}>
-                {confirmAction === 'delete'
-                  ? '⚠️ This will permanently mark the invoice as deleted. Continue?'
-                  : '↩️ This will mark the invoice as refunded. Continue?'}
+              <span style={{ color: '#fca5a5', fontSize: 12, flex: 1 }}>
+                ⚠️ This will permanently mark the invoice as deleted. Continue?
               </span>
               <button
-                onClick={confirmAction === 'delete' ? handleDelete : handleRefund}
-                style={{
-                  padding: '7px 18px',
-                  background: confirmAction === 'delete' ? RED : AMBER,
-                  border: 'none', borderRadius: 4,
-                  color: confirmAction === 'delete' ? '#fff' : '#000',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                }}
-              >
-                {confirmAction === 'delete' ? 'Yes, Delete' : 'Yes, Refund'}
-              </button>
+                onClick={handleDelete}
+                style={{ padding: '7px 18px', background: RED, border: 'none', borderRadius: 4, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+              >Yes, Delete</button>
               <button onClick={() => setConfirm(null)} style={{
                 padding: '7px 12px', background: 'transparent', border: `1px solid ${BORDER}`,
                 borderRadius: 4, color: MUTED, fontSize: 12, cursor: 'pointer',
               }}>Cancel</button>
+            </div>
+          )}
+
+          {/* Partial refund history */}
+          {hasPartialRefunds && (
+            <div style={{
+              background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)',
+              borderRadius: 8, padding: '12px 16px',
+            }}>
+              <p style={{ color: AMBER, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>
+                PARTIAL REFUNDS ({invoice.refunds.length})
+              </p>
+              {invoice.refunds.map((r, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: idx < invoice.refunds.length - 1 ? `1px solid rgba(245,158,11,0.15)` : 'none' }}>
+                  <div>
+                    <p style={{ color: 'var(--c-text)', fontSize: 12, fontWeight: 600 }}>
+                      {r.items?.length || 0} item{(r.items?.length || 0) !== 1 ? 's' : ''} · {r.refundMethod}
+                    </p>
+                    <p style={{ color: MUTED, fontSize: 11 }}>
+                      {r.timestamp ? new Date(r.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
+                      {r.authorizedBy ? ` · Auth: ${r.authorizedBy}` : ''}
+                    </p>
+                  </div>
+                  <p style={{ color: AMBER, fontWeight: 700, fontSize: 13 }}>
+                    −${(+(r.total || 0)).toFixed(2)}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
 
@@ -671,6 +699,14 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
         }}>
           {toast}
         </div>
+      )}
+
+      {showRefundModal && (
+        <RefundModal
+          invoice={invoice}
+          onClose={() => setShowRefundModal(false)}
+          onConfirm={handleRefundConfirm}
+        />
       )}
     </div>
   )
@@ -781,7 +817,7 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 const TABS = ['Summary', 'Invoices', 'Product Commission', 'Products Sold', 'Hours', 'Spare', 'Deductions', 'Reimbursements', 'My Clients']
 
-export default function UserReport({ onClose, sales = [], updateSale, voidSale, mode = 'self' }) {
+export default function UserReport({ onClose, sales = [], updateSale, voidSale, refundSale, mode = 'self' }) {
   const employees = loadActiveEmployees()
 
   const [unlockedEmployee, setUnlockedEmployee] = useState(
@@ -2024,6 +2060,7 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
           onClose={() => setOpenedInvoice(null)}
           updateSale={updateSale}
           voidSale={voidSale}
+          refundSale={refundSale}
         />
       )}
     </div>

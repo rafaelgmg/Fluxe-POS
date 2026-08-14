@@ -117,6 +117,7 @@ function defaultExt(loc) {
     enableCashCount:                 false,  // enable cash count module (structure only)
     drawerOnlyAfterSale:             false,  // open drawer ONLY after a sale — overrides autoOpenDrawer
     autoOpenCashDrawerAfterSale:     false,  // ✅ LIVE — auto-kick drawer on successful checkout
+    requireRefundAuth:               false,  // ✅ LIVE — require Manager/Admin PIN to process refunds
 
     // ════════════════════════════════════════════════════════
     // C. Timezone
@@ -721,6 +722,14 @@ function TabPreferences({ form, set, allLocations = [] }) {
         B — SECURITY
       </div>
       <div style={{ marginBottom: 20 }}>
+        <PrefGroup icon="↩️" title="Refunds" defaultOpen>
+          <Toggle
+            label={<>Require Manager / Admin authorization for refunds <StatusBadge live /></>}
+            checked={form.requireRefundAuth}
+            onChange={v => set('requireRefundAuth', v)}
+            description="When enabled, employees must enter a Manager or Admin PIN before processing any refund at this location. Refunds without authorization are fully blocked."
+          />
+        </PrefGroup>
         <PrefGroup icon="🔐" title="Cash Drawer & Count" defaultOpen>
           <Toggle
             label={<>Enable cash count <StatusBadge /></>}

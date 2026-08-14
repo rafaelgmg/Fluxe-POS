@@ -138,7 +138,7 @@ export default function App() {
   const [assistEmployee,    setAssistEmployee]     = useState(null)
 
   const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSHistory, updateSmsConsent, getSMSLog, getScheduled } = useCRM(posSession, currentUser)
-  const { sales, saveSale, updateSale, voidSale } = useSales()
+  const { sales, saveSale, updateSale, voidSale, refundSale } = useSales()
   const {
     cart,
     cartError,
@@ -1069,7 +1069,7 @@ export default function App() {
 
       {showDashboard   && <Dashboard       onClose={() => setShowDashboard(false)}  sales={sales} />}
       {showEndOfDay    && <EndOfDayReport onClose={() => setShowEndOfDay(false)}   sales={sales} posSession={posSession} />}
-      {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} />}
+      {showUserReport  && <UserReport    onClose={() => setShowUserReport(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} refundSale={refundSale} />}
       {showCompetition && <Competition   onClose={() => setShowCompetition(false)} sales={sales} posSession={posSession} />}
       {showAssistAuth && (
         <LoginModal
@@ -1094,7 +1094,7 @@ export default function App() {
       )}
       {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}  posSession={posSession} />}
       {showInventory   && <Inventory     onClose={() => setShowInventory(false)} products={products} />}
-      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} posSession={posSession} />}
+      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} refundSale={refundSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} posSession={posSession} />}
       {showReceipts    && <Receipts      onClose={() => setShowReceipts(false)}    posSession={posSession} />}
       {showCashDrawer  && <CashDrawer   onClose={() => setShowCashDrawer(false)} location={posSession?.location} />}
       {showCRM && (

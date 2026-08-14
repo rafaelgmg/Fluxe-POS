@@ -962,6 +962,80 @@ export async function voidSaleInSupabase(invoice, meta = {}) {
 }
 
 /**
+ * Restore inventory for a subset of items (partial refund) WITHOUT changing the
+ * sale status. Creates inventory_movements rows with type='refund'.
+ *
+ * @param {object} invoice      Full invoice (for .number, .locationId, .location)
+ * @param {Array}  items        Refunded items: [{ productId, qty, name, barcode }]
+ * @param {object} meta         { performedById?, employeeName? }
+ */
+export async function partialRefundInventoryInSupabase(invoice, items, meta = {}) {
+  if (!isSupabaseConfigured()) return
+  try {
+    const orgId       = await getOrgId()
+    const locationUUID = getLocationUUID(invoice.locationId)
+    const { performedById = null, employeeName = '' } = meta
+
+    if (!isUUID(locationUUID)) {
+      console.warn(`[Fluxe] partialRefund: no locationUUID for "${invoice.locationId}" — inventory not restored`)
+      return
+    }
+
+    const validItems = items.filter(item => isUUID(item.productId))
+    if (!validItems.length) return
+
+    // Resolve Supabase sale UUID for the movement audit row
+    let saleId = isUUID(invoice.supabaseId) ? invoice.supabaseId : null
+    if (!saleId) {
+      const rows = await sbGet(`/sales?number=eq.${invoice.number}&select=id&limit=1`)
+      saleId = rows[0]?.id || null
+    }
+
+    // Fetch current qty for each product
+    const stockData = await Promise.all(
+      validItems.map(async item => {
+        const rows = await sbGet(
+          `/inventory_stock?product_id=eq.${item.productId}&location_id=eq.${locationUUID}&select=qty&limit=1`
+        )
+        return { item, qtyBefore: rows[0]?.qty ?? 0 }
+      })
+    )
+
+    // Restore qty
+    await Promise.all(
+      stockData.map(({ item, qtyBefore }) =>
+        sbPatch(
+          `/inventory_stock?product_id=eq.${item.productId}&location_id=eq.${locationUUID}`,
+          { qty: qtyBefore + (item.qty ?? 1) }
+        )
+      )
+    )
+
+    // Insert movements (only if saleId is known — DB constraint)
+    if (saleId) {
+      const movementRows = stockData.map(({ item, qtyBefore }) => ({
+        organization_id:    orgId,
+        product_id:         item.productId,
+        location_id:        locationUUID,
+        type:               'refund',
+        qty_before:         qtyBefore,
+        qty_after:          qtyBefore + (item.qty ?? 1),
+        note:               `Partial Refund — Invoice #${invoice.number}`,
+        sale_id:            saleId,
+        performed_by_id:    isUUID(performedById) ? performedById : null,
+        product_name_snap:  item.name    || '',
+        barcode_snap:       item.barcode || '',
+        location_name_snap: invoice.location || '',
+        performed_by_snap:  employeeName,
+      }))
+      await sbPost('/inventory_movements', movementRows, 'return=minimal')
+    }
+  } catch (err) {
+    console.warn('[Fluxe] partialRefundInventoryInSupabase failed:', err.message)
+  }
+}
+
+/**
  * Re-export getOrgId for Phase 3 callers that need it alongside write functions.
  */
 export { getOrgId }

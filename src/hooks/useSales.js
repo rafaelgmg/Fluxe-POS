@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { loadCategories } from '../utils/categoriesStorage'
 import { loadAllSales, persistAllSales, nextInvoiceNumber as _nextInvoiceNumber } from '../utils/salesStorage'
 import { fetchSales, fetchCategories } from '../services/supabaseRead'
-import { writeSaleToSupabase, voidSaleInSupabase } from '../services/supabaseWrite'
+import { writeSaleToSupabase, voidSaleInSupabase, partialRefundInventoryInSupabase } from '../services/supabaseWrite'
 import { isDemoMode } from '../demo/demoSeed'
 
 // Status values aligned with Supabase schema enum (sale_status).
@@ -172,5 +172,43 @@ export function useSales() {
       .catch(err => console.warn('[Fluxe] voidSale backend error:', err.message))
   }, [])
 
-  return { sales, saveSale, updateSale, voidSale }
+  /**
+   * Process a refund (full or partial).
+   *
+   * Full refund  → marks sale status='refunded', stores refund record, voids in Supabase.
+   * Partial refund → keeps sale completed, appends refund record, restores only returned items.
+   *
+   * @param {object} invoice     Full invoice object
+   * @param {object} refundData  { type, items, refundMethod, subtotal, tax, total, authorizedBy, refundId }
+   */
+  const refundSale = useCallback((invoice, refundData) => {
+    const record = { ...refundData, timestamp: new Date().toISOString() }
+
+    if (refundData.type === 'full') {
+      setSales(prev => {
+        const updated = prev.map(s =>
+          s.number === invoice.number
+            ? { ...s, status: 'refunded', refunds: [record] }
+            : s
+        )
+        persistAllSales(updated)
+        return updated
+      })
+      voidSaleInSupabase(invoice, { performedById: null })
+        .catch(err => console.warn('[Fluxe] refundSale (full) backend error:', err.message))
+    } else {
+      setSales(prev => {
+        const updated = prev.map(s => {
+          if (s.number !== invoice.number) return s
+          return { ...s, refunds: [...(s.refunds || []), record] }
+        })
+        persistAllSales(updated)
+        return updated
+      })
+      partialRefundInventoryInSupabase(invoice, refundData.items, { performedById: null })
+        .catch(err => console.warn('[Fluxe] refundSale (partial) backend error:', err.message))
+    }
+  }, [])
+
+  return { sales, saveSale, updateSale, voidSale, refundSale }
 }

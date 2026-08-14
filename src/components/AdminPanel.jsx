@@ -905,7 +905,7 @@ function AdminHeader({ goBack, onClose, backLabel = '← Back' }) {
 
 // ─── Main AdminPanel ──────────────────────────────────────────────────────────
 
-export default function AdminPanel({ onClose, sales = [], updateSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, products: liveProducts = null, setProducts: setAppProducts = null, posSession = null }) {
+export default function AdminPanel({ onClose, sales = [], updateSale, voidSale, refundSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, products: liveProducts = null, setProducts: setAppProducts = null, posSession = null }) {
   const [localProducts, setLocalProducts] = useState(loadAllProducts)
 
   useEffect(() => {
@@ -942,6 +942,8 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
         onClose={goBack}
         sales={sales}
         updateSale={updateSale}
+        voidSale={voidSale}
+        refundSale={refundSale}
         mode="admin"
       />
     )
@@ -1076,6 +1078,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, customers 
         customers={customers}
         posSession={posSession}
         updateSale={updateSale}
+        refundSale={refundSale}
         onClose={goBack}
       />
     )

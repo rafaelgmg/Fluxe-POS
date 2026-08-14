@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { RETAIL_LOCATIONS as LOCATIONS_CFG } from '../config/branding'
 import { printReceipt }   from '../utils/printReceipt'
+import { RefundModal }    from './RefundModal'
 
 // ── Semantic colors (theme-neutral, kept as constants) ────────────────────────
 const BLUE  = '#3b82f6'
@@ -55,9 +56,10 @@ function Badge({ label, color, bg }) {
 }
 
 // ── Invoice detail modal ──────────────────────────────────────────────────────
-function InvoiceModal({ invoice: init, customers, updateSale, onClose }) {
-  const [invoice, setInvoice] = useState(init)
-  const [toast,   setToast]   = useState('')
+function InvoiceModal({ invoice: init, customers, updateSale, refundSale, onClose }) {
+  const [invoice, setInvoice]   = useState(init)
+  const [toast,   setToast]     = useState('')
+  const [showRefund, setShowRefund] = useState(false)
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
@@ -72,6 +74,18 @@ function InvoiceModal({ invoice: init, customers, updateSale, onClose }) {
     setInvoice(p => ({ ...p, reviewed }))
     showToast(reviewed ? 'Marked as reviewed ✓' : 'Review mark removed')
   }
+
+  const handleRefundConfirm = useCallback((refundData) => {
+    setShowRefund(false)
+    if (refundSale) refundSale(invoice, refundData)
+    if (refundData.type === 'full') {
+      setInvoice(p => ({ ...p, status: 'refunded', refunds: [refundData] }))
+      showToast(`Invoice #${invoice.number} refunded`)
+    } else {
+      setInvoice(p => ({ ...p, refunds: [...(p.refunds || []), refundData] }))
+      showToast(`Partial refund — ${refundData.items.length} item${refundData.items.length !== 1 ? 's' : ''}`)
+    }
+  }, [invoice, refundSale])
 
   const status   = statusMeta(invoice.status)
   const method   = methodMeta(invoice.paymentMethod)
@@ -246,6 +260,18 @@ function InvoiceModal({ invoice: init, customers, updateSale, onClose }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}
               >{invoice.reviewed ? '✓ Reviewed' : '○ Mark Reviewed'}</button>
+
+              {invoice.status === 'completed' && (
+                <button
+                  onClick={() => setShowRefund(true)}
+                  style={{
+                    padding: '9px 14px', background: `${AMBER}15`,
+                    border: `1px solid ${AMBER}50`, borderRadius: 6,
+                    color: AMBER, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  }}
+                >↩️ Process Refund</button>
+              )}
             </div>
           </div>
         </div>
@@ -261,6 +287,14 @@ function InvoiceModal({ invoice: init, customers, updateSale, onClose }) {
           }}>{toast}</div>
         )}
       </div>
+
+      {showRefund && (
+        <RefundModal
+          invoice={invoice}
+          onClose={() => setShowRefund(false)}
+          onConfirm={handleRefundConfirm}
+        />
+      )}
     </div>
   )
 }
@@ -287,7 +321,7 @@ function KpiCard({ label, value, color, icon }) {
 // ── Main component ────────────────────────────────────────────────────────────
 const PAGE_SIZE = 50
 
-export default function InvoicesAdmin({ sales = [], customers = [], posSession, onClose, updateSale }) {
+export default function InvoicesAdmin({ sales = [], customers = [], posSession, onClose, updateSale, refundSale = null }) {
   const [fromDate,    setFromDate]    = useState('')
   const [toDate,      setToDate]      = useState('')
   const [locFilter,   setLocFilter]   = useState('all')
@@ -641,6 +675,7 @@ export default function InvoicesAdmin({ sales = [], customers = [], posSession, 
           invoice={openInvoice}
           customers={customers}
           updateSale={updateSale}
+          refundSale={refundSale}
           onClose={() => setOpenInvoice(null)}
         />
       )}
