@@ -21,6 +21,7 @@ import InvoicesAdmin   from './InvoicesAdmin'
 import OrgSettingsScreen    from './OrgSettingsScreen'
 import ImportProductsScreen from './ImportProductsScreen'
 import SystemSetupScreen    from './SystemSetupScreen'
+import RefundsAdmin         from './RefundsAdmin'
 
 const PURPLE       = COLORS.admin
 const GOLD         = COLORS.accent
@@ -125,7 +126,7 @@ const MODULES = [
       { id: 'acc-invoices',  label: 'Invoices', screen: 'invoices' },
       { id: 'acc-payments',  label: 'Payments'           },
       { id: 'acc-credit',    label: 'Store Credit'       },
-      { id: 'acc-refunds',   label: 'Refunds'            },
+      { id: 'acc-refunds',   label: 'Refunds', screen: 'refunds' },
       { id: 'acc-expenses',  label: 'Expenses'           },
       { id: 'acc-pl',        label: 'Profit/Loss Report' },
       { id: 'acc-reset',     label: 'Reset Account'      },
@@ -1079,6 +1080,16 @@ export default function AdminPanel({ onClose, sales = [], updateSale, voidSale, 
         posSession={posSession}
         updateSale={updateSale}
         refundSale={refundSale}
+        onClose={goBack}
+      />
+    )
+  }
+
+  if (activeScreen?.screen === 'refunds') {
+    return (
+      <RefundsAdmin
+        sales={sales}
+        customers={customers}
         onClose={goBack}
       />
     )

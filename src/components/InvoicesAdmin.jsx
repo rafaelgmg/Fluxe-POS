@@ -55,8 +55,9 @@ function Badge({ label, color, bg }) {
   )
 }
 
-// ── Invoice detail modal ──────────────────────────────────────────────────────
-function InvoiceModal({ invoice: init, customers, updateSale, refundSale, onClose }) {
+// ── Invoice detail modal ─────────────────────────────────────────────────────
+// Exported so RefundsAdmin can open it in read-only mode.
+export function InvoiceModal({ invoice: init, customers = [], updateSale, refundSale, onClose, readOnly = false }) {
   const [invoice, setInvoice]   = useState(init)
   const [toast,   setToast]     = useState('')
   const [showRefund, setShowRefund] = useState(false)
@@ -219,6 +220,38 @@ function InvoiceModal({ invoice: init, customers, updateSale, refundSale, onClos
                 <p style={{ color: 'var(--c-text)', fontSize: 12 }}>{invoice.notes}</p>
               </div>
             )}
+
+            {/* Refund history */}
+            {Array.isArray(invoice.refunds) && invoice.refunds.length > 0 && (
+              <div style={{
+                marginTop: 14, padding: 10, background: `${AMBER}08`,
+                border: `1px solid ${AMBER}30`, borderRadius: 6,
+              }}>
+                <p style={{ color: AMBER, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>
+                  REFUND HISTORY ({invoice.refunds.length})
+                </p>
+                {invoice.refunds.map((r, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                    padding: '6px 0', borderBottom: i < invoice.refunds.length - 1 ? `1px solid ${AMBER}20` : 'none',
+                  }}>
+                    <div>
+                      <p style={{ color: 'var(--c-text)', fontSize: 12, fontWeight: 600 }}>
+                        {r.type === 'full' ? 'Full Refund' : `Partial — ${r.items?.length || 0} item${(r.items?.length || 0) !== 1 ? 's' : ''}`}
+                        {r.refundMethod ? ` · ${r.refundMethod}` : ''}
+                      </p>
+                      <p style={{ color: 'var(--c-text-muted)', fontSize: 10, marginTop: 2 }}>
+                        {r.timestamp ? new Date(r.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'}
+                        {r.authorizedBy ? ` · Auth: ${r.authorizedBy}` : ''}
+                      </p>
+                    </div>
+                    <p style={{ color: AMBER, fontWeight: 700, fontSize: 13, flexShrink: 0, paddingLeft: 12 }}>
+                      −${(+(r.total || 0)).toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right: summary + actions */}
@@ -261,7 +294,7 @@ function InvoiceModal({ invoice: init, customers, updateSale, refundSale, onClos
                 }}
               >{invoice.reviewed ? '✓ Reviewed' : '○ Mark Reviewed'}</button>
 
-              {invoice.status === 'completed' && (
+              {invoice.status === 'completed' && !readOnly && (
                 <button
                   onClick={() => setShowRefund(true)}
                   style={{
