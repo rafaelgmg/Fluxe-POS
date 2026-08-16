@@ -30,6 +30,7 @@ const C = {
   text: '#111827', sub: '#374151', muted: '#6B7280', dim: '#9CA3AF',
   green: '#10B981', blue: '#3B82F6', purple: '#8B5CF6',
   amber: '#F59E0B', red: '#EF4444', orange: '#F97316',
+  teal: '#14B8A6',
 }
 
 const SEV = {
@@ -44,6 +45,7 @@ const FILTERS = [
   { id: 'transfer', label: 'Transfers', icon: '↔'  },
   { id: 'reorder',  label: 'Reorder',   icon: '🛍️' },
   { id: 'counts',   label: 'Counts',    icon: '📋' },
+  { id: 'refunds',  label: 'Refunds',   icon: '↩️'  },
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -57,6 +59,33 @@ function loadLocalSales90() {
       const ts = new Date(s.timestamp || s.completedAt || s.createdAt || 0).getTime()
       return ts >= cutoff
     })
+  } catch { return [] }
+}
+
+function loadRefundAlerts() {
+  try {
+    const raw = localStorage.getItem('fluxe-sales-v1')
+    if (!raw) return []
+    const cutoff = Date.now() - 30 * 86_400_000
+    const list = []
+    let seq = 0
+    JSON.parse(raw).forEach(sale => {
+      if (!Array.isArray(sale.refunds) || sale.refunds.length === 0) return
+      sale.refunds.forEach(refund => {
+        if (!refund.timestamp) return
+        if (new Date(refund.timestamp).getTime() < cutoff) return
+        list.push({
+          id: `ra${++seq}-${refund.refundId || refund.timestamp}`,
+          type: refund.type === 'full' ? 'refund_full' : 'refund_partial',
+          severity: refund.type === 'full' ? 'warning' : 'info',
+          category: 'refunds',
+          icon: '↩️',
+          title: refund.type === 'full' ? 'Full Refund' : 'Partial Refund',
+          sale, refund, ts: refund.timestamp,
+        })
+      })
+    })
+    return list.sort((a, b) => new Date(b.ts) - new Date(a.ts))
   } catch { return [] }
 }
 
@@ -375,6 +404,43 @@ function AlertCard({ alert, warehouseLoc, onNavigate, onDismiss, addDraft }) {
       break
     }
 
+    case 'refund_full':
+    case 'refund_partial': {
+      const { sale, refund } = alert
+      const isFull = alert.type === 'refund_full'
+      body = (
+        <div style={{ fontSize: 13, color: C.sub }}>
+          <div>
+            <strong>Invoice #{sale.number}</strong>
+            <span style={{ color: C.muted }}> · {sale.location}</span>
+          </div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+            By: {refund.authorizedBy || sale.employee || '—'}
+            {alert.ts && <span style={{ marginLeft: 8 }}>{fmtTs(alert.ts)}</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 12, flexWrap: 'wrap' }}>
+            {!isFull && (
+              <span>
+                <span style={{ color: C.muted }}>Items: </span>
+                <span style={{ fontWeight: 600 }}>{(refund.items || []).length}</span>
+              </span>
+            )}
+            <span>
+              <span style={{ color: C.muted }}>Total: </span>
+              <span style={{ fontWeight: 700, color: isFull ? C.amber : C.blue }}>
+                -${(refund.total || 0).toFixed(2)}
+              </span>
+            </span>
+            <span>
+              <span style={{ color: C.muted }}>Method: </span>
+              <span style={{ fontWeight: 600 }}>{refund.refundMethod || '—'}</span>
+            </span>
+          </div>
+        </div>
+      )
+      break
+    }
+
     default: break
   }
 
@@ -421,14 +487,15 @@ function Chip({ label, count, color }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AlertsTab({ onNavigate }) {
-  const [products,     setProducts]     = useState(() => loadAllProducts())
-  const [sales,        setSales]        = useState(() => loadLocalSales90())
-  const [loading,      setLoading]      = useState(true)
-  const [fetchedAt,    setFetchedAt]    = useState(null)
-  const [drafts,       setDrafts]       = useState([])
-  const [recentCounts, setRecentCounts] = useState([])
-  const [dismissedIds, setDismissedIds] = useState(new Set())
-  const [filter,       setFilter]       = useState('all')
+  const [products,      setProducts]     = useState(() => loadAllProducts())
+  const [sales,         setSales]        = useState(() => loadLocalSales90())
+  const [refundAlerts,  setRefundAlerts] = useState(() => loadRefundAlerts())
+  const [loading,       setLoading]      = useState(true)
+  const [fetchedAt,     setFetchedAt]    = useState(null)
+  const [drafts,        setDrafts]       = useState([])
+  const [recentCounts,  setRecentCounts] = useState([])
+  const [dismissedIds,  setDismissedIds] = useState(new Set())
+  const [filter,        setFilter]       = useState('all')
 
   const retailLocs   = useMemo(() => getRetailLocations(),    [])
   const warehouseLocs= useMemo(() => getWarehouseLocations(), [])
@@ -453,6 +520,7 @@ export default function AlertsTab({ onNavigate }) {
         ))
       }
       setFetchedAt(new Date())
+      setRefundAlerts(loadRefundAlerts())
     }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
@@ -467,8 +535,8 @@ export default function AlertsTab({ onNavigate }) {
   }, [products, sales, retailLocs, warehouseLocs])
 
   const allAlerts = useMemo(() =>
-    buildAlerts({ forecastRows, drafts, recentCounts })
-  , [forecastRows, drafts, recentCounts])
+    [...buildAlerts({ forecastRows, drafts, recentCounts }), ...refundAlerts]
+  , [forecastRows, drafts, recentCounts, refundAlerts])
 
   const visibleAlerts = useMemo(() => {
     const active = allAlerts.filter(a => !dismissedIds.has(a.id))
@@ -485,10 +553,11 @@ export default function AlertsTab({ onNavigate }) {
       transfer: active.filter(a => a.category === 'transfer').length,
       reorder:  active.filter(a => a.category === 'reorder').length,
       counts:   active.filter(a => a.category === 'counts').length,
+      refunds:  active.filter(a => a.category === 'refunds').length,
     }
   }, [allAlerts, dismissedIds])
 
-  const catCount = { all: counts.total, stock: counts.stock, transfer: counts.transfer, reorder: counts.reorder, counts: counts.counts }
+  const catCount = { all: counts.total, stock: counts.stock, transfer: counts.transfer, reorder: counts.reorder, counts: counts.counts, refunds: counts.refunds }
 
   const dismiss  = useCallback(id => setDismissedIds(prev => new Set([...prev, id])), [])
   const addDraft = useCallback(d  => setDrafts(prev => [...prev, d]), [])
@@ -499,7 +568,7 @@ export default function AlertsTab({ onNavigate }) {
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>Inventory Alerts</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>Alerts</div>
             <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
               {loading
                 ? '⟳ Loading…'
@@ -515,6 +584,7 @@ export default function AlertsTab({ onNavigate }) {
           <Chip label="Transfers" count={counts.transfer} color={C.amber}  />
           <Chip label="Reorder"   count={counts.reorder}  color={C.purple} />
           <Chip label="Stock"     count={counts.stock}    color={C.orange} />
+          <Chip label="Refunds"   count={counts.refunds}  color={C.teal}   />
         </div>
       </div>
 
@@ -564,7 +634,11 @@ export default function AlertsTab({ onNavigate }) {
           <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>No alerts</div>
           <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>
-            {filter !== 'all' ? 'No alerts in this category.' : 'Inventory looks good.'}
+            {filter === 'refunds'
+              ? 'No refunds in the last 30 days.'
+              : filter !== 'all'
+                ? 'No alerts in this category.'
+                : 'Inventory looks good.'}
           </div>
         </div>
       ) : (
