@@ -374,7 +374,6 @@ function InvoiceCommissionSection({ invoice }) {
 // ─── Invoice Detail Modal ─────────────────────────────────────────────────────
 function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, voidSale, refundSale }) {
   const [invoice, setInvoice]       = useState(initialInvoice)
-  const [confirmAction, setConfirm] = useState(null) // 'delete'
   const [showRefundModal, setShowRefundModal] = useState(false)
   const [changingDate, setChangingDate] = useState(false)
   const [newDate, setNewDate]           = useState(toLocalInputVal(initialInvoice.timestamp))
@@ -406,17 +405,6 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
     setEmailMode(false)
     setEmailAddr('')
     showToast(`Invoice #${invoice.number} queued to ${emailAddr}`)
-  }
-
-  const handleDelete = () => {
-    // Update local UI immediately
-    setInvoice(prev => ({ ...prev, status: 'voided' }))
-    // Local localStorage + Supabase void + inventory restore
-    if (voidSale) voidSale(invoice)
-    else updateSale(invoice.number, { status: 'voided' })
-    setConfirm(null)
-    showToast(`Invoice #${invoice.number} deleted`)
-    setTimeout(onClose, 1200)
   }
 
   const handleRefundConfirm = useCallback((refundData) => {
@@ -537,9 +525,8 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
             {actionBtn('Print',       '🖨️', BLUE,   handlePrint,       false)}
             {actionBtn('Email',       '📧', BLUE,   () => setEmailMode(m => !m), false)}
             {actionBtn('Location',    '📍', DIM,    () => showToast(`${invoice.location}${locCfg?.address ? ` — ${locCfg.address}` : ''}`), false)}
-            {actionBtn('Change Date', '📅', AMBER,  () => { setChangingDate(m => !m); setConfirm(null) }, isDeleted)}
-            {actionBtn('Refund',      '↩️', AMBER,  () => { setShowRefundModal(true); setChangingDate(false); setConfirm(null) }, isRefunded || isDeleted)}
-            {actionBtn('Delete',      '🗑️', RED,    () => { setConfirm('delete'); setChangingDate(false) }, isDeleted)}
+            {actionBtn('Change Date', '📅', AMBER,  () => setChangingDate(m => !m), isDeleted)}
+            {actionBtn('Refund',      '↩️', AMBER,  () => { setShowRefundModal(true); setChangingDate(false) }, isRefunded || isDeleted)}
           </div>
 
           {/* Email input */}
@@ -589,26 +576,6 @@ function InvoiceDetailModal({ invoice: initialInvoice, onClose, updateSale, void
                 color: '#000', fontSize: 12, fontWeight: 700, cursor: 'pointer',
               }}>Confirm</button>
               <button onClick={() => setChangingDate(false)} style={{
-                padding: '7px 12px', background: 'transparent', border: `1px solid ${BORDER}`,
-                borderRadius: 4, color: MUTED, fontSize: 12, cursor: 'pointer',
-              }}>Cancel</button>
-            </div>
-          )}
-
-          {/* Confirm delete */}
-          {confirmAction === 'delete' && (
-            <div style={{
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 8, padding: '12px 16px', display: 'flex', gap: 12, alignItems: 'center',
-            }}>
-              <span style={{ color: '#fca5a5', fontSize: 12, flex: 1 }}>
-                ⚠️ This will permanently mark the invoice as deleted. Continue?
-              </span>
-              <button
-                onClick={handleDelete}
-                style={{ padding: '7px 18px', background: RED, border: 'none', borderRadius: 4, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-              >Yes, Delete</button>
-              <button onClick={() => setConfirm(null)} style={{
                 padding: '7px 12px', background: 'transparent', border: `1px solid ${BORDER}`,
                 borderRadius: 4, color: MUTED, fontSize: 12, cursor: 'pointer',
               }}>Cancel</button>
