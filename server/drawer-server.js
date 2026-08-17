@@ -3,6 +3,9 @@
  * Zero dependencies — only Node.js built-ins.
  * Run: node drawer-server.js
  * Listens on http://localhost:3001/api/drawer/kick
+ *
+ * Uses Windows Print Spooler API (winspool.drv) to send BEL (0x07)
+ * to the first Star printer found — works with Star TSP100 in Star line mode.
  */
 
 const http = require('http')
@@ -15,12 +18,24 @@ const PORT = 3001
 
 const PS_SCRIPT = `
 $ErrorActionPreference = 'Stop'
-$bytes = [byte[]](0x1b, 0x70, 0x00, 0x19, 0xfa)
-$port  = New-Object System.IO.Ports.SerialPort("COM3", 9600)
-$port.Open()
-$port.Write($bytes, 0, $bytes.Length)
-$port.Close()
-Write-Output "OK:COM3:5"
+Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public class FluxeRP { [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)] public struct DI { public string pDocName; public string pOutputFile; public string pDataType; } [DllImport(""winspool.drv"", CharSet=CharSet.Ansi)] public static extern bool OpenPrinter(string n, out IntPtr h, IntPtr d); [DllImport(""winspool.drv"")] public static extern bool ClosePrinter(IntPtr h); [DllImport(""winspool.drv"", CharSet=CharSet.Ansi)] public static extern bool StartDocPrinter(IntPtr h, int l, ref DI d); [DllImport(""winspool.drv"")] public static extern bool EndDocPrinter(IntPtr h); [DllImport(""winspool.drv"")] public static extern bool StartPagePrinter(IntPtr h); [DllImport(""winspool.drv"")] public static extern bool EndPagePrinter(IntPtr h); [DllImport(""winspool.drv"")] public static extern bool WritePrinter(IntPtr h, byte[] b, int n, out int w); }"
+$printerName = (Get-Printer | Where-Object { $_.Name -like '*Star*' } | Select-Object -First 1).Name
+if (-not $printerName) { throw 'Star printer not found. Check that the printer is installed.' }
+$b = [byte[]](0x07)
+$h = [IntPtr]::Zero
+[FluxeRP]::OpenPrinter($printerName, [ref]$h, [IntPtr]::Zero)
+$d = New-Object FluxeRP+DI
+$d.pDocName = 'drawer'
+$d.pOutputFile = $null
+$d.pDataType = 'RAW'
+[FluxeRP]::StartDocPrinter($h, 1, [ref]$d)
+[FluxeRP]::StartPagePrinter($h)
+$w = 0
+[FluxeRP]::WritePrinter($h, $b, $b.Length, [ref]$w)
+[FluxeRP]::EndPagePrinter($h)
+[FluxeRP]::EndDocPrinter($h)
+[FluxeRP]::ClosePrinter($h)
+Write-Output "OK:$printerName:$w"
 `
 
 function kickDrawer(res) {
