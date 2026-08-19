@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { SYSTEM_NAME, SYSTEM_TAG, BUSINESS, CREATOR, LOGIN_PASSWORD } from '../config/branding'
+import { getClientConfig } from '../services/clientConfig'
 
 const MACHINE_EMAIL = import.meta.env.VITE_ORG_MACHINE_EMAIL || ''
 
 const BLUE = '#3b82f6'
 
-export default function AccountLoginScreen({ onLogin }) {
+export default function AccountLoginScreen({ onLogin, onSetup }) {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [pwVisible, setPwVisible] = useState(false)
@@ -22,15 +23,16 @@ export default function AccountLoginScreen({ onLogin }) {
     const raw          = email.trim().toLowerCase()
     const username     = raw.includes('@') ? raw.split('@')[0] : raw
     const machineEmail = MACHINE_EMAIL.toLowerCase()
-    const validUsernames = ['rafael', 'admin']
-    const validPasswords = [LOGIN_PASSWORD, 'pass123'].filter(Boolean)
+    const cfg          = getClientConfig()
+    const validUsernames = ['rafael', 'admin', ...(cfg.accountUsername ? [cfg.accountUsername] : [])]
+    const validPasswords = [LOGIN_PASSWORD, 'pass123', ...(cfg.accountPassword ? [cfg.accountPassword] : [])].filter(Boolean)
     const emailOk = validUsernames.includes(username) || (machineEmail && raw === machineEmail)
     if (!emailOk || !validPasswords.includes(password)) {
       setError('Incorrect email or password.')
       return
     }
     setError('')
-    onLogin({ email: email.trim(), accountId: 'Delmondes_Retailing_NV_Inc', role: 'admin' })
+    onLogin({ email: email.trim(), accountId: cfg.accountUsername || 'Delmondes_Retailing_NV_Inc', role: 'admin' })
   }
 
   const handleKey = (e) => { if (e.key === 'Enter') handleLogin() }
@@ -187,7 +189,19 @@ export default function AccountLoginScreen({ onLogin }) {
             Continue →
           </button>
 
-          <p style={{ color: 'var(--c-text-dim)', fontSize: 12, marginTop: 32, alignSelf: 'flex-start' }}>
+          {onSetup && (
+            <p
+              onClick={onSetup}
+              style={{
+                color: BLUE, fontSize: 12, marginTop: 20, alignSelf: 'flex-start',
+                cursor: 'pointer', textDecoration: 'underline',
+              }}
+            >
+              First time? Set up this device →
+            </p>
+          )}
+
+          <p style={{ color: 'var(--c-text-dim)', fontSize: 12, marginTop: 16, alignSelf: 'flex-start' }}>
             v1.0.0 · {CREATOR}
           </p>
         </div>

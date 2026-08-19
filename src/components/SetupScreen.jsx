@@ -46,6 +46,9 @@ export default function SetupScreen() {
     supabaseAnonKey: '',
     machineEmail:    '',
     machinePassword: '',
+    accountUsername:  '',
+    accountPassword:  '',
+    locationPassword: '',
   })
   const [focused,  setFocused]  = useState(null)
   const [testing,  setTesting]  = useState(false)
@@ -54,7 +57,8 @@ export default function SetupScreen() {
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setError(null) }
 
-  const allFilled = form.supabaseUrl && form.supabaseAnonKey && form.machineEmail && form.machinePassword
+  const allFilled = form.supabaseUrl && form.supabaseAnonKey && form.machineEmail && form.machinePassword &&
+    form.accountUsername && form.accountPassword && form.locationPassword
 
   const handleTest = async () => {
     if (!allFilled || testing) return
@@ -91,11 +95,14 @@ export default function SetupScreen() {
 
       // All good — save and reload
       saveClientConfig({
-        supabaseUrl:     url,
-        supabaseAnonKey: form.supabaseAnonKey.trim(),
-        machineEmail:    form.machineEmail.trim(),
-        machinePassword: form.machinePassword,
+        supabaseUrl:      url,
+        supabaseAnonKey:  form.supabaseAnonKey.trim(),
+        machineEmail:     form.machineEmail.trim(),
+        machinePassword:  form.machinePassword,
         orgId,
+        accountUsername:  form.accountUsername.trim().toLowerCase(),
+        accountPassword:  form.accountPassword,
+        locationPassword: form.locationPassword,
       })
 
       setSuccess(true)
@@ -182,6 +189,52 @@ export default function SetupScreen() {
             onChange={e => set('machinePassword', e.target.value)}
             onFocus={() => setFocused('pass')} onBlur={() => setFocused(null)}
             style={inp(focused === 'pass', false)}
+            placeholder="••••••••••••"
+            autoComplete="new-password"
+          />
+        </Field>
+
+        <div style={{ borderTop: `1px solid ${BORDER}`, margin: '20px 0 20px', opacity: 0.5 }} />
+        <p style={{ color: SUB, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, marginBottom: 14 }}>
+          ACCESS CREDENTIALS — used to log in to this kiosk
+        </p>
+
+        <Field
+          label="ACCOUNT USERNAME"
+          hint="Username the owner enters on the 'Sign in to your account' screen"
+        >
+          <input
+            value={form.accountUsername}
+            onChange={e => set('accountUsername', e.target.value)}
+            onFocus={() => setFocused('accu')} onBlur={() => setFocused(null)}
+            style={{ ...inp(focused === 'accu', false), fontFamily: 'inherit' }}
+            placeholder="e.g. admin"
+            autoComplete="off"
+          />
+        </Field>
+
+        <Field label="ACCOUNT PASSWORD">
+          <input
+            type="password"
+            value={form.accountPassword}
+            onChange={e => set('accountPassword', e.target.value)}
+            onFocus={() => setFocused('accp')} onBlur={() => setFocused(null)}
+            style={inp(focused === 'accp', false)}
+            placeholder="••••••••••••"
+            autoComplete="new-password"
+          />
+        </Field>
+
+        <Field
+          label="LOCATION PASSWORD (KIOSK PIN)"
+          hint="Password managers enter when selecting the kiosk location"
+        >
+          <input
+            type="password"
+            value={form.locationPassword}
+            onChange={e => set('locationPassword', e.target.value)}
+            onFocus={() => setFocused('locp')} onBlur={() => setFocused(null)}
+            style={inp(focused === 'locp', false)}
             placeholder="••••••••••••"
             autoComplete="new-password"
           />

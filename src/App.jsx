@@ -136,6 +136,7 @@ export default function App() {
   const [showAssist,        setShowAssist]         = useState(false)
   const [showAssistAuth,    setShowAssistAuth]     = useState(false)
   const [assistEmployee,    setAssistEmployee]     = useState(null)
+  const [setupMode,         setSetupMode]          = useState(false)
 
   const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSHistory, updateSmsConsent, getSMSLog, getScheduled } = useCRM(posSession, currentUser)
   const { sales, saveSale, updateSale, voidSale, refundSale } = useSales()
@@ -526,15 +527,18 @@ export default function App() {
                : sortOrder === 'za' ? [...filtered].sort((a, b) => b.name.localeCompare(a.name))
                : filtered
 
-  if (!isClientConfigured()) {
+  if (!isClientConfigured() || setupMode) {
     return <SetupScreen />
   }
 
   if (!accountSession) {
-    return <AccountLoginScreen onLogin={(session) => {
-      try { localStorage.setItem(KIOSK_KEY, JSON.stringify(session)) } catch {}
-      setAccountSession(session)
-    }} />
+    return <AccountLoginScreen
+      onLogin={(session) => {
+        try { localStorage.setItem(KIOSK_KEY, JSON.stringify(session)) } catch {}
+        setAccountSession(session)
+      }}
+      onSetup={() => setSetupMode(true)}
+    />
   }
 
   if (!posSession) {

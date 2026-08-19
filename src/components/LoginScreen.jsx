@@ -6,11 +6,13 @@ import {
 } from '../config/branding'
 import { loadActiveEmployees, loadUsersAsync } from '../utils/usersStorage'
 import { verifyEmployeePin, resolveSessionContext } from '../services/supabaseAuth'
+import { getClientConfig } from '../services/clientConfig'
 import LoginModal from './LoginModal'
 import AdminPanel from './AdminPanel'
 import ChangePinModal from './ChangePinModal'
 
-const LOCATION_PASSWORD = LOGIN_PASSWORD
+const _cfg = getClientConfig()
+const LOCATION_PASSWORD = _cfg.locationPassword || LOGIN_PASSWORD
 const LOC_KEY      = 'fluxe-locations-v1'
 const REMEMBER_KEY = 'fluxe-remembered-location-v1'
 

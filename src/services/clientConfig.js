@@ -20,6 +20,10 @@ const ENV = {
   machineEmail:    import.meta.env.VITE_ORG_MACHINE_EMAIL       || '',
   machinePassword: import.meta.env.VITE_ORG_MACHINE_PASSWORD    || '',
   orgId:           import.meta.env.VITE_SUPABASE_ORG_ID        || '',
+  // Per-client login credentials (saved during SetupScreen for multi-tenant)
+  accountUsername: '',
+  accountPassword: '',
+  locationPassword: '',
 }
 
 /** Read credentials: localStorage overrides env vars. */
