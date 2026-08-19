@@ -528,7 +528,7 @@ export default function App() {
                : filtered
 
   if (!isClientConfigured() || setupMode) {
-    return <SetupScreen />
+    return <SetupScreen onClose={setupMode ? () => setSetupMode(false) : null} />
   }
 
   if (!accountSession) {

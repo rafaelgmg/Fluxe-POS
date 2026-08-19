@@ -20,27 +20,27 @@ const BLUE   = '#3b82f6'
 const GREEN  = '#22c55e'
 const RED    = '#ef4444'
 
-const inp = (focused, err) => ({
-  width: '100%', padding: '10px 12px', background: CARD,
-  border: `1px solid ${err ? RED : focused ? BLUE : BORDER}`,
-  borderRadius: 6, color: TEXT, fontSize: 13, outline: 'none',
+const inp = (focused) => ({
+  width: '100%', padding: '7px 10px', background: CARD,
+  border: `1px solid ${focused ? BLUE : BORDER}`,
+  borderRadius: 6, color: TEXT, fontSize: 12, outline: 'none',
   boxSizing: 'border-box', fontFamily: 'monospace',
   transition: 'border-color 0.15s',
 })
 
 function Field({ label, hint, children }) {
   return (
-    <div style={{ marginBottom: 16 }}>
-      <label style={{ display: 'block', color: SUB, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, marginBottom: 5 }}>
+    <div style={{ marginBottom: 10 }}>
+      <label style={{ display: 'block', color: SUB, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
         {label}
       </label>
       {children}
-      {hint && <p style={{ color: MUTED, fontSize: 11, marginTop: 4, lineHeight: 1.5 }}>{hint}</p>}
+      {hint && <p style={{ color: MUTED, fontSize: 10, marginTop: 3, lineHeight: 1.4 }}>{hint}</p>}
     </div>
   )
 }
 
-export default function SetupScreen() {
+export default function SetupScreen({ onClose }) {
   const [form, setForm] = useState({
     supabaseUrl:     '',
     supabaseAnonKey: '',
@@ -117,162 +117,159 @@ export default function SetupScreen() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: BG,
+      position: 'fixed', inset: 0, background: 'rgba(2,11,23,0.92)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 24,
+      padding: 16, zIndex: 9999,
     }}>
       <div style={{
         background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12,
-        width: '100%', maxWidth: 520, padding: 36,
-        boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+        width: '100%', maxWidth: 460,
+        maxHeight: '92vh', overflowY: 'auto',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+        position: 'relative',
       }}>
-
-        {/* Logo + title */}
-        <div style={{ marginBottom: 28, textAlign: 'center' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 48, height: 48, borderRadius: 12,
-            background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
-            marginBottom: 12, fontSize: 22,
-          }}>⚡</div>
-          <h1 style={{ color: TEXT, fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Fluxe POS — Setup</h1>
-          <p style={{ color: MUTED, fontSize: 13 }}>Connect this kiosk to your Supabase organization</p>
-        </div>
-
-        {/* Form */}
-        <Field
-          label="SUPABASE PROJECT URL"
-          hint="Found in Supabase → Settings → API → Project URL"
-        >
-          <input
-            value={form.supabaseUrl}
-            onChange={e => set('supabaseUrl', e.target.value)}
-            onFocus={() => setFocused('url')} onBlur={() => setFocused(null)}
-            style={inp(focused === 'url', false)}
-            placeholder="https://xxxxxxxxxxxx.supabase.co"
-            spellCheck={false}
-          />
-        </Field>
-
-        <Field
-          label="SUPABASE ANON KEY"
-          hint="Found in Supabase → Settings → API → anon public key"
-        >
-          <input
-            value={form.supabaseAnonKey}
-            onChange={e => set('supabaseAnonKey', e.target.value)}
-            onFocus={() => setFocused('key')} onBlur={() => setFocused(null)}
-            style={inp(focused === 'key', false)}
-            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-            spellCheck={false}
-          />
-        </Field>
-
-        <Field
-          label="MACHINE ACCOUNT EMAIL"
-          hint="The Supabase Auth email created for this org (e.g. pos-machine@yourbusiness.local)"
-        >
-          <input
-            value={form.machineEmail}
-            onChange={e => set('machineEmail', e.target.value)}
-            onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
-            style={inp(focused === 'email', false)}
-            placeholder="pos-machine@yourbusiness.local"
-            autoComplete="off"
-          />
-        </Field>
-
-        <Field label="MACHINE ACCOUNT PASSWORD">
-          <input
-            type="password"
-            value={form.machinePassword}
-            onChange={e => set('machinePassword', e.target.value)}
-            onFocus={() => setFocused('pass')} onBlur={() => setFocused(null)}
-            style={inp(focused === 'pass', false)}
-            placeholder="••••••••••••"
-            autoComplete="new-password"
-          />
-        </Field>
-
-        <div style={{ borderTop: `1px solid ${BORDER}`, margin: '20px 0 20px', opacity: 0.5 }} />
-        <p style={{ color: SUB, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, marginBottom: 14 }}>
-          ACCESS CREDENTIALS — used to log in to this kiosk
-        </p>
-
-        <Field
-          label="ACCOUNT USERNAME"
-          hint="Username the owner enters on the 'Sign in to your account' screen"
-        >
-          <input
-            value={form.accountUsername}
-            onChange={e => set('accountUsername', e.target.value)}
-            onFocus={() => setFocused('accu')} onBlur={() => setFocused(null)}
-            style={{ ...inp(focused === 'accu', false), fontFamily: 'inherit' }}
-            placeholder="e.g. admin"
-            autoComplete="off"
-          />
-        </Field>
-
-        <Field label="ACCOUNT PASSWORD">
-          <input
-            type="password"
-            value={form.accountPassword}
-            onChange={e => set('accountPassword', e.target.value)}
-            onFocus={() => setFocused('accp')} onBlur={() => setFocused(null)}
-            style={inp(focused === 'accp', false)}
-            placeholder="••••••••••••"
-            autoComplete="new-password"
-          />
-        </Field>
-
-        <Field
-          label="LOCATION PASSWORD (KIOSK PIN)"
-          hint="Password managers enter when selecting the kiosk location"
-        >
-          <input
-            type="password"
-            value={form.locationPassword}
-            onChange={e => set('locationPassword', e.target.value)}
-            onFocus={() => setFocused('locp')} onBlur={() => setFocused(null)}
-            style={inp(focused === 'locp', false)}
-            placeholder="••••••••••••"
-            autoComplete="new-password"
-          />
-        </Field>
-
-        {error && (
-          <div style={{
-            padding: '10px 14px', borderRadius: 6, marginBottom: 16,
-            background: 'rgba(239,68,68,0.1)', border: `1px solid rgba(239,68,68,0.3)`,
-            color: RED, fontSize: 12, lineHeight: 1.5,
-          }}>
-            {error}
-          </div>
+        {/* Close button */}
+        {onClose && (
+          <button onClick={onClose} style={{
+            position: 'absolute', top: 12, right: 12,
+            background: 'transparent', border: 'none',
+            color: MUTED, fontSize: 18, cursor: 'pointer',
+            lineHeight: 1, padding: 4, borderRadius: 4,
+          }}>✕</button>
         )}
 
-        <button
-          onClick={handleTest}
-          disabled={!allFilled || testing || success}
-          style={{
-            width: '100%', padding: '13px',
-            background: success
-              ? `linear-gradient(135deg, ${GREEN} 0%, #16a34a 100%)`
-              : `linear-gradient(135deg, ${BLUE} 0%, #7c3aed 100%)`,
-            border: 'none', borderRadius: 8,
-            color: '#fff', fontSize: 14, fontWeight: 700,
-            cursor: (!allFilled || testing || success) ? 'not-allowed' : 'pointer',
-            opacity: (!allFilled && !testing) ? 0.5 : 1,
-            transition: 'all 0.2s',
-          }}
-        >
-          {success ? '✓ Connected — reloading…' : testing ? 'Testing connection…' : 'Test & Save'}
-        </button>
+        <div style={{ padding: '20px 24px 24px' }}>
+          {/* Logo + title */}
+          <div style={{ marginBottom: 16, textAlign: 'center' }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 36, height: 36, borderRadius: 10,
+              background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
+              marginBottom: 8, fontSize: 18,
+            }}>⚡</div>
+            <h1 style={{ color: TEXT, fontSize: 16, fontWeight: 800, marginBottom: 2 }}>Fluxe POS — Setup</h1>
+            <p style={{ color: MUTED, fontSize: 11 }}>Connect this kiosk to your Supabase organization</p>
+          </div>
 
-        <p style={{ color: MUTED, fontSize: 11, textAlign: 'center', marginTop: 14, lineHeight: 1.6 }}>
-          Credentials are saved locally on this device only.<br/>
-          To reset, open Admin → System → Reset Setup.
-        </p>
+          {/* Form */}
+          <Field label="SUPABASE PROJECT URL" hint="Settings → API Keys → Project URL">
+            <input
+              value={form.supabaseUrl}
+              onChange={e => set('supabaseUrl', e.target.value)}
+              onFocus={() => setFocused('url')} onBlur={() => setFocused(null)}
+              style={inp(focused === 'url')}
+              placeholder="https://xxxxxxxxxxxx.supabase.co"
+              spellCheck={false}
+            />
+          </Field>
 
+          <Field label="SUPABASE ANON KEY" hint="Settings → API Keys → anon public key">
+            <input
+              value={form.supabaseAnonKey}
+              onChange={e => set('supabaseAnonKey', e.target.value)}
+              onFocus={() => setFocused('key')} onBlur={() => setFocused(null)}
+              style={inp(focused === 'key')}
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              spellCheck={false}
+            />
+          </Field>
+
+          <Field label="MACHINE ACCOUNT EMAIL">
+            <input
+              value={form.machineEmail}
+              onChange={e => set('machineEmail', e.target.value)}
+              onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
+              style={inp(focused === 'email')}
+              placeholder="pos-machine@yourbusiness.local"
+              autoComplete="off"
+            />
+          </Field>
+
+          <Field label="MACHINE ACCOUNT PASSWORD">
+            <input
+              type="password"
+              value={form.machinePassword}
+              onChange={e => set('machinePassword', e.target.value)}
+              onFocus={() => setFocused('pass')} onBlur={() => setFocused(null)}
+              style={inp(focused === 'pass')}
+              placeholder="••••••••••••"
+              autoComplete="new-password"
+            />
+          </Field>
+
+          <div style={{ borderTop: `1px solid ${BORDER}`, margin: '14px 0 12px', opacity: 0.5 }} />
+          <p style={{ color: SUB, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, marginBottom: 10 }}>
+            ACCESS CREDENTIALS — used to log in to this kiosk
+          </p>
+
+          <Field label="ACCOUNT USERNAME" hint="Entered on the 'Sign in to your account' screen">
+            <input
+              value={form.accountUsername}
+              onChange={e => set('accountUsername', e.target.value)}
+              onFocus={() => setFocused('accu')} onBlur={() => setFocused(null)}
+              style={{ ...inp(focused === 'accu'), fontFamily: 'inherit' }}
+              placeholder="e.g. admin"
+              autoComplete="off"
+            />
+          </Field>
+
+          <Field label="ACCOUNT PASSWORD">
+            <input
+              type="password"
+              value={form.accountPassword}
+              onChange={e => set('accountPassword', e.target.value)}
+              onFocus={() => setFocused('accp')} onBlur={() => setFocused(null)}
+              style={inp(focused === 'accp')}
+              placeholder="••••••••••••"
+              autoComplete="new-password"
+            />
+          </Field>
+
+          <Field label="LOCATION PASSWORD (KIOSK PIN)" hint="Entered when selecting the kiosk location">
+            <input
+              type="password"
+              value={form.locationPassword}
+              onChange={e => set('locationPassword', e.target.value)}
+              onFocus={() => setFocused('locp')} onBlur={() => setFocused(null)}
+              style={inp(focused === 'locp')}
+              placeholder="••••••••••••"
+              autoComplete="new-password"
+            />
+          </Field>
+
+          {error && (
+            <div style={{
+              padding: '8px 12px', borderRadius: 6, marginBottom: 12,
+              background: 'rgba(239,68,68,0.1)', border: `1px solid rgba(239,68,68,0.3)`,
+              color: RED, fontSize: 11, lineHeight: 1.5,
+            }}>
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleTest}
+            disabled={!allFilled || testing || success}
+            style={{
+              width: '100%', padding: '11px',
+              background: success
+                ? `linear-gradient(135deg, ${GREEN} 0%, #16a34a 100%)`
+                : `linear-gradient(135deg, ${BLUE} 0%, #7c3aed 100%)`,
+              border: 'none', borderRadius: 8,
+              color: '#fff', fontSize: 13, fontWeight: 700,
+              cursor: (!allFilled || testing || success) ? 'not-allowed' : 'pointer',
+              opacity: (!allFilled && !testing) ? 0.5 : 1,
+              transition: 'all 0.2s',
+            }}
+          >
+            {success ? '✓ Connected — reloading…' : testing ? 'Testing connection…' : 'Test & Save'}
+          </button>
+
+          <p style={{ color: MUTED, fontSize: 10, textAlign: 'center', marginTop: 10, lineHeight: 1.5 }}>
+            Credentials are saved locally on this device only.
+            To reset, open Admin → System → Reset Setup.
+          </p>
+        </div>
       </div>
     </div>
   )
