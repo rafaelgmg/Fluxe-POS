@@ -114,6 +114,7 @@ function defaultExt(loc) {
     // ════════════════════════════════════════════════════════
     // B. Security
     // ════════════════════════════════════════════════════════
+    password:                        '',     // kiosk login password — set here, validated on LoginScreen
     enableCashCount:                 false,  // enable cash count module (structure only)
     drawerOnlyAfterSale:             false,  // open drawer ONLY after a sale — overrides autoOpenDrawer
     autoOpenCashDrawerAfterSale:     false,  // ✅ LIVE — auto-kick drawer on successful checkout
@@ -722,6 +723,21 @@ function TabPreferences({ form, set, allLocations = [] }) {
         B — SECURITY
       </div>
       <div style={{ marginBottom: 20 }}>
+        <PrefGroup icon="🔑" title="Kiosk Login" defaultOpen>
+          <Field label="KIOSK PASSWORD">
+            <input
+              type="password"
+              value={form.password || ''}
+              onChange={e => set('password', e.target.value)}
+              style={{ ...inp(), width: '100%', maxWidth: 280, fontFamily: 'monospace' }}
+              placeholder="Set a password for this kiosk"
+              autoComplete="new-password"
+            />
+          </Field>
+          <p style={{ color: MUTED, fontSize: 11, marginTop: 4 }}>
+            Required when selecting this location on the login screen.
+          </p>
+        </PrefGroup>
         <PrefGroup icon="↩️" title="Refunds" defaultOpen>
           <Toggle
             label={<>Require Manager / Admin authorization for refunds <StatusBadge live /></>}

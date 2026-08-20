@@ -11,9 +11,20 @@ import LoginModal from './LoginModal'
 import AdminPanel from './AdminPanel'
 import ChangePinModal from './ChangePinModal'
 
-const _cfg = getClientConfig()
-const LOCATION_PASSWORD = _cfg.locationPassword || LOGIN_PASSWORD
 const LOC_KEY      = 'fluxe-locations-v1'
+
+function getExpectedLocationPassword(locationName) {
+  try {
+    const raw = localStorage.getItem(LOC_KEY)
+    if (raw) {
+      const locs = JSON.parse(raw)
+      const loc = locs.find(l => l.name === locationName)
+      if (loc?.password) return loc.password
+    }
+  } catch {}
+  // Fallback: device-level password from SetupScreen, then branding default
+  return getClientConfig().locationPassword || LOGIN_PASSWORD
+}
 const REMEMBER_KEY = 'fluxe-remembered-location-v1'
 
 const BLUE = '#3b82f6'
@@ -119,7 +130,7 @@ export default function LoginScreen({ onLogin, onBack }) {
 
   const handleLocationLogin = async () => {
     if (!password.trim()) { setError('Location password is required.'); return }
-    if (password !== LOCATION_PASSWORD) { setError('Incorrect password. Please try again.'); return }
+    if (password !== getExpectedLocationPassword(location)) { setError('Incorrect password. Please try again.'); return }
     setError('')
     setLoading(true)
     const locCfg = LOCATIONS_CFG.find(l => l.name === location)

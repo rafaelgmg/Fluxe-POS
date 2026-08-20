@@ -48,7 +48,6 @@ export default function SetupScreen({ onClose }) {
     machinePassword: '',
     accountUsername:  '',
     accountPassword:  '',
-    locationPassword: '',
   })
   const [focused,  setFocused]  = useState(null)
   const [testing,  setTesting]  = useState(false)
@@ -58,7 +57,7 @@ export default function SetupScreen({ onClose }) {
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setError(null) }
 
   const allFilled = form.supabaseUrl && form.supabaseAnonKey && form.machineEmail && form.machinePassword &&
-    form.accountUsername && form.accountPassword && form.locationPassword
+    form.accountUsername && form.accountPassword
 
   const handleTest = async () => {
     if (!allFilled || testing) return
@@ -110,7 +109,6 @@ export default function SetupScreen({ onClose }) {
         orgId,
         accountUsername:  form.accountUsername.trim().toLowerCase(),
         accountPassword:  form.accountPassword,
-        locationPassword: form.locationPassword,
       })
 
       setSuccess(true)
@@ -228,18 +226,6 @@ export default function SetupScreen({ onClose }) {
               onChange={e => set('accountPassword', e.target.value)}
               onFocus={() => setFocused('accp')} onBlur={() => setFocused(null)}
               style={inp(focused === 'accp')}
-              placeholder="••••••••••••"
-              autoComplete="new-password"
-            />
-          </Field>
-
-          <Field label="LOCATION PASSWORD (KIOSK PIN)" hint="Entered when selecting the kiosk location">
-            <input
-              type="password"
-              value={form.locationPassword}
-              onChange={e => set('locationPassword', e.target.value)}
-              onFocus={() => setFocused('locp')} onBlur={() => setFocused(null)}
-              style={inp(focused === 'locp')}
               placeholder="••••••••••••"
               autoComplete="new-password"
             />
