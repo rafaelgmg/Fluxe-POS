@@ -21,8 +21,9 @@ import { useCart } from './hooks/useCart'
 import { useProducts } from './hooks/useProducts'
 import { COLORS, DEFAULT_LOCATION, SYSTEM_NAME, LOCATIONS_CFG } from './config/branding'
 import ServiceApp from './components/service/ServiceApp'
-import AccountLoginScreen from './components/AccountLoginScreen'
-import SetupScreen        from './components/SetupScreen'
+import AccountLoginScreen    from './components/AccountLoginScreen'
+import SetupScreen           from './components/SetupScreen'
+import OrgOnboardingScreen   from './components/OrgOnboardingScreen'
 import { isClientConfigured } from './services/clientConfig'
 import LoginScreen from './components/LoginScreen'
 import LoginModal from './components/LoginModal'
@@ -137,6 +138,7 @@ export default function App() {
   const [showAssistAuth,    setShowAssistAuth]     = useState(false)
   const [assistEmployee,    setAssistEmployee]     = useState(null)
   const [setupMode,         setSetupMode]          = useState(false)
+  const [orgReady,          setOrgReady]           = useState(null) // null=checking, true=configured, false=needs setup
 
   const { customers, serverOnline, syncStatus, upsertCustomer, updateCustomer, archiveCustomer, restoreCustomer, deleteCustomer, addCustomer, patchCustomer, sendManualSMS, getSMSHistory, updateSmsConsent, getSMSLog, getScheduled } = useCRM(posSession, currentUser)
   const { sales, saveSale, updateSale, voidSale, refundSale } = useSales()
@@ -158,6 +160,15 @@ export default function App() {
     clearCart,
     loadCartItems,
   } = useCart({ products, location: posSession?.location || DEFAULT_LOCATION })
+
+  // After account login: verify org_settings exist in Supabase.
+  // If not, show OrgOnboardingScreen so the client can configure their business.
+  useEffect(() => {
+    if (!accountSession) { setOrgReady(null); return }
+    fetchOrgSettings()
+      .then(settings => setOrgReady(settings !== null && (settings.locations?.length ?? 0) > 0))
+      .catch(() => setOrgReady(true)) // On error, don't block the flow
+  }, [accountSession]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Boot-time user sync: fetch from Supabase, merge with local PINs, save to localStorage.
   // Runs once on mount — all subsequent loadActiveEmployees() calls get fresh data.
@@ -539,6 +550,10 @@ export default function App() {
       }}
       onSetup={() => setSetupMode(true)}
     />
+  }
+
+  if (orgReady === false) {
+    return <OrgOnboardingScreen onComplete={() => setOrgReady(true)} />
   }
 
   if (!posSession) {

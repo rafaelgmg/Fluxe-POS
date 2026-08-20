@@ -110,3 +110,29 @@ export async function saveOrgSettings(partial) {
   if (rows?.length) applyOrgSettings(rows[0])
   return rows?.[0] ?? null
 }
+
+/**
+ * Create or replace org_settings for a new client (INSERT ... ON CONFLICT UPDATE).
+ * Used by OrgOnboardingScreen on first-time setup.
+ */
+export async function upsertOrgSettings(data) {
+  if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
+  const orgId = getClientConfig().orgId
+  const res = await fetch(`${_url()}/rest/v1/org_settings`, {
+    method: 'POST',
+    headers: {
+      apikey:          _key(),
+      Authorization:   authBearer(),
+      'Content-Type':  'application/json',
+      Prefer:          'resolution=merge-duplicates,return=representation',
+    },
+    body: JSON.stringify({ organization_id: orgId, ...data, updated_at: new Date().toISOString() }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`upsertOrgSettings ${res.status}: ${text}`)
+  }
+  const rows = await res.json()
+  if (rows?.length) applyOrgSettings(rows[0])
+  return rows?.[0] ?? null
+}
