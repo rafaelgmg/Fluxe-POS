@@ -22,8 +22,8 @@ function getExpectedLocationPassword(locationName) {
       if (loc?.password) return loc.password
     }
   } catch {}
-  // Fallback: device-level password from SetupScreen, then branding default
-  return getClientConfig().locationPassword || LOGIN_PASSWORD
+  // Fallback: device-level password from legacy SetupScreen config (backward compat)
+  return getClientConfig().locationPassword || ''
 }
 const REMEMBER_KEY = 'fluxe-remembered-location-v1'
 
@@ -129,8 +129,11 @@ export default function LoginScreen({ onLogin, onBack }) {
   }
 
   const handleLocationLogin = async () => {
-    if (!password.trim()) { setError('Location password is required.'); return }
-    if (password !== getExpectedLocationPassword(location)) { setError('Incorrect password. Please try again.'); return }
+    const expectedPw = getExpectedLocationPassword(location)
+    if (expectedPw) {
+      if (!password.trim()) { setError('Location password is required.'); return }
+      if (password !== expectedPw) { setError('Incorrect password. Please try again.'); return }
+    }
     setError('')
     setLoading(true)
     const locCfg = LOCATIONS_CFG.find(l => l.name === location)
