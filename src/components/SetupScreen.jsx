@@ -93,6 +93,14 @@ export default function SetupScreen({ onClose }) {
         throw new Error('Connected but org_id not found in JWT. Check machine account app_metadata.')
       }
 
+      // Clear any org-specific data cached from a previous session before saving new config
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('fluxe-') && key !== 'fluxe-client-config-v1') {
+          localStorage.removeItem(key)
+        }
+      }
+
       // All good — save and reload
       saveClientConfig({
         supabaseUrl:      url,
