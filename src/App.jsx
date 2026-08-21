@@ -165,7 +165,9 @@ export default function App() {
   // If not, show OrgOnboardingScreen so the client can configure their business.
   useEffect(() => {
     if (!accountSession) { setOrgReady(null); return }
-    fetchOrgSettings()
+    // Wait for machine account JWT before fetching — RLS requires authenticated token
+    awaitOrgSession()
+      .then(() => fetchOrgSettings())
       .then(settings => setOrgReady(settings !== null && (settings.locations?.length ?? 0) > 0))
       .catch(() => setOrgReady(true)) // On error, don't block the flow
   }, [accountSession]) // eslint-disable-line react-hooks/exhaustive-deps
