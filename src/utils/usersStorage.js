@@ -16,11 +16,6 @@ const SCHEMA_VERSION = 1
 let _corrupted = false
 export function hadStorageError() { return _corrupted }
 
-// ─── Default seed ─────────────────────────────────────────────────────────────
-const DEFAULT_USERS = [
-  { id: 1, firstName: 'Rafael', lastName: '', position: 'Manager', email: '', phone: '', pin: '', status: 'active', photo: null, createdAt: new Date().toISOString() },
-]
-
 // ─── Schema migration: fills in missing fields from older formats ──────────────
 function migrateUser(u) {
   return {
@@ -64,8 +59,8 @@ export function loadUsers() {
   const applyPhotos = (list) =>
     list.map(u => ({ ...u, photo: u.photo || photoMap[String(u.id)] || null }))
 
-  // Nothing saved yet — use seed
-  if (!raw) return applyPhotos(DEFAULT_USERS)
+  // Nothing saved yet — return empty list (Supabase hydrates on boot)
+  if (!raw) return []
 
   try {
     const parsed = JSON.parse(raw)
@@ -88,7 +83,7 @@ export function loadUsers() {
     _corrupted = true
     // Preserve corrupted data for manual recovery — never silently discard
     try { localStorage.setItem(BACKUP_KEY, raw) } catch {}
-    return applyPhotos(DEFAULT_USERS)
+    return []
   }
 }
 

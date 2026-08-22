@@ -9,13 +9,12 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { PRODUCTS as INITIAL_PRODUCTS } from '../data/mockData'
 import { KEY_PRODUCTS } from './storageKeys'
 import { normalizeProduct } from '../domain/adapters/legacyProduct'
 
 /**
  * Load all products from storage.
- * Falls back to INITIAL_PRODUCTS (mockData) on first run or parse error.
+ * Returns [] when nothing is saved — Supabase hydrates the list on boot.
  * Each product is normalized to the canonical shape (guarantees qtyByLoc, status, etc.).
  *
  * @returns {import('../domain/models/product').Product[]}
@@ -23,10 +22,10 @@ import { normalizeProduct } from '../domain/adapters/legacyProduct'
 export function loadAllProducts() {
   try {
     const raw = localStorage.getItem(KEY_PRODUCTS)
-    const list = raw ? JSON.parse(raw) : INITIAL_PRODUCTS
-    return list.map(normalizeProduct)
+    if (!raw) return []
+    return JSON.parse(raw).map(normalizeProduct)
   } catch {
-    return INITIAL_PRODUCTS.map(normalizeProduct)
+    return []
   }
 }
 
