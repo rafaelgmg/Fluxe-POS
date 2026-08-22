@@ -44,18 +44,17 @@ export const DEFAULT_TIERS = [
   { id: 3, threshold: 1500, rate: 30 },
 ]
 
-/** Load tiers sorted highest threshold first. Falls back to defaults. */
+/** Load tiers sorted highest threshold first. Returns [] when not configured. */
 export function loadCommissionTiers() {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return [...parsed].sort((a, b) => b.threshold - a.threshold)
-      }
-    }
-  } catch {}
-  return [...DEFAULT_TIERS].sort((a, b) => b.threshold - a.threshold)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return [...parsed].sort((a, b) => b.threshold - a.threshold)
+  } catch {
+    return []
+  }
 }
 
 /** Persist tiers array. */

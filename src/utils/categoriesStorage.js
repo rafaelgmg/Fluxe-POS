@@ -44,51 +44,22 @@ export const COMMISSION_TYPES = [
   { value: 'fixed_per_unit', label: 'Fixed $ per unit'              },
 ]
 
-// Seed names matching the existing mock categories
-const SEED_NAMES = [
-  "Armaf Oil",
-  "Kids",
-  "Men's Brands",
-  "Men's NC",
-  "Niche",
-  "SMART SHOP",
-  "Unisex",
-  "Unisex NC",
-  "Women's Brands",
-  "Women's NC",
-]
-
-function buildSeed() {
-  return SEED_NAMES.map((name, i) => ({
-    id:             i + 1,
-    name,
-    status:         'active',
-    sortIndex:      i,
-    commissionRate: null,
-    commissionType: null,
-    notes:          '',
-    createdAt:      new Date().toISOString(),
-  }))
-}
-
-/** Load all categories. Returns seed if storage is empty or corrupt. */
+/** Load all categories. Returns [] when storage is empty — Supabase hydrates on boot. */
 export function loadCategories() {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Migrate older records that may lack new fields
-        return parsed.map(c => ({
-          commissionRate: null,
-          commissionType: null,
-          notes: '',
-          ...c,
-        }))
-      }
-    }
-  } catch {}
-  return buildSeed()
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.map(c => ({
+      commissionRate: null,
+      commissionType: null,
+      notes: '',
+      ...c,
+    }))
+  } catch {
+    return []
+  }
 }
 
 /** Persist categories array. */
@@ -119,16 +90,8 @@ export function nextCategoryId(cats) {
   return nums.length > 0 ? Math.max(...nums) + 1 : 1
 }
 
-/**
- * Initialize storage if not yet seeded.
- * Call once on app boot so POS reads real data from the start.
- */
-export function ensureCategoriesSeeded() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) saveCategories(buildSeed())
-  } catch {}
-}
+/** No-op — kept for import compatibility. Seeding from mock data is disabled in multi-tenant. */
+export function ensureCategoriesSeeded() {}
 
 /**
  * Build a lookup map  { categoryName → category }  for O(1) access.

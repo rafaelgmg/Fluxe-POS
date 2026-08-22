@@ -8,6 +8,13 @@
  */
 
 import { loadSpareRate } from './commissionTiersStorage'
+import { TAX_RATE as ORG_TAX_RATE } from '../config/branding'
+
+// TAX_RATE from branding can be decimal (0.085) or percentage (8.5) depending on
+// whether applyOrgSettings() has run yet. Normalize to percentage for calculations.
+function orgTaxRatePct() {
+  return ORG_TAX_RATE < 1 ? ORG_TAX_RATE * 100 : ORG_TAX_RATE
+}
 
 const LOC_KEY = 'fluxe-locations-v1'
 
@@ -55,14 +62,14 @@ export function loadLocationConfigById(locationId) {
 
 /**
  * Get the effective tax rate (as a decimal) for a location.
- * Falls back to 0.085 (Nevada 8.5%) if not configured.
+ * Falls back to the org-wide tax rate from org_settings (via branding live binding).
  *
  * @param {string|null} locationName
  * @returns {number}  e.g. 0.085
  */
 export function getTaxRate(locationName) {
   const cfg = loadLocationConfig(locationName)
-  const rate = cfg?.taxRate ?? 8.5
+  const rate = cfg?.taxRate ?? orgTaxRatePct()
   return rate / 100
 }
 
@@ -188,7 +195,7 @@ export function mergeLocationConfigsFromCloud(rows) {
  */
 export function getTaxRateById(locationId) {
   const cfg = loadLocationConfigById(locationId)
-  const rate = cfg?.taxRate ?? 8.5
+  const rate = cfg?.taxRate ?? orgTaxRatePct()
   return rate / 100
 }
 

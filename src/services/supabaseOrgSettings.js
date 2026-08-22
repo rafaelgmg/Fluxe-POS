@@ -67,7 +67,9 @@ const DEMO_ORG_SETTINGS = {
  * Returns the settings object, or null if Supabase is not configured / offline.
  */
 export async function fetchOrgSettings() {
-  // Demo mode: use isolated branding, never touch production Supabase org settings
+  // Demo mode: use isolated branding, never touch production Supabase org settings.
+  // Note: SetupScreen clears all fluxe-* keys (including this one) on every new device
+  // setup, so this flag cannot accidentally survive into a production machine.
   if (localStorage.getItem('fluxe-demo-mode') === '1') {
     applyOrgSettings(DEMO_ORG_SETTINGS)
     return DEMO_ORG_SETTINGS

@@ -22,15 +22,18 @@ export const DEFAULT_SETTINGS = {
 }
 
 export function loadCRMSettings() {
+  const raw = localStorage.getItem(KEY)
+  if (!raw) return { ...DEFAULT_SETTINGS }
   try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return { ...DEFAULT_SETTINGS }
     const saved = JSON.parse(raw)
     return {
       mandatoryFields: saved.mandatoryFields ?? DEFAULT_SETTINGS.mandatoryFields,
       loyaltyTiers:    saved.loyaltyTiers    ?? DEFAULT_SETTINGS.loyaltyTiers,
     }
-  } catch { return { ...DEFAULT_SETTINGS } }
+  } catch (err) {
+    console.warn('[Fluxe] CRM settings corrupted, reverting to defaults:', err.message)
+    return { ...DEFAULT_SETTINGS }
+  }
 }
 
 export function saveCRMSettings(settings) {

@@ -1,5 +1,4 @@
 ﻿import { useState, useMemo, useEffect } from 'react'
-import { CATEGORIES } from '../data/mockData'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { BUSINESS_SHORT, COLORS, LOCATIONS_CFG } from '../config/branding'
 import { verifyEmployeePin } from '../services/supabaseAuth'
@@ -189,9 +188,10 @@ export default function Inventory({ onClose, products: liveProducts = [] }) {
     })
   }, [products, search])
 
-  // ── Category summary ──────────────────────────────────────────────────────
+  // ── Category summary — derived from actual products, not a static list ───
   const categorySummary = useMemo(() => {
-    return CATEGORIES.map((cat, i) => ({
+    const cats = [...new Set(products.map(p => p.category).filter(Boolean))].sort()
+    return cats.map((cat, i) => ({
       id: i + 1,
       name: cat,
       qty: products.filter(p => p.category === cat).reduce((s, p) => s + p.qty, 0),

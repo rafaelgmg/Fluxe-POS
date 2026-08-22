@@ -18,7 +18,6 @@
  */
 
 import { useState, useCallback } from 'react'
-import { PRODUCT_BY_BARCODE } from '../data/mockData'
 import { loadLocationConfig } from '../utils/locationConfig'
 import { parseBarcode } from '../utils/parseBarcode'
 import { sumItemSpare } from '../utils/spareUtils'
@@ -75,8 +74,7 @@ export function useCart({ products, location }) {
   // ── Barcode scan → product lookup → open edit modal ───────────────────────
   const handleBarcodeScanned = useCallback((rawCode) => {
     const { cleanBarcode, minPrice } = parseBarcode(rawCode)
-    // Search live products (Supabase) first, fallback to mockData
-    const live = products.find(p => p.barcode === cleanBarcode) || PRODUCT_BY_BARCODE[cleanBarcode]
+    const live = products.find(p => p.barcode === cleanBarcode)
     if (!live) return
     const productWithPrice = minPrice !== null ? { ...live, minPrice } : live
     openEditModal(productWithPrice)

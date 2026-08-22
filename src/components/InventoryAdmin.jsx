@@ -1,6 +1,6 @@
 ﻿import { useState, useMemo, useEffect } from 'react'
-import { CATEGORIES } from '../data/mockData'
 import { LOCATIONS_CFG } from '../config/branding'
+import { loadActiveCategoryNames } from '../utils/categoriesStorage'
 import BarcodeModal, { BarcodeIconButton } from './BarcodeModal'
 import { loadAllProducts, saveAllProducts } from '../utils/productsStorage'
 import { loadInventoryHistory, saveInventoryHistory } from '../utils/inventoryHistoryStorage'
@@ -256,7 +256,7 @@ function EditProductPanel({ product, onSave, onClose, onDeactivate, onReactivate
     description:       product.description       || '',
     size:              product.size              || '',
     barcode:           product.barcode           || '',
-    category:          product.category          || CATEGORIES[0],
+    category:          product.category          || '',
     costPrice:         product.costPrice         || '',
     systemPrice:       product.systemPrice       || '',
     minPrice:          product.minPrice          || '',
@@ -300,7 +300,8 @@ function EditProductPanel({ product, onSave, onClose, onDeactivate, onReactivate
         <div>
           {lbl('CATEGORY')}
           <select value={form.category} onChange={e => set('category', e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            <option value="">— Select category —</option>
+            {loadActiveCategoryNames().map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -590,7 +591,7 @@ function ManagementView({ products, setProducts, setHistory, filterHistory, sale
         )}
         <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ padding: '6px 10px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 13, cursor: 'pointer', outline: 'none' }}>
           <option value="All">All Categories</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          {loadActiveCategoryNames().map(c => <option key={c} value={c}>{c}</option>)}
         </select>
 
         {/* Status filter tabs */}
