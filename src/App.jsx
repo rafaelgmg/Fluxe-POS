@@ -554,6 +554,28 @@ export default function App() {
     />
   }
 
+  // orgReady === null: machine account is configured but we're still waiting for
+  // Supabase to return org_settings. Block rendering so branding.js defaults
+  // (Perfume Passage) never flash on screen for other tenants.
+  if (orgReady === null) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        background: '#020e1e',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexDirection: 'column', gap: 16,
+      }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: '50%',
+          border: '3px solid #1e3048',
+          borderTopColor: '#3b82f6',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
+    )
+  }
+
   if (orgReady === false) {
     return <OrgOnboardingScreen onComplete={() => setOrgReady(true)} />
   }

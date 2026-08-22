@@ -1,3 +1,14 @@
+/**
+ * DEMO / DEVELOPMENT DATA ONLY — not used in production.
+ *
+ * This file contains Perfume Passage sample data used exclusively by:
+ *   - demoSeed.js  (seeds localStorage for the ?demo=true URL flag)
+ *   - local development without a Supabase connection
+ *
+ * Production data always comes from Supabase.
+ * Never import this file from production components or hooks.
+ */
+
 import { parseBarcode } from '../utils/parseBarcode'
 
 export const CATEGORIES = [
@@ -18,9 +29,7 @@ export const EMPLOYEES = [
   { id: 3, name: "Nate",    pin: "9012", role: "seller"  },
 ]
 
-// rawBarcode = "barcode.minPrice" — o minPrice é extraído silenciosamente via parseBarcode()
-// systemPrice = preço "cheio" exibido no recibo
-// minPrice NÃO aparece na interface — extraído do rawBarcode
+// rawBarcode = "barcode.minPrice" — minPrice is extracted silently via parseBarcode()
 const RAW_PRODUCTS = [
   { id: 1,  rawBarcode: "3616304679452.55",  name: "Burberry Hero Parfum",         description: "",                               size: "1.7oz",        category: "Men's Brands",   systemPrice: 180, qty: 8,  costPrice: 30 },
   { id: 2,  rawBarcode: "6291107972947.30",  name: "Farasha Perfume Oil",          description: "OIL",                            size: "28ml",         category: "Armaf Oil",      systemPrice: 80,  qty: 12, costPrice: 12 },
@@ -42,20 +51,11 @@ const RAW_PRODUCTS = [
   { id: 18, rawBarcode: "7257656572990.60",  name: "New Collection Sangria",       description: "Michael Malul Sangria Saffron",  size: "3.4oz-100ml",  category: "Women's Brands", systemPrice: 220, qty: 5,  costPrice: 30 },
 ]
 
-// Processa produtos: extrai barcode limpo e minPrice do rawBarcode
 export const PRODUCTS = RAW_PRODUCTS.map(p => {
   const { cleanBarcode, minPrice } = parseBarcode(p.rawBarcode)
-  return {
-    ...p,
-    rawBarcode: p.rawBarcode,   // guardado internamente
-    barcode: cleanBarcode,       // exibido na UI
-    minPrice: minPrice ?? 0,     // usado na validação — NUNCA exibido ao vendedor
-  }
+  return { ...p, rawBarcode: p.rawBarcode, barcode: cleanBarcode, minPrice: minPrice ?? 0 }
 })
 
-// Lookup rápido por barcode limpo (para o scanner)
-export const PRODUCT_BY_BARCODE = Object.fromEntries(
-  PRODUCTS.map(p => [p.barcode, p])
-)
+export const PRODUCT_BY_BARCODE = Object.fromEntries(PRODUCTS.map(p => [p.barcode, p]))
 
-export const TAX_RATE = 0.085 // Nevada 8.5%
+export const TAX_RATE = 0.085
