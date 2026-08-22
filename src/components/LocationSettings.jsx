@@ -99,7 +99,7 @@ function defaultExt(loc) {
     // ════════════════════════════════════════════════════════
     // A. Sales preferences
     // ════════════════════════════════════════════════════════
-    minPriceRestriction:            false,  // block sale below min price (structure only)
+    minPriceRestriction:            false,
     spareTransferTime:              0,       // minutes — time window to transfer spare between invoices (structure only)
     listModeDefault:                false,   // change sales screen to list mode (structure only)
     allowSaleWithoutEmployee:       false,   // allow completing a sale with no employee selected

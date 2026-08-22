@@ -1086,6 +1086,8 @@ export default function App() {
           onAdd={handleAddToCart}
           onExchange={handleExchange}
           onCancel={closeEditModal}
+          location={posSession?.location}
+          locationId={posSession?.locationId}
         />
       )}
 
