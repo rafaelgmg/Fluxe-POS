@@ -1,17 +1,18 @@
 {
-  "name": "Fluxe Dashboard",
+  "name": "Fluxe POS",
   "short_name": "Fluxe",
-  "description": "Perfume Passage — owner dashboard",
-  "start_url": "/dashboard",
+  "description": "Fluxe — Retail Point of Sale",
+  "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#F8FAFC",
+  "orientation": "any",
+  "background_color": "#020e1e",
   "theme_color": "#3B82F6",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64",
-      "type": "image/x-icon"
+      "src": "/fluxe-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }

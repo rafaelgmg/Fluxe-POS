@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Blue rounded background -->
+  <rect width="512" height="512" rx="96" fill="#3B82F6"/>
+  <!-- White F — bold, clean, centered -->
+  <text
+    x="256"
+    y="370"
+    text-anchor="middle"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+    font-weight="900"
+    font-size="340"
+    fill="white"
+    letter-spacing="-8"
+  >F</text>
+</svg>
