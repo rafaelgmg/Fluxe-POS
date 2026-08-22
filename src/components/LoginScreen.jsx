@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  ACCOUNTS, REGIONS, RETAIL_LOCATION_MAP, LOGIN_PASSWORD, LOGIN_CHECKBOX,
+  REGIONS, RETAIL_LOCATION_MAP, LOGIN_PASSWORD, LOGIN_CHECKBOX,
   BUSINESS, BUSINESS_SHORT, SYSTEM_NAME, SYSTEM_TAG, CREATOR,
   LOCATIONS_CFG,
 } from '../config/branding'
@@ -72,7 +72,7 @@ function Clock() {
 }
 
 export default function LoginScreen({ onLogin, onBack }) {
-  const [account,          setAccount]          = useState(ACCOUNTS[0])
+  const [account,          setAccount]          = useState('')
   const [region,           setRegion]           = useState(REGIONS[0])
   const [location,         setLocation]         = useState(RETAIL_LOCATION_MAP[REGIONS[0]]?.[0] || '')
   const [password,         setPassword]         = useState('')
@@ -102,7 +102,7 @@ export default function LoginScreen({ onLogin, onBack }) {
     if (!REGIONS.includes(saved.region)) return
     const locs = loadActiveLocationNames(saved.region)
     if (!locs.includes(saved.location)) return
-    setAccount(saved.account || ACCOUNTS[0])
+    setAccount(saved.account || '')
     setRegion(saved.region)
     setLocation(saved.location)
     setOnlyThis(true)
@@ -430,16 +430,6 @@ export default function LoginScreen({ onLogin, onBack }) {
           {step === 'location' && (
           <>
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-            {/* Select Account */}
-            <div>
-              <label style={{ display: 'block', color: 'var(--c-text-muted)', fontSize: 11, fontWeight: 700, marginBottom: 6, letterSpacing: 0.5 }}>
-                SELECT ACCOUNT
-              </label>
-              <select {...sel(account, setAccount)}>
-                {ACCOUNTS.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
-            </div>
 
             {/* Select Region */}
             <div>
