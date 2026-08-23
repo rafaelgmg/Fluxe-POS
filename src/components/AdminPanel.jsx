@@ -906,7 +906,7 @@ function AdminHeader({ goBack, onClose, backLabel = '← Back' }) {
 
 // ─── Main AdminPanel ──────────────────────────────────────────────────────────
 
-export default function AdminPanel({ onClose, sales = [], updateSale, voidSale, refundSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, products: liveProducts = null, setProducts: setAppProducts = null, posSession = null }) {
+export default function AdminPanel({ onClose, sales = [], updateSale, voidSale, refundSale, customers = [], onAddCustomer, onPatchCustomer, onArchiveCustomer, products: liveProducts = null, setProducts: setAppProducts = null, posSession = null, onCategoriesChange }) {
   const [localProducts, setLocalProducts] = useState(loadAllProducts)
 
   useEffect(() => {
@@ -1033,7 +1033,7 @@ export default function AdminPanel({ onClose, sales = [], updateSale, voidSale, 
       <div style={{ position: 'fixed', inset: 0, background: 'var(--c-bg)', zIndex: 1000, display: 'flex', flexDirection: 'column' }}>
         <AdminHeader goBack={goBack} onClose={onClose} backLabel="← Products" />
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          <CategoriesScreen onBack={goBack} />
+          <CategoriesScreen onBack={goBack} onCategoriesChange={onCategoriesChange} />
         </div>
       </div>
     )

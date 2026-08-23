@@ -292,7 +292,7 @@ function EditPanel({ cat, onSave, onClose }) {
 }
 
 // ── Main CategoriesScreen ──────────────────────────────────────────────────────
-export default function CategoriesScreen({ onBack }) {
+export default function CategoriesScreen({ onBack, onCategoriesChange }) {
   const [cats,      setCats]      = useState(() => loadCategories())
   const [search,    setSearch]    = useState('')
   const [addName,   setAddName]   = useState('')
@@ -328,6 +328,7 @@ export default function CategoriesScreen({ onBack }) {
     saveCategories(updated)
     setSaved(true)
     setTimeout(() => setSaved(false), 1800)
+    onCategoriesChange?.()
     // Sync to Supabase — fire-and-forget; hydrate supabaseId on local records when returned
     import('../services/supabaseWrite').then(({ syncAllCategoriesToSupabase }) => {
       syncAllCategoriesToSupabase(updated).then(uuidMap => {

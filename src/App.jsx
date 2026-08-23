@@ -1139,7 +1139,7 @@ export default function App() {
       )}
       {showClockInOut  && <ClockInOut    onClose={() => setShowClockInOut(false)}  posSession={posSession} />}
       {showInventory   && <Inventory     onClose={() => setShowInventory(false)} products={products} />}
-      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} refundSale={refundSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} posSession={posSession} />}
+      {showAdmin       && <AdminPanel    onClose={() => setShowAdmin(false)}  sales={sales} updateSale={updateSale} voidSale={voidSale} refundSale={refundSale} customers={customers} onAddCustomer={addCustomer} onPatchCustomer={patchCustomer} onArchiveCustomer={archiveCustomer} products={products} setProducts={setProducts} posSession={posSession} onCategoriesChange={() => setCategoryNames(loadActiveCategoryNames())} />}
       {showReceipts    && <Receipts      onClose={() => setShowReceipts(false)}    posSession={posSession} />}
       {showCashDrawer  && <CashDrawer   onClose={() => setShowCashDrawer(false)} location={posSession?.location} />}
       {showCRM && (
