@@ -1,4 +1,13 @@
-const KEY = 'fluxe_campaigns'
+const KEY        = 'fluxe-campaigns-v1'
+const KEY_LEGACY = 'fluxe_campaigns'
+
+// Migrate legacy underscore key on first load
+;(function migrateLegacyCampaigns() {
+  const legacy = localStorage.getItem(KEY_LEGACY)
+  if (!legacy) return
+  if (!localStorage.getItem(KEY)) localStorage.setItem(KEY, legacy)
+  localStorage.removeItem(KEY_LEGACY)
+})()
 
 export function loadCampaigns() {
   try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch { return [] }

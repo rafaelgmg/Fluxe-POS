@@ -8,13 +8,19 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { KEY_CLOCK_RECORDS } from './storageKeys'
+import { KEY_CLOCK_RECORDS, KEY_CLOCK_RECORDS_LEGACY } from './storageKeys'
 
-/**
- * Load all clock records.
- *
- * @returns {object[]}
- */
+// Migrate legacy key on first read
+function migrateLegacyClock() {
+  const legacy = localStorage.getItem(KEY_CLOCK_RECORDS_LEGACY)
+  if (!legacy) return
+  if (!localStorage.getItem(KEY_CLOCK_RECORDS)) {
+    localStorage.setItem(KEY_CLOCK_RECORDS, legacy)
+  }
+  localStorage.removeItem(KEY_CLOCK_RECORDS_LEGACY)
+}
+migrateLegacyClock()
+
 export function loadClockRecords() {
   try {
     const raw = localStorage.getItem(KEY_CLOCK_RECORDS)

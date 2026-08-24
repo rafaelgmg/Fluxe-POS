@@ -16,12 +16,13 @@ export const KEY_INVOICE_COUNTER  = 'fluxe-invoice-counter-v1'
 export const KEY_PRODUCTS         = 'fluxe-products-v1'
 export const KEY_CATEGORIES       = 'fluxe-categories-v1'
 export const KEY_CUSTOMERS        = 'fluxe-crm-v1'
-export const KEY_CUSTOMERS_LEGACY = 'perfume-passage-crm-v1'  // migration only
+export const KEY_CUSTOMERS_LEGACY = 'perfume-passage-crm-v1'  // migration only — cleared by SetupScreen
 
 // ── Users & session ───────────────────────────────────────────────────────────
 export const KEY_USERS            = 'fluxe-users-v1'
 export const KEY_USERS_BACKUP     = 'fluxe-users-v1-corrupted-backup'
-export const KEY_CLOCK_RECORDS    = 'pp_clock_records'
+export const KEY_CLOCK_RECORDS    = 'fluxe-clock-records-v1'
+export const KEY_CLOCK_RECORDS_LEGACY = 'pp_clock_records'  // pre-2025 name — cleared by SetupScreen
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 export const KEY_LOCATIONS        = 'fluxe-locations-v1'

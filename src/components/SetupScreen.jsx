@@ -93,12 +93,14 @@ export default function SetupScreen({ onClose }) {
       }
 
       // Clear any org-specific data cached from a previous session before saving new config
+      const LEGACY_KEYS = ['pp_clock_records', 'fluxe_campaigns', 'perfume-passage-crm-v1']
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i)
         if (key && key.startsWith('fluxe-') && key !== 'fluxe-client-config-v1') {
           localStorage.removeItem(key)
         }
       }
+      LEGACY_KEYS.forEach(k => localStorage.removeItem(k))
 
       // All good — save and reload
       saveClientConfig({
