@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { loadLocationConfig, loadLocationConfigById } from '../utils/locationConfig'
 
 const BLUE  = '#3b82f6'
 const AMBER = '#f59e0b'
 const GREEN = '#22c55e'
 const RED   = '#ef4444'
 
-export default function EditItemModal({ product, onAdd, onExchange, onCancel, location, locationId }) {
+export default function EditItemModal({ product, onAdd, onExchange, onCancel, location, locationId, minPriceRestriction = false }) {
   const [priceInput,    setPriceInput]    = useState(String(product._cartPrice ?? product.systemPrice))
   const [qty,           setQty]           = useState(String(product._cartQty ?? 1))
   const [activeField,   setActiveField]   = useState('price')
@@ -78,11 +77,8 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel, lo
   const handleAdd = () => {
     const resolvedQty = parseInt(qty) || 1
 
-    // Enforce minimum price restriction if enabled for this location
-    const locCfg = locationId
-      ? loadLocationConfigById(locationId)
-      : loadLocationConfig(location)
-    if (locCfg?.minPriceRestriction && product.minPrice > 0 && price < product.minPrice) {
+    // minPriceRestriction comes from Supabase via App.jsx state — not from localStorage
+    if (minPriceRestriction && product.minPrice > 0 && price < product.minPrice) {
       setError(`Minimum price is $${product.minPrice.toFixed(2)}. Cannot sell below minimum.`)
       return
     }

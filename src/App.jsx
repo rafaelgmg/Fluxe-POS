@@ -81,6 +81,9 @@ export default function App() {
     isDemoMode() ? { id: 101, name: 'Alex Morgan', role: 'manager', photo: null } : null
   )
   const [saleEmployee, setSaleEmployee] = useState(null)  // seller confirmed for current sale
+  // minPriceRestriction loaded from Supabase into React state — NOT re-read from localStorage
+  // during the session, so localStorage edits cannot bypass it.
+  const [minPriceRestriction, setMinPriceRestriction] = useState(false)
   const { products, setProducts, decrementStock } = useProducts()
   const [selectedCategory, setCategory]   = useState('All')
   const [categoryNames,    setCategoryNames] = useState(() => loadActiveCategoryNames())
@@ -178,9 +181,21 @@ export default function App() {
 
   // Boot-time location config sync: pull latest settings from Supabase and merge into
   // localStorage so all loadLocationConfig() callers get cross-device fresh data.
+  // Also extracts minPriceRestriction into React state — immune to localStorage edits.
   useEffect(() => {
     fetchLocationConfigs()
-      .then(rows => { if (rows) mergeLocationConfigsFromCloud(rows) })
+      .then(rows => {
+        if (!rows) return
+        mergeLocationConfigsFromCloud(rows)
+        // Find the active location's config from Supabase response
+        const activeRow = rows.find(r =>
+          r.location_id === posSession?.locationId ||
+          r.location_name === posSession?.location
+        )
+        if (activeRow?.config?.minPriceRestriction !== undefined) {
+          setMinPriceRestriction(!!activeRow.config.minPriceRestriction)
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -1088,6 +1103,7 @@ export default function App() {
           onCancel={closeEditModal}
           location={posSession?.location}
           locationId={posSession?.locationId}
+          minPriceRestriction={minPriceRestriction}
         />
       )}
 

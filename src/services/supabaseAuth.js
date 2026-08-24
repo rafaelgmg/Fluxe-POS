@@ -245,7 +245,8 @@ export async function verifyEmployeePin(employeeName, pin) {
         return {
           id:    u.id,
           name:  (`${u.first_name || ''} ${u.last_name || ''}`).replace(/\s+/g, ' ').trim() || employeeName,
-          role:  localEmp?.role || (u.position || 'sales').toLowerCase(),
+          // Supabase position is authoritative — localStorage role is NOT trusted (editable by user)
+          role:  (u.position || localEmp?.role || 'sales').toLowerCase(),
           photo: localEmp?.photo || null,
         }
       }
