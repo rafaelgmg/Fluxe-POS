@@ -1086,6 +1086,7 @@ export async function writeProductToSupabase(product) {
       reorder_point:       product.reorderPoint       ?? null,
       target_days_of_stock: product.targetDaysOfStock ?? 14,
       lead_time_days:      product.leadTimeDays        ?? 7,
+      image_url:           product.photoUrl            ?? null,
     }, 'return=representation')
 
     if (!row?.id) return null
@@ -1150,6 +1151,7 @@ export async function updateProductInSupabase(product) {
       reorder_point:       product.reorderPoint       ?? null,
       target_days_of_stock: product.targetDaysOfStock ?? 14,
       lead_time_days:      product.leadTimeDays        ?? 7,
+      image_url:           product.photoUrl            ?? null,
     })
 
     const stockRows = Object.entries(product.qtyByLoc || {})
@@ -1235,6 +1237,69 @@ export async function deleteUserAvatar(supabaseUserId) {
     await sbPatch(`/users?id=eq.${supabaseUserId}`, { avatar_url: null })
   } catch (err) {
     console.warn('[Fluxe] deleteUserAvatar failed:', err.message)
+  }
+}
+
+/**
+ * Upload a product image to Supabase Storage and update image_url in the DB.
+ * Path: product-images/{orgId}/{productId}.webp
+ * Requires a public "product-images" bucket in Supabase Storage.
+ *
+ * @param {string} productId  Supabase UUID of the product
+ * @param {File}   file       Optimized WebP File from optimizeAvatarImage()
+ * @returns {Promise<string|null>} Public URL, or null on failure
+ */
+export async function uploadProductImage(productId, file) {
+  if (!isSupabaseConfigured()) return null
+  try {
+    await awaitOrgSession().catch(() => null)
+    const orgId = await getOrgId()
+    const path  = `${orgId}/${productId}.webp`
+    const res   = await fetch(`${_url()}/storage/v1/object/product-images/${path}`, {
+      method:  'PUT',
+      headers: {
+        apikey:         _key(),
+        Authorization:  `Bearer ${authBearer()}`,
+        'Content-Type': 'image/webp',
+        'x-upsert':     'true',
+      },
+      body: file,
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(`Storage PUT ${res.status}: ${text}`)
+    }
+    const publicUrl = `${_url()}/storage/v1/object/public/product-images/${path}?v=${Date.now()}`
+    await sbPatch(`/products?id=eq.${productId}`, { image_url: publicUrl })
+    return publicUrl
+  } catch (err) {
+    console.warn('[Fluxe] uploadProductImage failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Remove a product image from Supabase Storage and clear image_url in the DB.
+ * @param {string} productId  Supabase UUID of the product
+ */
+export async function deleteProductImage(productId) {
+  if (!isSupabaseConfigured()) return
+  try {
+    await awaitOrgSession().catch(() => null)
+    const orgId = await getOrgId()
+    const path  = `${orgId}/${productId}.webp`
+    await fetch(`${_url()}/storage/v1/object/product-images`, {
+      method:  'DELETE',
+      headers: {
+        apikey:         _key(),
+        Authorization:  `Bearer ${authBearer()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prefixes: [path] }),
+    })
+    await sbPatch(`/products?id=eq.${productId}`, { image_url: null })
+  } catch (err) {
+    console.warn('[Fluxe] deleteProductImage failed:', err.message)
   }
 }
 

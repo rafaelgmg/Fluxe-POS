@@ -7,7 +7,8 @@ import { loadInventoryHistory, saveInventoryHistory } from '../utils/inventoryHi
 import { loadAllSales } from '../utils/salesStorage'
 import { localId } from '../domain/utils/ids'
 import { fetchProducts, fetchInventoryMovements, fetchRecentTransfers, getLocationUUID } from '../services/supabaseRead'
-import { sendTransfer, receiveTransfer, writeStockAdjustment, updateProductInSupabase } from '../services/supabaseWrite'
+import { sendTransfer, receiveTransfer, writeStockAdjustment, updateProductInSupabase, uploadProductImage, deleteProductImage } from '../services/supabaseWrite'
+import { optimizeAvatarImage } from '../utils/imageOptimization'
 import DailyCountsAdmin from './DailyCountsAdmin'
 
 function addEntry(setHistory, entry) {
@@ -272,6 +273,46 @@ function EditProductPanel({ product, onSave, onClose, onDeactivate, onReactivate
   const inp = { padding: '7px 10px', background: BG, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
   const lbl = (t) => <label style={{ color: MUTED, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>{t}</label>
 
+  const [photoUrl,     setPhotoUrl]     = useState(product.photoUrl || null)
+  const [photoLoading, setPhotoLoading] = useState(false)
+  const [photoError,   setPhotoError]   = useState('')
+  const isUUID = (id) => typeof id === 'string' && /^[0-9a-f-]{36}$/.test(id)
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!isUUID(product.id)) {
+      setPhotoError('Save the product first, then add a photo.')
+      return
+    }
+    setPhotoLoading(true)
+    setPhotoError('')
+    try {
+      const optimized = await optimizeAvatarImage(file, { size: 400, quality: 0.88 })
+      const url = await uploadProductImage(product.id, optimized)
+      if (url) {
+        setPhotoUrl(url)
+        onSave({ ...product, photoUrl: url })
+      } else {
+        setPhotoError('Upload failed — check Storage bucket exists.')
+      }
+    } catch (err) {
+      setPhotoError(err.message || 'Upload failed.')
+    } finally {
+      setPhotoLoading(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleRemovePhoto = async () => {
+    if (!isUUID(product.id)) return
+    setPhotoLoading(true)
+    await deleteProductImage(product.id)
+    setPhotoUrl(null)
+    onSave({ ...product, photoUrl: null })
+    setPhotoLoading(false)
+  }
+
   const handleSave = () => {
     onSave({
       ...form,
@@ -293,6 +334,45 @@ function EditProductPanel({ product, onSave, onClose, onDeactivate, onReactivate
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+        {/* ── Product Photo ────────────────────────────────────── */}
+        <div>
+          {lbl('PRODUCT PHOTO')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
+              background: '#1a2a3a', border: `1px solid ${BORDER}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {photoUrl
+                ? <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 28, opacity: 0.4 }}>🖼️</span>
+              }
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{
+                display: 'block', padding: '7px 12px', background: BLUE, borderRadius: 5,
+                color: '#fff', fontSize: 12, fontWeight: 700, cursor: photoLoading ? 'not-allowed' : 'pointer',
+                opacity: photoLoading ? 0.6 : 1, textAlign: 'center',
+              }}>
+                {photoLoading ? 'Uploading…' : photoUrl ? '📷 Change Photo' : '📷 Add Photo'}
+                <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} disabled={photoLoading} />
+              </label>
+              {photoUrl && (
+                <button onClick={handleRemovePhoto} disabled={photoLoading} style={{
+                  padding: '6px 12px', background: 'rgba(239,68,68,0.12)',
+                  border: '1px solid rgba(239,68,68,0.3)', borderRadius: 5,
+                  color: RED, fontSize: 11, cursor: photoLoading ? 'not-allowed' : 'pointer',
+                }}>
+                  Remove
+                </button>
+              )}
+              {photoError && <p style={{ color: RED, fontSize: 10, margin: 0 }}>{photoError}</p>}
+              {!isUUID(product.id) && <p style={{ color: MUTED, fontSize: 10, margin: 0 }}>Save product first to add photo.</p>}
+            </div>
+          </div>
+        </div>
+
         <div>{lbl('PRODUCT NAME')}<input value={form.name} onChange={e => set('name', e.target.value)} style={inp} onFocus={e => { e.target.style.borderColor = BLUE }} onBlur={e => { e.target.style.borderColor = BORDER }} /></div>
         <div>{lbl('DESCRIPTION')}<input value={form.description} onChange={e => set('description', e.target.value)} style={inp} onFocus={e => { e.target.style.borderColor = BLUE }} onBlur={e => { e.target.style.borderColor = BORDER }} /></div>
         <div>{lbl('SIZE')}<input value={form.size} onChange={e => set('size', e.target.value)} style={inp} onFocus={e => { e.target.style.borderColor = BLUE }} onBlur={e => { e.target.style.borderColor = BORDER }} /></div>

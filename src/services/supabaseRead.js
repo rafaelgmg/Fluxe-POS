@@ -244,6 +244,7 @@ function fromSupabaseProduct(row, locationMap) {
     reorderPoint:      row.reorder_point       ?? null,
     targetDaysOfStock: row.target_days_of_stock ?? 14,
     leadTimeDays:      row.lead_time_days       ?? 7,
+    photoUrl:          row.image_url           ?? null,
   })
 }
 

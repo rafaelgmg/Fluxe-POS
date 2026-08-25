@@ -45,5 +45,6 @@ export function normalizeProduct(raw) {
     reorderPoint:      raw.reorderPoint      ?? null,
     targetDaysOfStock: raw.targetDaysOfStock  ?? 14,
     leadTimeDays:      raw.leadTimeDays       ?? 7,
+    photoUrl:          raw.photoUrl          ?? null,
   }
 }

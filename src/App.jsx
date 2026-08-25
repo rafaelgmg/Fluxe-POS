@@ -1001,20 +1001,34 @@ export default function App() {
                   const qColor = locQty <= 2 ? '#ef4444' : locQty <= 5 ? '#f59e0b' : 'var(--c-text-sub)'
                   return (
                     <button key={product.id} onClick={() => openEditModal(product)} style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                      padding: '14px 12px', background: 'var(--c-bg-card)',
+                      display: 'flex', flexDirection: 'column', alignItems: 'stretch',
+                      padding: 0, background: 'var(--c-bg-card)',
                       border: '1px solid var(--c-border)', borderRadius: 8,
                       cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-                      gap: 6,
+                      overflow: 'hidden',
                     }}
                       onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-bg-hover)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.35)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'var(--c-bg-card)'; e.currentTarget.style.borderColor = 'var(--c-border)' }}
                     >
-                      <p style={{ fontSize: 13, color: 'var(--c-text)', fontWeight: 700, lineHeight: 1.3 }}>{product.name}</p>
-                      {product.size && <p style={{ fontSize: 11, color: 'var(--c-text-muted)' }}>{product.size}</p>}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: dColor, boxShadow: `0 0 5px ${dColor}`, flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: qColor, fontWeight: 700 }}>{locQty} in stock</span>
+                      {/* Photo or placeholder */}
+                      <div style={{
+                        width: '100%', aspectRatio: '1', background: '#0d1a2a',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        overflow: 'hidden', flexShrink: 0,
+                      }}>
+                        {product.photoUrl
+                          ? <img src={product.photoUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <span style={{ fontSize: 32, opacity: 0.25 }}>🧴</span>
+                        }
+                      </div>
+                      {/* Info */}
+                      <div style={{ padding: '10px 10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <p style={{ fontSize: 12, color: 'var(--c-text)', fontWeight: 700, lineHeight: 1.3, margin: 0 }}>{product.name}</p>
+                        {product.size && <p style={{ fontSize: 10, color: 'var(--c-text-muted)', margin: 0 }}>{product.size}</p>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: dColor, boxShadow: `0 0 5px ${dColor}`, flexShrink: 0 }} />
+                          <span style={{ fontSize: 10, color: qColor, fontWeight: 700 }}>{locQty} in stock</span>
+                        </div>
                       </div>
                     </button>
                   )

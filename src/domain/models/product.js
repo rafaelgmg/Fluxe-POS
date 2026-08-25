@@ -15,6 +15,7 @@
  * @property {'active'|'inactive'}   status
  * @property {string}                supplierName
  * @property {string|null}           updatedAt     ISO string
+ * @property {string|null}           photoUrl      Supabase Storage public URL
  * @property {'reorderable'|'do_not_reorder'|'seasonal'|'discontinued'|'test_product'} reorderStatus
  * @property {boolean}               coreProduct   always keep in stock
  * @property {number|null}           minStockTarget
@@ -38,4 +39,5 @@ export const PRODUCT_DEFAULTS = {
   reorderPoint:      null,
   targetDaysOfStock: 14,
   leadTimeDays:      7,
+  photoUrl:          null,
 }
