@@ -3,7 +3,8 @@ import { buildBarcode } from '../utils/parseBarcode'
 import { BUSINESS_SHORT, COLORS, SYSTEM_NAME, LOCATIONS_CFG } from '../config/branding'
 import { loadActiveCategoryNames } from '../utils/categoriesStorage'
 import { loadAllProducts, saveAllProducts } from '../utils/productsStorage'
-import { writeProductToSupabase, updateProductInSupabase } from '../services/supabaseWrite'
+import { writeProductToSupabase, updateProductInSupabase, uploadProductImage, deleteProductImage } from '../services/supabaseWrite'
+import { optimizeAvatarImage } from '../utils/imageOptimization'
 import UsersScreen        from './UsersScreen'
 import UserReport         from './UserReport'
 import InventoryAdmin     from './InventoryAdmin'
@@ -162,6 +163,34 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
 
   const [errors, setErrors] = useState({})
 
+  const [photoUrl,     setPhotoUrl]     = useState(product?.photoUrl || null)
+  const [photoLoading, setPhotoLoading] = useState(false)
+  const [photoError,   setPhotoError]   = useState('')
+  const isUUID = (id) => typeof id === 'string' && /^[0-9a-f-]{36}$/.test(id)
+
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!isUUID(product?.id)) { setPhotoError('Save the product first, then add a photo.'); return }
+    setPhotoLoading(true); setPhotoError('')
+    try {
+      const optimized = await optimizeAvatarImage(file, { size: 400, quality: 0.88 })
+      const url = await uploadProductImage(product.id, optimized)
+      if (url) { setPhotoUrl(url); onSave({ ...product, photoUrl: url }) }
+      else setPhotoError('Upload failed — check Storage bucket.')
+    } catch { setPhotoError('Upload failed.') }
+    setPhotoLoading(false)
+  }
+
+  const handleRemovePhoto = async () => {
+    if (!isUUID(product?.id)) return
+    setPhotoLoading(true)
+    await deleteProductImage(product.id)
+    setPhotoUrl(null)
+    onSave({ ...product, photoUrl: null })
+    setPhotoLoading(false)
+  }
+
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }))
 
   const validate = () => {
@@ -246,6 +275,43 @@ function ProductEditor({ product, onSave, onClose, isNew, onDeactivate, onReacti
 
       {/* Form body */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px' }}>
+
+        {/* ── Product Photo ── */}
+        {row(<>
+          {lbl('Product Photo')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
+              background: '#1a2a3a', border: '1px solid var(--c-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {photoUrl
+                ? <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 28, opacity: 0.4 }}>🖼️</span>
+              }
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{
+                display: 'block', padding: '7px 12px', background: PURPLE, borderRadius: 5,
+                color: '#fff', fontSize: 12, fontWeight: 700,
+                cursor: photoLoading ? 'not-allowed' : 'pointer',
+                opacity: photoLoading ? 0.6 : 1, textAlign: 'center',
+              }}>
+                {photoLoading ? 'Uploading…' : photoUrl ? '📷 Change Photo' : '📷 Add Photo'}
+                <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} disabled={photoLoading} />
+              </label>
+              {photoUrl && (
+                <button onClick={handleRemovePhoto} disabled={photoLoading} style={{
+                  padding: '6px 12px', background: 'rgba(239,68,68,0.12)',
+                  border: '1px solid rgba(239,68,68,0.3)', borderRadius: 5,
+                  color: '#ef4444', fontSize: 11, cursor: photoLoading ? 'not-allowed' : 'pointer',
+                }}>Remove</button>
+              )}
+              {photoError && <p style={{ color: '#ef4444', fontSize: 10, margin: 0 }}>{photoError}</p>}
+              {!isUUID(product?.id) && <p style={{ color: 'var(--c-text-muted)', fontSize: 10, margin: 0 }}>Save product first to add photo.</p>}
+            </div>
+          </div>
+        </>)}
 
         {row(<>
           {lbl('Product Name *')}
