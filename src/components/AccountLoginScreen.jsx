@@ -25,7 +25,7 @@ export default function AccountLoginScreen({ onLogin, onSetup }) {
     const machineEmail = MACHINE_EMAIL.toLowerCase()
     const cfg          = getClientConfig()
     const validUsernames = ['rafael', 'admin', ...(cfg.accountUsername ? [cfg.accountUsername] : [])]
-    const validPasswords = [LOGIN_PASSWORD, 'pass123', ...(cfg.accountPassword ? [cfg.accountPassword] : [])].filter(Boolean)
+    const validPasswords = [LOGIN_PASSWORD, ...(cfg.accountPassword ? [cfg.accountPassword] : [])].filter(Boolean)
     const emailOk = validUsernames.includes(username) || (machineEmail && raw === machineEmail)
     if (!emailOk || !validPasswords.includes(password)) {
       setError('Incorrect email or password.')

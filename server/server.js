@@ -91,7 +91,7 @@ app.use((req, _res, next) => {
 const ACCOUNT_USERS = [
   {
     email:     process.env.ACCOUNT_EMAIL    || 'admin@maisonparfum.com',
-    password:  process.env.ACCOUNT_PASSWORD || 'admin123',
+    password:  process.env.ACCOUNT_PASSWORD || '',
     role:      'admin',
     accountId: 'Delmondes_Retailing_NV_Inc',
   },

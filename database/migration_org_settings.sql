@@ -29,8 +29,8 @@ CREATE POLICY "org_settings_update" ON org_settings
   USING  (organization_id = auth_org_id())
   WITH CHECK (organization_id = auth_org_id());
 
--- Perfume Passage seed row
--- organization_id = a4a232c2-d44f-49c5-b1db-7937e68878a9
+-- Seed row — replace 'your-org-uuid-here' with your actual organization UUID
+-- Find it: SELECT id FROM organizations LIMIT 1; (run in Supabase SQL Editor)
 INSERT INTO org_settings (
   organization_id,
   business_name,
@@ -43,7 +43,7 @@ INSERT INTO org_settings (
   receipt_legal,
   crm_sms_signature
 ) VALUES (
-  'a4a232c2-d44f-49c5-b1db-7937e68878a9',
+  'your-org-uuid-here',
   'Perfume Passage',
   'PERFUME PASSAGE',
   'Perfume & Fragrance',
