@@ -1,7 +1,9 @@
 node_modules
 dist
 .env
+.env.*
 server/.env
+server/.env.*
 server/data/*.json
 
 .vercel
