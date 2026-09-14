@@ -19,23 +19,23 @@ const PORT = 3001
 const PS_SCRIPT = `
 $ErrorActionPreference = 'Stop'
 Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public class FluxeRP { [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)] public struct DI { public string pDocName; public string pOutputFile; public string pDataType; } [DllImport(""winspool.drv"", CharSet=CharSet.Ansi)] public static extern bool OpenPrinter(string n, out IntPtr h, IntPtr d); [DllImport(""winspool.drv"")] public static extern bool ClosePrinter(IntPtr h); [DllImport(""winspool.drv"", CharSet=CharSet.Ansi)] public static extern bool StartDocPrinter(IntPtr h, int l, ref DI d); [DllImport(""winspool.drv"")] public static extern bool EndDocPrinter(IntPtr h); [DllImport(""winspool.drv"")] public static extern bool StartPagePrinter(IntPtr h); [DllImport(""winspool.drv"")] public static extern bool EndPagePrinter(IntPtr h); [DllImport(""winspool.drv"")] public static extern bool WritePrinter(IntPtr h, byte[] b, int n, out int w); }"
-$printerName = (Get-Printer | Where-Object { $_.Name -like '*Star*' } | Select-Object -First 1).Name
-if (-not $printerName) { throw 'Star printer not found. Check that the printer is installed.' }
+$pn = (Get-Printer | Where-Object { $_.Name -like '*Star*' } | Select-Object -First 1).Name
+if (-not $pn) { $pn = "Star TSP100 Cutter (TSP143)" }
 $b = [byte[]](0x07)
 $h = [IntPtr]::Zero
-[FluxeRP]::OpenPrinter($printerName, [ref]$h, [IntPtr]::Zero)
+[FluxeRP]::OpenPrinter($pn, [ref]$h, [IntPtr]::Zero) | Out-Null
 $d = New-Object FluxeRP+DI
 $d.pDocName = 'drawer'
 $d.pOutputFile = $null
 $d.pDataType = 'RAW'
-[FluxeRP]::StartDocPrinter($h, 1, [ref]$d)
-[FluxeRP]::StartPagePrinter($h)
+[FluxeRP]::StartDocPrinter($h, 1, [ref]$d) | Out-Null
+[FluxeRP]::StartPagePrinter($h) | Out-Null
 $w = 0
-[FluxeRP]::WritePrinter($h, $b, $b.Length, [ref]$w)
-[FluxeRP]::EndPagePrinter($h)
-[FluxeRP]::EndDocPrinter($h)
-[FluxeRP]::ClosePrinter($h)
-Write-Output "OK:$printerName:$w"
+[FluxeRP]::WritePrinter($h, $b, $b.Length, [ref]$w) | Out-Null
+[FluxeRP]::EndPagePrinter($h) | Out-Null
+[FluxeRP]::EndDocPrinter($h) | Out-Null
+[FluxeRP]::ClosePrinter($h) | Out-Null
+Write-Output "OK:$pn:$w"
 `
 
 function kickDrawer(res) {
