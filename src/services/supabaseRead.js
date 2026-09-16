@@ -370,7 +370,7 @@ export async function fetchSales() {
     const orgId = await getOrgId()
     const rows  = await sbFetch(
       `/sales?select=*,sale_items(*),payments(*)` +
-      `&organization_id=eq.${orgId}&order=number.desc&limit=2000`
+      `&organization_id=eq.${orgId}&order=number.desc&limit=10000`
     )
     return rows.map(r => normalizeSale(fromSupabaseSale(r)))
   } catch (err) {
