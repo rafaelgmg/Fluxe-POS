@@ -347,7 +347,7 @@ export async function fetchSalesInRange(from, to) {
     const fromTs = from.toISOString()
     const toTs   = to.toISOString()
     const rows   = await sbFetch(
-      `/sales?select=*,sale_items(*)` +
+      `/sales?select=*,sale_items(*),payments(*)` +
       `&organization_id=eq.${orgId}` +
       `&sold_at=gte.${fromTs}&sold_at=lte.${toTs}` +
       `&status=neq.voided` +

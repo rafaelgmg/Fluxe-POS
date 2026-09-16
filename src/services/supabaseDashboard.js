@@ -2,7 +2,7 @@
  * supabaseDashboard.js — Data layer for the /dashboard page.
  */
 
-import { fetchSales, getOrgId, isSupabaseConfigured } from './supabaseRead'
+import { fetchSalesInRange, getOrgId, isSupabaseConfigured } from './supabaseRead'
 import { initOrgSession } from './supabaseAuth'
 import { getAccessToken }  from './supabaseSession'
 import { loadActiveEmployees } from '../utils/usersStorage'
@@ -184,26 +184,21 @@ export async function fetchLeadsForAnalytics(startDate, endDate) {
 export async function fetchDashboardData(startDate, endDate) {
   try { await initOrgSession() } catch {}
 
-  const [sales, leads] = await Promise.all([
-    fetchSales(),
-    fetchLeadsInRange(startDate, endDate),
-  ])
-  if (!sales) return null
-
-  const active  = s => s.status !== 'voided'
-  const inRange = (s, from, to) => { const d = new Date(s.timestamp); return d >= from && d < to }
-
-  const selected   = sales.filter(s => active(s) && inRange(s, startDate, endDate))
-
   // Comparison period: same duration immediately before the selected range
   const duration     = endDate.getTime() - startDate.getTime()
   const compareEnd   = startDate
   const compareStart = new Date(startDate.getTime() - duration)
-  const comparison   = sales.filter(s => active(s) && inRange(s, compareStart, compareEnd))
+
+  const [selected, comparison, leads] = await Promise.all([
+    fetchSalesInRange(startDate, endDate),
+    fetchSalesInRange(compareStart, compareEnd),
+    fetchLeadsInRange(startDate, endDate),
+  ])
+  if (!selected) return null
 
   return {
     current:    computeMetrics(selected),
-    comparison: computeMetrics(comparison),
+    comparison: computeMetrics(comparison || []),
     feed:       selected.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 60),
     all:        selected,   // full untruncated list — used for location-filtered recompute
     leads,
