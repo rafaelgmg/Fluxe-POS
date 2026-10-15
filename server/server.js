@@ -516,6 +516,7 @@ app.listen(PORT, HOST, () => {
   console.log('\n──────────────────────────────────────────────────────')
   console.log('  🧴  Perfume Passage CRM Server')
   console.log('──────────────────────────────────────────────────────')
+  console.log(`  Node        : ${process.version}`)
   console.log(`  Port        : ${PORT}`)
   console.log(`  Twilio      : ${twilioStatus}`)
   console.log(`  Automation  : ${automationEnabled ? 'ENABLED  (auto-scheduler active)' : 'DISABLED (SMS_AUTOMATION_ENABLED=false)'}`)
