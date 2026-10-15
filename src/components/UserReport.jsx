@@ -1,4 +1,5 @@
-﻿import { useState, useMemo, useEffect, useCallback } from 'react'
+import { isDemoMode } from '../demo/demoSeed'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { RefundModal } from './RefundModal'
 import { loadActiveEmployees } from '../utils/usersStorage'
 import { loadCRM } from '../utils/crmStorage'
@@ -11,7 +12,7 @@ import { setManualBonus } from '../utils/bonusStorage'
 import { loadUsers } from '../utils/usersStorage'
 import { calcDayCompetitionBonus } from '../utils/competitionBonusEngine'
 import { localDateKey } from '../utils/dateUtils'
-import { fetchClockRecordsByEmployee } from '../services/supabaseRead'
+import { fetchClockRecordsByEmployee, fetchSalesInRange } from '../services/supabaseRead'
 import { fetchBonusRules }             from '../services/supabaseBonusRules'
 import { loadLocationConfig, resolveSpareRateForDay } from '../utils/locationConfig'
 import { sumItemSpare } from '../utils/spareUtils'
@@ -784,7 +785,7 @@ function InvoiceTable({ invoices, onOpenInvoice }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 const TABS = ['Summary', 'Invoices', 'Product Commission', 'Products Sold', 'Hours', 'Spare', 'Deductions', 'Reimbursements', 'My Clients']
 
-export default function UserReport({ onClose, sales = [], updateSale, voidSale, refundSale, mode = 'self' }) {
+export default function UserReport({ onClose, sales: liveSales = [], updateSale, voidSale, refundSale, mode = 'self' }) {
   const employees = loadActiveEmployees()
 
   const [unlockedEmployee, setUnlockedEmployee] = useState(
@@ -811,6 +812,31 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
     return localDateStr(d)          // primeiro dia do mês em horário local
   })
   const [toDate, setToDate] = useState(() => localDateStr()) // hoje em horário local
+
+  const [history, setHistory] = useState({ key: '', rows: [], error: '', loading: true })
+  const [historyRefresh, setHistoryRefresh] = useState(0)
+  const historyKey = fromDate + ':' + toDate
+  const demo = isDemoMode()
+  useEffect(() => {
+    let active = true
+    if (demo || !unlockedEmployee) return
+    const from = parseLocalDate(fromDate)
+    const to = parseLocalDate(toDate)
+    to.setHours(23, 59, 59, 999)
+    if (!Number.isFinite(+from) || !Number.isFinite(+to) || from > to) {
+      setHistory({ key: historyKey, rows: [], loading: false, error: 'Select a valid date range.' })
+      return
+    }
+    setHistory({ key: historyKey, rows: [], loading: true, error: '' })
+    fetchSalesInRange(from, to, { includeVoided: true }).then(rows => {
+      if (!active) return
+      setHistory({ key: historyKey, rows: rows || [], loading: false,
+        error: rows === null ? 'Unable to load the complete report. Check your connection and retry.' : '' })
+    })
+    return () => { active = false }
+  }, [fromDate, toDate, historyKey, demo, unlockedEmployee, historyRefresh, liveSales])
+  const historyReady = demo || (history.key === historyKey && !history.loading && !history.error)
+  const sales = demo ? liveSales : history.key === historyKey ? history.rows : []
 
   // Hooks must always be called — never after a conditional return
   const employeeSales = useMemo(() => {
@@ -1240,8 +1266,12 @@ export default function UserReport({ onClose, sales = [], updateSale, voidSale, 
           </div>
         </div>
 
+        {!historyReady && <div role="status" style={{ padding: 16, color: MUTED }}>
+          {history.key === historyKey && history.error ? history.error : 'Loading complete sales history...'}
+          {history.key === historyKey && history.error && <button onClick={() => setHistoryRefresh(n => n + 1)} style={{ marginLeft: 12 }}>Retry</button>}
+        </div>}
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: historyReady ? 'flex' : 'none', flexDirection: 'column', gap: 16 }}>
 
           {/* Summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>

@@ -1,3 +1,4 @@
+import { backendFetch } from '../services/backendApi'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { loadCRM, saveCRM } from '../utils/crmStorage'
 import { localId } from '../domain/utils/ids'
@@ -13,7 +14,7 @@ import {
   updateSmsConsentInSupabase,
 } from '../services/supabaseCRM'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+
 
 const load    = loadCRM
 const persist = saveCRM
@@ -22,7 +23,7 @@ const persist = saveCRM
 
 async function isServerOnline() {
   try {
-    const res = await fetch(`${SERVER_URL}/api/health`, { signal: AbortSignal.timeout(1500) })
+    const res = await backendFetch('/api/status', { signal: AbortSignal.timeout(1500) })
     return res.ok
   } catch {
     return false
@@ -313,7 +314,7 @@ export function useCRM(posSession = null, currentUser = null) {
       const online = await isServerOnline()
       setServerOnline(online)
       if (online) {
-        const res = await fetch(`${SERVER_URL}/api/customers/upsert`, {
+        const res = await backendFetch('/api/customers/upsert', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ formData, invoice, capturedBy: capturedByOverride }),
@@ -520,7 +521,7 @@ export function useCRM(posSession = null, currentUser = null) {
 
   // customer — full customer object (needs .phone, .firstName, .supabaseId)
   const sendManualSMS = useCallback(async (customer, message, channel = 'sms') => {
-    const res = await fetch(`${SERVER_URL}/api/sms/send`, {
+    const res = await backendFetch('/api/sms/send', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({
@@ -574,13 +575,13 @@ export function useCRM(posSession = null, currentUser = null) {
   }, [])
 
   const getSMSLog = useCallback(async () => {
-    const res = await fetch(`${SERVER_URL}/api/sms/log`)
+    const res = await backendFetch('/api/sms/log')
     if (!res.ok) throw new Error('Failed to fetch SMS log')
     return res.json()
   }, [])
 
   const getScheduled = useCallback(async () => {
-    const res = await fetch(`${SERVER_URL}/api/sms/scheduled`)
+    const res = await backendFetch('/api/sms/scheduled')
     if (!res.ok) throw new Error('Failed to fetch scheduled messages')
     return res.json()
   }, [])

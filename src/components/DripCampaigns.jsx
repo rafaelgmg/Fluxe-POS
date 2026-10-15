@@ -1,7 +1,8 @@
+import { backendFetch } from '../services/backendApi'
 import { useState, useMemo, useCallback } from 'react'
 import { loadDripRules, saveDripRule, deleteDripRule, loadDripLog, appendDripLog } from '../utils/dripStorage'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+
 const STORE_NAME = 'Perfume Passage'
 
 const BG     = '#030e1e'
@@ -341,7 +342,7 @@ export default function DripCampaigns({ customers = [], posSession = null }) {
       const message = resolveVars(rule.message, c)
       let status = 'error'
       try {
-        const res = await fetch(`${SERVER_URL}/api/sms/send`, {
+        const res = await backendFetch('/api/sms/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

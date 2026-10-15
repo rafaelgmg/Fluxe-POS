@@ -1,6 +1,7 @@
+import { backendFetch } from '../services/backendApi'
 import { useState, useEffect, useCallback } from 'react'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+
 
 const BG     = '#030e1e'
 const PANEL  = '#0d1526'
@@ -82,7 +83,7 @@ export default function SmsAutomationTemplates() {
   const load = useCallback(async () => {
     setLoadState('loading')
     try {
-      const res  = await fetch(`${SERVER_URL}/api/sms/templates`, { signal: AbortSignal.timeout(4000) })
+      const res  = await backendFetch('/api/sms/templates', { signal: AbortSignal.timeout(4000) })
       const data = await res.json()
       setTemplates(data)
       setDrafts(data)
@@ -117,7 +118,7 @@ export default function SmsAutomationTemplates() {
     if (saveState === 'saving') return
     setSaveState('saving')
     try {
-      const res = await fetch(`${SERVER_URL}/api/sms/templates`, {
+      const res = await backendFetch('/api/sms/templates', {
         method:  'PUT',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(drafts),

@@ -22,8 +22,11 @@ const scheduler = require('./scheduler')
 const sbClient  = require('./supabaseClient')
 const { buildScheduledMessages, buildManualMessage, loadTemplates, saveTemplates } = require('./messages')
 
+const { createApiGuard, createTwilioGuard } = require('./security')
 const app  = express()
+app.disable('x-powered-by')
 const PORT = process.env.PORT || 3001
+const HOST = process.env.HOST || '127.0.0.1'
 
 // ─── Twilio setup ─────────────────────────────────────────────────────────────
 
@@ -86,39 +89,26 @@ app.use((req, _res, next) => {
 })
 
 // ─── Account login ───────────────────────────────────────────────────────────
-// Mock credentials — move to environment variables in production.
-// In production: hash passwords with bcrypt, issue real JWTs.
-const ACCOUNT_USERS = [
-  {
-    email:     process.env.ACCOUNT_EMAIL    || 'admin@maisonparfum.com',
-    password:  process.env.ACCOUNT_PASSWORD || '',
-    role:      'admin',
-    accountId: 'Delmondes_Retailing_NV_Inc',
-  },
-]
+// Public liveness contains no customer counts, phone numbers or sender details.
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }))
 
-app.post('/api/account-login', (req, res) => {
-  const { email, password } = req.body || {}
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' })
-  }
-  const user = ACCOUNT_USERS.find(
-    u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-  )
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid email or password' })
-  }
-  res.json({
-    email:     user.email,
-    accountId: user.accountId,
-    role:      user.role,
-    token:     `tok_${Date.now()}`,
-  })
+// Existing CORS policy still applies. Only a loopback-bound kiosk gets hardware access.
+require('./localDrawer').registerLocalDrawer(app, HOST)
+
+const apiGuard = createApiGuard({ getClient: sbClient.getClient, getOrgId: () => process.env.ORG_ID })
+app.use('/api', (req, res, next) => {
+  if (req.method === 'POST' && req.path === '/webhooks/twilio/sms') return next()
+  return apiGuard(req, res, next)
 })
 
-// ─── Health ───────────────────────────────────────────────────────────────────
+app.post('/api/receipts/authorize', require('./receiptAuthorization').createReceiptAuthorization({ getClient: sbClient.getClient }))
+app.get('/api/receipts/requests/:saleId', require('./receiptQueue').createReceiptStatus({ getClient: sbClient.getClient }))
+app.post('/api/receipts/requests', require('./receiptQueue').createReceiptQueue({
+  getClient: sbClient.getClient,
+  isEnabled: () => process.env.RECEIPT_QUEUE_ENABLED === 'true',
+}))
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/status', (_req, res) => {
   res.json({
     status:            'ok',
     twilio:            !!twilioClient,
@@ -133,8 +123,6 @@ app.get('/api/health', (_req, res) => {
     timestamp:         new Date().toISOString(),
   })
 })
-
-// ─── Customers ────────────────────────────────────────────────────────────────
 
 // GET /api/customers
 app.get('/api/customers', (_req, res) => {
@@ -412,7 +400,10 @@ app.post('/api/sales', (req, res) => {
 //   npx ngrok http 3001
 //   Then set the ngrok URL in Twilio console as webhook
 
-app.post('/api/webhooks/twilio/sms', express.urlencoded({ extended: false }), async (req, res) => {
+app.post('/api/webhooks/twilio/sms', express.urlencoded({ extended: false }), createTwilioGuard({
+  getConfig: () => ({ token: process.env.TWILIO_AUTH_TOKEN, url: process.env.TWILIO_SMS_WEBHOOK_URL }),
+  validateRequest: require('twilio').validateRequest,
+}), async (req, res) => {
   // Respond with empty TwiML immediately — Twilio requires fast response
   res.set('Content-Type', 'text/xml')
   res.send('<Response></Response>')
@@ -509,142 +500,9 @@ app.post('/api/scheduler/run', async (_req, res) => {
 //   - no Star/TSP printer found
 //   - PowerShell spawns an error
 
-app.post('/api/drawer/kick', (req, res) => {
-  const { location = 'unknown' } = req.body || {}
-  const TAG = '[CashDrawer]'
+app.post('/api/drawer/kick', (_req, res) => res.status(410).json({ error: 'Use the local drawer server' }))
 
-  if (process.platform !== 'win32') {
-    console.log(`${TAG} Location: ${location} → non-Windows — skipping`)
-    return res.json({ ok: false, error: 'non-Windows platform' })
-  }
-
-  const { spawn }  = require('child_process')
-  const fs         = require('fs')
-  const os         = require('os')
-  const path       = require('path')
-
-  // PowerShell: find Star/TSP printer → send raw ESC/POS via Win32 Spooler API
-  const psScript = `
-$ErrorActionPreference = 'Stop'
-
-# Find first Star/TSP printer installed on this machine
-$printerName = (Get-Printer | Where-Object { $_.Name -match 'Star|TSP' } | Select-Object -First 1).Name
-if (-not $printerName) {
-  Write-Error "No Star/TSP printer found"
-  exit 2
-}
-
-# Win32 Spooler API via inline C# (P/Invoke)
-Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
-public class RawPrint {
-    [DllImport("winspool.drv", EntryPoint="OpenPrinterA",    CharSet=CharSet.Ansi)] public static extern bool   OpenPrinter   (string n, ref IntPtr h, IntPtr d);
-    [DllImport("winspool.drv", EntryPoint="ClosePrinter")]                          public static extern bool   ClosePrinter  (IntPtr h);
-    [DllImport("winspool.drv", EntryPoint="StartDocPrinterA",CharSet=CharSet.Ansi)] public static extern int    StartDocPrinter(IntPtr h, int l, ref DOC di);
-    [DllImport("winspool.drv", EntryPoint="EndDocPrinter")]                         public static extern bool   EndDocPrinter (IntPtr h);
-    [DllImport("winspool.drv", EntryPoint="StartPagePrinter")]                      public static extern bool   StartPagePrinter(IntPtr h);
-    [DllImport("winspool.drv", EntryPoint="EndPagePrinter")]                        public static extern bool   EndPagePrinter(IntPtr h);
-    [DllImport("winspool.drv", EntryPoint="WritePrinter")]                          public static extern bool   WritePrinter  (IntPtr h, IntPtr p, int c, ref int w);
-    [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)]
-    public struct DOC {
-        [MarshalAs(UnmanagedType.LPStr)] public string pDocName;
-        [MarshalAs(UnmanagedType.LPStr)] public string pOutputFile;
-        [MarshalAs(UnmanagedType.LPStr)] public string pDatatype;
-    }
-}
-"@ -PassThru | Out-Null
-
-# ESC p 0 25 250 — standard cash drawer kick (drawer 1)
-$bytes = [byte[]](0x1b, 0x70, 0x00, 0x19, 0xfa)
-
-$handle = [IntPtr]::Zero
-if (-not [RawPrint]::OpenPrinter($printerName, [ref]$handle, [IntPtr]::Zero)) {
-  Write-Error "OpenPrinter failed: $printerName"
-  exit 3
-}
-
-$doc           = New-Object RawPrint+DOC
-$doc.pDocName  = "fluxe-drawer-kick"
-$doc.pDatatype = "RAW"
-
-$docId = [RawPrint]::StartDocPrinter($handle, 1, [ref]$doc)
-if ($docId -le 0) {
-  [RawPrint]::ClosePrinter($handle) | Out-Null
-  Write-Error "StartDocPrinter failed"
-  exit 4
-}
-
-[RawPrint]::StartPagePrinter($handle) | Out-Null
-$ptr     = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($bytes.Length)
-[System.Runtime.InteropServices.Marshal]::Copy($bytes, 0, $ptr, $bytes.Length)
-$written = 0
-[RawPrint]::WritePrinter($handle, $ptr, $bytes.Length, [ref]$written) | Out-Null
-[System.Runtime.InteropServices.Marshal]::FreeHGlobal($ptr)
-[RawPrint]::EndPagePrinter($handle)  | Out-Null
-[RawPrint]::EndDocPrinter($handle)   | Out-Null
-[RawPrint]::ClosePrinter($handle)    | Out-Null
-
-Write-Output "OK:$printerName:$written"
-`
-
-  const tmpFile = path.join(os.tmpdir(), `fluxe_drawer_${Date.now()}.ps1`)
-
-  try {
-    fs.writeFileSync(tmpFile, psScript, 'utf8')
-  } catch (e) {
-    console.error(`${TAG} Failed to write PS script:`, e.message)
-    return res.json({ ok: false, error: e.message })
-  }
-
-  let responded = false
-  const safeReply = (payload) => {
-    if (responded) return
-    responded = true
-    try { fs.unlinkSync(tmpFile) } catch {}
-    res.json(payload)
-  }
-
-  const proc = spawn('powershell', [
-    '-ExecutionPolicy', 'Bypass',
-    '-NoProfile',
-    '-NonInteractive',
-    '-File', tmpFile,
-  ])
-
-  let stdout = '', stderr = ''
-  proc.stdout.on('data', d => { stdout += d.toString() })
-  proc.stderr.on('data', d => { stderr += d.toString() })
-
-  proc.on('close', code => {
-    const out = stdout.trim()
-    if (code === 0 && out.startsWith('OK:')) {
-      const parts      = out.split(':')
-      const printer    = parts[1] || 'unknown'
-      const bytesWrote = parts[2] || '?'
-      console.log(`${TAG} Location: ${location} → ESC/POS raw sent → printer: "${printer}" → bytes: ${bytesWrote}`)
-      safeReply({ ok: true, printer, bytes: Number(bytesWrote) })
-    } else {
-      const errMsg = stderr.trim() || `exit ${code}`
-      console.error(`${TAG} Location: ${location} → raw kick FAILED → ${errMsg}`)
-      safeReply({ ok: false, error: errMsg, code })
-    }
-  })
-
-  proc.on('error', e => {
-    console.error(`${TAG} spawn error:`, e.message)
-    safeReply({ ok: false, error: e.message })
-  })
-
-  // 10-second failsafe
-  setTimeout(() => {
-    if (!responded) { proc.kill(); safeReply({ ok: false, error: 'timeout' }) }
-  }, 10_000)
-})
-
-// ─── Start ────────────────────────────────────────────────────────────────────
-
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   const automationEnabled = process.env.SMS_AUTOMATION_ENABLED === 'true'
   const testNumber        = process.env.SMS_TEST_NUMBER
   const rateLimit         = parseInt(process.env.SMS_RATE_LIMIT_PER_DAY) || 3

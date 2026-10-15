@@ -127,7 +127,7 @@ export function useSales() {
     if (saleId) {
       setSales(prev => {
         const withId = prev.map(s =>
-          s.number === serialized.number ? { ...s, supabaseId: saleId } : s
+          s.number === (serverNumber ?? serialized.number) ? { ...s, supabaseId: saleId } : s
         )
         persistAllSales(withId)
         return withId

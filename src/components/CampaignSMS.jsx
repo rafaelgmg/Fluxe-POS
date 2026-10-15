@@ -1,7 +1,8 @@
+import { backendFetch } from '../services/backendApi'
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { loadCampaigns, saveCampaign, deleteCampaign, updateCampaign } from '../utils/campaignStorage'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+
 const STORE_NAME = 'Perfume Passage'
 
 const BG     = '#030e1e'
@@ -493,7 +494,7 @@ function StepReview({ selected, customers, message, templateId, posSession, onBa
   const eligibleList = selectedCustomers.filter(c => c.smsConsentStatus !== 'opted_out')
 
   useEffect(() => {
-    fetch(`${SERVER_URL}/api/health`, { signal: AbortSignal.timeout(2500) })
+    backendFetch('/api/status', { signal: AbortSignal.timeout(2500) })
       .then(r => r.json())
       .then(d => setTwilioOk(!!d.twilio))
       .catch(() => setTwilioOk(false))
@@ -545,7 +546,7 @@ function StepReview({ selected, customers, message, templateId, posSession, onBa
       let status = 'error'
       let errMsg = ''
       try {
-        const res = await fetch(`${SERVER_URL}/api/sms/send`, {
+        const res = await backendFetch('/api/sms/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

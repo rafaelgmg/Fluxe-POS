@@ -409,7 +409,7 @@ export default function App() {
       : invoice
 
     // Persist sale to localStorage + Supabase; get saleId for inventory chain (Phase 4)
-    const { saleId } = await saveSale(finalInvoice)
+    const { saleId, serverNumber } = await saveSale(finalInvoice)
 
     // Decrement stock locally + write inventory_stock/movements to Supabase via saleId
     decrementStock(finalInvoice.items, posSession?.locationId || null, {
@@ -430,7 +430,7 @@ export default function App() {
       })
     }
 
-    setSaleComplete(finalInvoice)
+    setSaleComplete({ ...finalInvoice, number: serverNumber ?? finalInvoice.number, supabaseId: saleId || null })
     clearCart()
     setSaleEmployee(null)   // clear sale-specific seller; session user (currentUser) is preserved
     setPendingInvoice(null)

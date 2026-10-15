@@ -1,13 +1,15 @@
-﻿/**
+/**
  * Receipts.jsx
  * Locate, view, and reprint any stored invoice.
  * Mirrors Nova POS "Receipts" module: search by number, Print Latest, Open Latest.
  */
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { printReceipt } from '../utils/printReceipt'
 import { loadAllSales } from '../utils/salesStorage'
-import { fetchSales } from '../services/supabaseRead'
+import { fetchSales, fetchSaleByNumber } from '../services/supabaseRead'
+import { isDemoMode } from '../demo/demoSeed'
+import SmsReceiptModal from './SmsReceiptModal'
 
 function fmt$(n) {
   return '$' + (n || 0).toFixed(2)
@@ -36,6 +38,7 @@ function resolveItem(item) {
 
 // ── Invoice detail panel ───────────────────────────────────────────────────────
 function InvoiceDetail({ invoice, onClose, onPrint }) {
+  const [showSms, setShowSms] = useState(false)
   const tip      = invoice.tip ?? 0
   const subtotal = invoice.subtotal ?? 0
   const tax      = invoice.tax      ?? 0
@@ -86,6 +89,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+          <button onClick={() => setShowSms(true)} style={{ background: '#111d30', border: '1px solid #253349', borderRadius: 6, color: '#fff', padding: '8px 18px', cursor: 'pointer' }}>SMS receipt / status</button>
           <button
             onClick={() => onPrint(invoice)}
             style={{
@@ -99,6 +103,7 @@ function InvoiceDetail({ invoice, onClose, onPrint }) {
         </div>
       </div>
 
+      {showSms && <SmsReceiptModal key={invoice.supabaseId || invoice.number} invoice={invoice} onClose={() => setShowSms(false)} />}
       {/* Body */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
         <div style={{
@@ -206,6 +211,9 @@ export default function Receipts({ onClose, posSession }) {
   const [searchInput, setSearchInput]   = useState('')
   const [searchResult, setSearchResult] = useState(null)   // { found: bool, invoice?: {} }
   const [openInvoice, setOpenInvoice]   = useState(null)
+  const [searching, setSearching] = useState(false)
+  const searchVersion = useRef(0)
+  useEffect(() => () => { searchVersion.current++ }, [])
   // 'current' = filter by posSession.location | 'all' = no filter
   const [locScope, setLocScope]         = useState('current')
 
@@ -234,13 +242,24 @@ export default function Receipts({ onClose, posSession }) {
       .slice(0, 10)
   }, [sales])
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const q = searchInput.trim()
     if (!q) return
-    // Search in allSales so an invoice from another location can still be found by number
-    const found = allSales.find(s => String(s.number) === q)
-    setSearchResult(found ? { found: true, invoice: found } : { found: false })
-    if (found) setOpenInvoice(null)
+    const version = ++searchVersion.current
+    setSearching(true)
+    setSearchResult(null)
+    try {
+      const found = isDemoMode()
+        ? allSales.find(s => String(s.number) === q)
+        : await fetchSaleByNumber(q)
+      if (version !== searchVersion.current) return
+      setSearchResult(found ? { found: true, invoice: found } : { found: false })
+      if (found) setOpenInvoice(null)
+    } catch {
+      if (version === searchVersion.current) setSearchResult({ error: 'Unable to verify this receipt online. Check your connection and try again.' })
+    } finally {
+      if (version === searchVersion.current) setSearching(false)
+    }
   }
 
   const handleKeyDown = (e) => {
@@ -358,7 +377,7 @@ export default function Receipts({ onClose, posSession }) {
             <div style={{ display: 'flex', gap: 10 }}>
               <input
                 value={searchInput}
-                onChange={e => { setSearchInput(e.target.value); setSearchResult(null) }}
+                onChange={e => { searchVersion.current++; setSearching(false); setSearchInput(e.target.value); setSearchResult(null) }}
                 onKeyDown={handleKeyDown}
                 placeholder="Invoice number..."
                 autoFocus
@@ -372,6 +391,7 @@ export default function Receipts({ onClose, posSession }) {
               />
               <button
                 onClick={handleSearch}
+                disabled={searching}
                 style={{
                   background: '#3b82f6', border: 'none', borderRadius: 8,
                   color: '#fff', padding: '9px 20px', cursor: 'pointer',
@@ -379,11 +399,12 @@ export default function Receipts({ onClose, posSession }) {
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8' }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#3b82f6' }}
-              >Search</button>
+              >{searching ? 'Searching...' : 'Search'}</button>
             </div>
 
             {/* Not found */}
-            {searchResult && !searchResult.found && (
+            {searchResult?.error && <div role="alert" style={{ color: '#fca5a5', marginTop: 10 }}>{searchResult.error}</div>}
+            {searchResult && !searchResult.error && !searchResult.found && (
               <div style={{
                 marginTop: 10, padding: '9px 14px',
                 background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',

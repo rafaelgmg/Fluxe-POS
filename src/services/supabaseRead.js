@@ -1,3 +1,4 @@
+import { fetchSalesPages } from './salesPagination'
 /**
  * supabaseRead.js — Phase 1: read-only Supabase integration.
  *
@@ -340,18 +341,17 @@ export async function fetchProducts() {
  * @param {Date} to
  * @returns {Promise<import('../domain/models/sale').Sale[] | null>}
  */
-export async function fetchSalesInRange(from, to) {
+export async function fetchSalesInRange(from, to, { includeVoided = false } = {}) {
   if (!isSupabaseConfigured()) return null
   try {
     const orgId  = await getOrgId()
     const fromTs = from.toISOString()
     const toTs   = to.toISOString()
-    const rows   = await sbFetch(
+    const rows   = await fetchSalesPages(sbFetch,
       `/sales?select=*,sale_items(*),payments(*)` +
       `&organization_id=eq.${orgId}` +
       `&sold_at=gte.${fromTs}&sold_at=lte.${toTs}` +
-      `&status=neq.voided` +
-      `&order=sold_at.desc&limit=5000`
+      (includeVoided ? '' : '&status=neq.voided')
     )
     return rows.map(r => normalizeSale(fromSupabaseSale(r)))
   } catch (err) {
@@ -361,22 +361,33 @@ export async function fetchSalesInRange(from, to) {
 }
 
 /**
- * Fetch all sales with items and payments (latest 2000, sorted desc).
+ * Fetch all sales with items and payments, following every server page.
  * @returns {Promise<import('../domain/models/sale').Sale[] | null>}
  */
 export async function fetchSales() {
   if (!isSupabaseConfigured()) return null
   try {
     const orgId = await getOrgId()
-    const rows  = await sbFetch(
+    const rows  = await fetchSalesPages(sbFetch,
       `/sales?select=*,sale_items(*),payments(*)` +
-      `&organization_id=eq.${orgId}&order=number.desc&limit=10000`
+      `&organization_id=eq.${orgId}`
     )
     return rows.map(r => normalizeSale(fromSupabaseSale(r)))
   } catch (err) {
     console.warn('[Fluxe] fetchSales failed — using local fallback:', err.message)
     return null
   }
+}
+
+/** Exact lookup never depends on the recently loaded sales list. Errors remain errors. */
+export async function fetchSaleByNumber(number) {
+  if (!isSupabaseConfigured()) throw new Error('Supabase is not configured')
+  if (!/^\d+$/.test(String(number))) throw new Error('Enter a valid invoice number')
+  const orgId = await getOrgId()
+  const rows = await sbFetch('/sales?select=*,sale_items(*),payments(*)' +
+    '&organization_id=eq.' + encodeURIComponent(orgId) +
+    '&number=eq.' + encodeURIComponent(number) + '&limit=1')
+  return rows.length ? normalizeSale(fromSupabaseSale(rows[0])) : null
 }
 
 /**

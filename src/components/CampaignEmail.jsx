@@ -1,7 +1,8 @@
+import { backendFetch } from '../services/backendApi'
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { loadCampaigns, saveCampaign } from '../utils/campaignStorage'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'
+
 const STORE_NAME = 'Perfume Passage'
 
 const BG     = '#030e1e'
@@ -279,7 +280,7 @@ function StepReview({ selected, customers, subject, body, templateId, onBack, on
   const selectedCustomers = useMemo(() => customers.filter(c => selected.has(c.id)), [customers, selected])
 
   useEffect(() => {
-    fetch(`${SERVER_URL}/api/health`, { signal: AbortSignal.timeout(2500) })
+    backendFetch('/api/status', { signal: AbortSignal.timeout(2500) })
       .then(r => r.json())
       .then(d => setResendOk(!!d.resend))
       .catch(() => setResendOk(false))
@@ -301,7 +302,7 @@ function StepReview({ selected, customers, subject, body, templateId, onBack, on
       let status = 'error'; let errMsg = ''
 
       try {
-        const res = await fetch(`${SERVER_URL}/api/email/send`, {
+        const res = await backendFetch('/api/email/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ to: c.email, firstName: c.firstName, subject: resolvedSubject, body: resolvedBody, dryRun }),
