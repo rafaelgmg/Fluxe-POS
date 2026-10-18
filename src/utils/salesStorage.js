@@ -11,6 +11,7 @@
 
 import { KEY_SALES, KEY_INVOICE_COUNTER } from './storageKeys'
 import { normalizeSale } from '../domain/adapters/legacySale'
+import { writeCheckoutCache, CHECKOUT_CACHE_ERROR } from './checkoutCache'
 
 // ── Sales array ───────────────────────────────────────────────────────────────
 
@@ -37,7 +38,10 @@ export function loadAllSales() {
  * @param {object[]} sales
  */
 export function persistAllSales(sales) {
-  localStorage.setItem(KEY_SALES, JSON.stringify(sales))
+  return writeCheckoutCache(localStorage, KEY_SALES, sales, () => {
+    console.warn('[Fluxe] Local sales copy could not be saved; verify cloud synchronization before reloading.')
+    window.dispatchEvent(new Event(CHECKOUT_CACHE_ERROR))
+  })
 }
 
 // ── Invoice sequence ──────────────────────────────────────────────────────────

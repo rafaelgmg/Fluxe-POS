@@ -17,6 +17,7 @@ import { fetchOrgSettings } from './services/supabaseOrgSettings'
 import { loadUsersAsync, loadActiveEmployees } from './utils/usersStorage'
 import { useCRM } from './hooks/useCRM'
 import { useSales, nextInvoiceNumber } from './hooks/useSales'
+import { CHECKOUT_CACHE_ERROR } from './utils/checkoutCache'
 import { useCart } from './hooks/useCart'
 import { useProducts } from './hooks/useProducts'
 import { COLORS, DEFAULT_LOCATION, SYSTEM_NAME, LOCATIONS_CFG } from './config/branding'
@@ -76,6 +77,12 @@ ensureCategoriesSeeded()
 awaitOrgSession().then(() => { fetchOrgSettings(); fetchBonusRules() })
 
 export default function App() {
+  const [salesCacheError, setSalesCacheError] = useState(false)
+  useEffect(() => {
+    const onCacheError = () => setSalesCacheError(true)
+    window.addEventListener(CHECKOUT_CACHE_ERROR, onCacheError)
+    return () => window.removeEventListener(CHECKOUT_CACHE_ERROR, onCacheError)
+  }, [])
   const { mode, tokens, toggle } = useTheme()
   const [currentUser, setCurrentUser]   = useState(() =>
     isDemoMode() ? { id: 101, name: 'Alex Morgan', role: 'manager', photo: null } : null
@@ -1256,6 +1263,13 @@ export default function App() {
       )}
 
       {/* SALE COMPLETE TOAST */}
+      {salesCacheError && (
+        <div role="alert" style={{ position: 'fixed', top: 8, left: '10%', right: '10%',
+          zIndex: 2200, padding: 14, background: '#422006', color: '#fef3c7', borderRadius: 8 }}>
+          This device could not save a local copy of checkout data. Before closing or refreshing,
+          verify the latest sale in Reports on another device. Do not repeat the payment.
+        </div>
+      )}
       {saleComplete && (
         <div style={{
           position: 'fixed', bottom: 48, left: '50%', transform: 'translateX(-50%)',

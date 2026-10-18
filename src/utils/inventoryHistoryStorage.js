@@ -9,6 +9,7 @@
  */
 
 import { KEY_INV_HISTORY } from './storageKeys'
+import { writeCheckoutCache, CHECKOUT_CACHE_ERROR } from './checkoutCache'
 
 /**
  * Load all inventory history entries.
@@ -30,5 +31,8 @@ export function loadInventoryHistory() {
  * @param {object[]} history
  */
 export function saveInventoryHistory(history) {
-  localStorage.setItem(KEY_INV_HISTORY, JSON.stringify(history))
+  return writeCheckoutCache(localStorage, KEY_INV_HISTORY, history, () => {
+    console.warn('[Fluxe] Local inventory history could not be saved.')
+    window.dispatchEvent(new Event(CHECKOUT_CACHE_ERROR))
+  })
 }
