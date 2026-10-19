@@ -38,8 +38,9 @@ export function loadAllSales() {
  * @param {object[]} sales
  */
 export function persistAllSales(sales) {
-  return writeCheckoutCache(localStorage, KEY_SALES, sales, () => {
-    console.warn('[Fluxe] Local sales copy could not be saved; verify cloud synchronization before reloading.')
+  return writeCheckoutCache(localStorage, KEY_SALES, sales, (error) => {
+    console.warn('[Fluxe] Local sales copy could not be saved; verify cloud synchronization before reloading.',
+      { errorType: error?.name || 'UnknownError', recordCount: sales.length })
     window.dispatchEvent(new Event(CHECKOUT_CACHE_ERROR))
   })
 }

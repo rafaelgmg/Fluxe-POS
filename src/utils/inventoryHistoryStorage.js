@@ -31,8 +31,9 @@ export function loadInventoryHistory() {
  * @param {object[]} history
  */
 export function saveInventoryHistory(history) {
-  return writeCheckoutCache(localStorage, KEY_INV_HISTORY, history, () => {
-    console.warn('[Fluxe] Local inventory history could not be saved.')
+  return writeCheckoutCache(localStorage, KEY_INV_HISTORY, history, (error) => {
+    console.warn('[Fluxe] Local inventory history could not be saved.',
+      { errorType: error?.name || 'UnknownError', recordCount: history.length })
     window.dispatchEvent(new Event(CHECKOUT_CACHE_ERROR))
   })
 }

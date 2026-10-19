@@ -1265,9 +1265,19 @@ export default function App() {
       {/* SALE COMPLETE TOAST */}
       {salesCacheError && (
         <div role="alert" style={{ position: 'fixed', top: 8, left: '10%', right: '10%',
-          zIndex: 2200, padding: 14, background: '#422006', color: '#fef3c7', borderRadius: 8 }}>
-          This device could not save a local copy of checkout data. Before closing or refreshing,
-          verify the latest sale in Reports on another device. Do not repeat the payment.
+          zIndex: 2200, padding: 14, background: '#422006', color: '#fef3c7', borderRadius: 8,
+          display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span>
+            This device could not save a local copy of checkout data. Before closing or refreshing,
+            verify the latest sale in Reports on another device. Do not repeat the payment.
+            Dismissing this notice does not confirm synchronization.
+          </span>
+          <button type="button" onClick={() => setSalesCacheError(false)}
+            aria-label="Dismiss local storage warning"
+            style={{ flexShrink: 0, padding: '8px 12px', borderRadius: 6, cursor: 'pointer',
+              background: 'transparent', color: '#fef3c7', border: '1px solid #fef3c7' }}>
+            Dismiss
+          </button>
         </div>
       )}
       {saleComplete && (
