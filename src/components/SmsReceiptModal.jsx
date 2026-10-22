@@ -92,7 +92,7 @@ export default function SmsReceiptModal({ invoice, defaultPhone = '', onClose })
       <div style={{ width: 440, maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto', background: '#0d1526', border: '1px solid #253349', borderRadius: 12, padding: 20, color: '#f1f5f9' }}>
         <h3 id="receipt-title">SMS Receipt</h3>
         <p style={{ color: '#94a3b8', margin: '8px 0 16px' }}>Invoice #{invoice.number}</p>
-        <p style={{ color: '#fbbf24', marginBottom: 16 }}>SMS delivery is not active yet. Verified requests can be saved on hold when the queue is available.</p>
+        <p style={{ color: '#fbbf24', marginBottom: 16 }}>Verified requests are saved on hold. Saving a request does not send an SMS; it must be explicitly released for sending.</p>
         {!synced && <p role="status" style={{ marginBottom: 12 }}>This sale has no confirmed server ID. Its SMS receipt cannot be verified yet.</p>}
         <label htmlFor="receipt-phone">Customer phone (US/Canada)</label>
         <input id="receipt-phone" type="tel" value={phone} disabled={busy || !!queueResult} placeholder="702-555-1234" style={{ ...inputStyle, margin: '6px 0 12px' }} onChange={e => { setPhone(e.target.value); setPreview(null); setRequested(false); setError('') }} />

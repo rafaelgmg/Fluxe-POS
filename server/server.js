@@ -532,4 +532,5 @@ app.listen(PORT, HOST, () => {
   }
 
   scheduler.start()
+  require('./receiptWorker').startReceiptWorker(process.env, sbClient.getClient)
 })
