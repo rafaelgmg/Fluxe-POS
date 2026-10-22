@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { loadCategories } from '../utils/categoriesStorage'
-import { loadAllSales, persistAllSales, nextInvoiceNumber as _nextInvoiceNumber } from '../utils/salesStorage'
+import { loadAllSales, persistSaleChanges, nextInvoiceNumber as _nextInvoiceNumber } from '../utils/salesStorage'
 import { fetchSales, fetchCategories } from '../services/supabaseRead'
 import { writeSaleToSupabase, voidSaleInSupabase, partialRefundInventoryInSupabase } from '../services/supabaseWrite'
+import { mergeSalesForDisplay } from '../utils/localSalesDb'
 import { isDemoMode } from '../demo/demoSeed'
 
 // Status values aligned with Supabase schema enum (sale_status).
@@ -36,16 +37,12 @@ export function useSales() {
       fetchSales().then(remote => {
         if (!remote) return
         setSales(prev => {
-          // Don't let the poll un-void a sale that was voided locally but whose
-          // PATCH hasn't propagated to Supabase yet (race condition window).
-          const localVoided = new Set(
-            prev.filter(s => s.status === 'voided').map(s => String(s.number))
+          return mergeSalesForDisplay(
+            remote.filter(s => s.location !== 'Fluxe Demo Store'),
+            [...loadAllSales(), ...prev.filter(s => s._localPending)],
           )
-          return remote
-            .filter(s => s.location !== 'Fluxe Demo Store')
-            .map(s => localVoided.has(String(s.number)) ? { ...s, status: 'voided' } : s)
         })
-      })
+      }).catch(error => console.warn('[Fluxe] Sales refresh failed:', error.name))
     hydrate()
     const id = setInterval(hydrate, 30_000)
     return () => clearInterval(id)
@@ -54,6 +51,7 @@ export function useSales() {
   const saveSale = useCallback(async (invoice) => {
     const serialized = {
       ...invoice,
+      _localPending: true,
       tip:    invoice.tip    ?? 0,
       // Phase 2: status uses canonical enum values (completed/voided).
       // Legacy 'normal'/'deleted' values are mapped for backward compat.
@@ -96,43 +94,22 @@ export function useSales() {
       })(),
     }
 
-    // ── Step 1: persist locally first (offline-first guarantee) ─────────────
-    setSales(prev => {
-      const updated = [...prev, serialized]
-      persistAllSales(updated)
-      return updated
-    })
-
-    // ── Step 2: write to Supabase — fire-and-forget with fallback ─────────
-    // Demo mode: skip Supabase entirely — demo sales must never reach production DB.
+    // Await local durability before the cloud request; cloud failure retains the pending copy.
+    await persistSaleChanges([serialized])
+    setSales(prev => [...prev, serialized])
     if (isDemoMode()) return { saleId: null, serverNumber: serialized.number }
-    // The sale is already safe in localStorage. Supabase failure never blocks the POS.
     const { saleId, serverNumber } = await writeSaleToSupabase(serialized)
-
-    // ── Step 3: reconcile number if server assigned a different one ────────
-    // Normally server and local counters match (sequence reset after Phase 0 seed).
-    // If they diverge (e.g. offline sales pushed the local counter ahead), patch.
-    if (serverNumber != null && serverNumber !== serialized.number) {
-      setSales(prev => {
-        const reconciled = prev.map(s =>
-          s.number === serialized.number ? { ...s, number: serverNumber } : s
-        )
-        persistAllSales(reconciled)
-        return reconciled
-      })
+    const confirmed = {
+      ...serialized,
+      number: serverNumber ?? serialized.number,
+      supabaseId: saleId || null,
+      _localPending: !saleId,
     }
-
-    // Store supabaseId on the local record so voidSaleInSupabase can find it
-    // without a network round-trip (Phase 8+).
-    if (saleId) {
-      setSales(prev => {
-        const withId = prev.map(s =>
-          s.number === (serverNumber ?? serialized.number) ? { ...s, supabaseId: saleId } : s
-        )
-        persistAllSales(withId)
-        return withId
-      })
-    }
+    await persistSaleChanges([confirmed], confirmed.number !== serialized.number ? [serialized.number] : [])
+    setSales(prev => [
+      ...prev.filter(s => String(s.number) !== String(serialized.number) && String(s.number) !== String(confirmed.number)),
+      confirmed,
+    ])
 
     // Return saleId (UUID) + confirmed number so caller can chain inventory write.
     return { saleId, serverNumber: serverNumber ?? serialized.number }
@@ -142,9 +119,9 @@ export function useSales() {
   const updateSale = useCallback((invoiceNumber, patch) => {
     setSales(prev => {
       const updated = prev.map(s =>
-        s.number === invoiceNumber ? { ...s, ...patch } : s
+        s.number === invoiceNumber ? { ...s, ...patch, _localPending: true } : s
       )
-      persistAllSales(updated)
+      persistSaleChanges(updated.filter(s => s.number === invoiceNumber))
       return updated
     })
   }, [])
@@ -162,9 +139,9 @@ export function useSales() {
     // 1. Immediate local update
     setSales(prev => {
       const updated = prev.map(s =>
-        s.number === invoice.number ? { ...s, status: 'voided' } : s
+        s.number === invoice.number ? { ...s, status: 'voided', _localPending: true } : s
       )
-      persistAllSales(updated)
+      persistSaleChanges(updated.filter(s => s.number === invoice.number))
       return updated
     })
     // 2. Backend void + inventory restore (fire-and-forget)
@@ -188,10 +165,10 @@ export function useSales() {
       setSales(prev => {
         const updated = prev.map(s =>
           s.number === invoice.number
-            ? { ...s, status: 'refunded', refunds: [record] }
+            ? { ...s, status: 'refunded', refunds: [record], _localPending: true }
             : s
         )
-        persistAllSales(updated)
+        persistSaleChanges(updated.filter(s => s.number === invoice.number))
         return updated
       })
       voidSaleInSupabase(invoice, { performedById: null })
@@ -200,9 +177,9 @@ export function useSales() {
       setSales(prev => {
         const updated = prev.map(s => {
           if (s.number !== invoice.number) return s
-          return { ...s, refunds: [...(s.refunds || []), record] }
+          return { ...s, refunds: [...(s.refunds || []), record], _localPending: true }
         })
-        persistAllSales(updated)
+        persistSaleChanges(updated.filter(s => s.number === invoice.number))
         return updated
       })
       partialRefundInventoryInSupabase(invoice, refundData.items, { performedById: null })

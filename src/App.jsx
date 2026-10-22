@@ -17,6 +17,7 @@ import { fetchOrgSettings } from './services/supabaseOrgSettings'
 import { loadUsersAsync, loadActiveEmployees } from './utils/usersStorage'
 import { useCRM } from './hooks/useCRM'
 import { useSales, nextInvoiceNumber } from './hooks/useSales'
+import { hasSalesStorageError } from './utils/salesStorage'
 import { CHECKOUT_CACHE_ERROR } from './utils/checkoutCache'
 import { useCart } from './hooks/useCart'
 import { useProducts } from './hooks/useProducts'
@@ -77,7 +78,7 @@ ensureCategoriesSeeded()
 awaitOrgSession().then(() => { fetchOrgSettings(); fetchBonusRules() })
 
 export default function App() {
-  const [salesCacheError, setSalesCacheError] = useState(false)
+  const [salesCacheError, setSalesCacheError] = useState(hasSalesStorageError)
   useEffect(() => {
     const onCacheError = () => setSalesCacheError(true)
     window.addEventListener(CHECKOUT_CACHE_ERROR, onCacheError)
