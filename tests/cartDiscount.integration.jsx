@@ -5,7 +5,7 @@ import EditItemModal from '../src/components/EditItemModal'
 
 export async function run() {
   const results = []
-  function scenario({ initial = 129.99, type = '%', value = '20', expected = 103.99, qty = 1, minimum = 0, typed }) {
+  function scenario({ initial = 129.99, type = '%', value = '20', expected = 103.99, qty = 1, minimum = 0, typed, presets, manualAfterPreset = false, cancel = false }) {
     const host = document.body.appendChild(document.createElement('div'))
     const root = createRoot(host)
     let added
@@ -18,9 +18,25 @@ export async function run() {
     try {
       flushSync(() => root.render(<EditItemModal product={product} onAdd={item => { added = item }} onCancel={() => {}} minPriceRestriction={minimum > 0} />))
       if (typed) for (const digit of typed) click(digit)
-      click('% Discount'); click(type)
-      for (const digit of value) click(digit)
-      if (!host.textContent.includes(`New price: $${expected.toFixed(2)}`)) throw new Error('Discount preview used wrong base')
+      click('% Discount')
+      if (presets) {
+        for (const label of presets) click(label)
+        if (manualAfterPreset) for (const digit of value) click(digit)
+        const pressed = host.querySelectorAll('[aria-pressed="true"]')
+        if (pressed.length > 1 || (manualAfterPreset && pressed.length)) throw new Error('Preset selection is inconsistent')
+        if (host.querySelector('input').value !== String(initial)) throw new Error('Preset applied before confirmation')
+      } else {
+        click(type)
+        for (const digit of value) click(digit)
+      }
+      if (cancel) {
+        click('Cancel')
+        if (host.querySelector('input').value !== String(initial)) throw new Error('Cancel changed price')
+        click('% Discount')
+        if (host.querySelector('[aria-pressed="true"]')) throw new Error('Reopening retained preset')
+        return
+      }
+      if (expected !== initial && !host.textContent.includes(`New price: $${expected.toFixed(2)}`)) throw new Error('Discount preview used wrong base')
       click('Apply')
       if (host.querySelector('input').value !== expected.toFixed(2)) throw new Error('Applied price differs from preview')
       click('Add to Cart')
@@ -40,5 +56,12 @@ export async function run() {
   scenario({ value: '200', expected: 0 }); results.push('discount cannot make unit price negative')
   scenario({ minimum: 110 }); results.push('minimum price restriction still blocks add')
   scenario({ initial: 103.99, expected: 83.19 }); results.push('subsequent discount uses latest price, not original catalog price')
+  scenario({ presets: ['First time customer20%'] }); results.push('first-time preset applies 20% to custom price')
+  scenario({ presets: ['Employee discount25%'], expected: 97.49 }); results.push('employee preset applies 25% to custom price')
+  scenario({ presets: ['First time customer20%', 'Employee discount25%'], expected: 97.49 }); results.push('switching presets replaces selection without stacking')
+  scenario({ presets: ['First time customer20%', 'First time customer20%'], expected: 129.99 }); results.push('selected preset toggles off without changing price')
+  scenario({ presets: ['Employee discount25%'], manualAfterPreset: true, value: '10', expected: 116.99 }); results.push('manual entry replaces preset and clears selection')
+  scenario({ presets: ['Employee discount25%'], expected: 97.49, minimum: 110 }); results.push('preset respects minimum price restriction')
+  scenario({ presets: ['Employee discount25%'], cancel: true }); results.push('cancel preserves price and reopening clears selection')
   return results
 }

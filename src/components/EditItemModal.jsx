@@ -16,6 +16,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel, lo
   const [discType,      setDiscType]      = useState('pct')
   const [discInput,     setDiscInput]     = useState('0')
   const [discTouched,   setDiscTouched]   = useState(false)
+  const [discPreset,    setDiscPreset]    = useState(null)
   const [showExchange,  setShowExchange]  = useState(false)
 
   useEffect(() => {
@@ -107,6 +108,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel, lo
   }
 
   const handleDiscNumpad = (val) => {
+    setDiscPreset(null)
     if (val === 'Clear') { setDiscInput('0'); setDiscTouched(false); return }
     if (!discTouched) {
       setDiscTouched(true)
@@ -196,7 +198,7 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel, lo
                 color: RED, fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}>🔄 Exchange</button>
-              <button onClick={() => { setDiscInput('0'); setDiscTouched(false); setShowDiscount(true) }} style={{
+              <button onClick={() => { setDiscInput('0'); setDiscTouched(false); setDiscPreset(null); setShowDiscount(true) }} style={{
                 padding: '7px 12px', background: `${AMBER}15`,
                 border: `1px solid ${AMBER}40`, borderRadius: 6,
                 color: AMBER, fontSize: 12, fontWeight: 600, cursor: 'pointer',
@@ -280,12 +282,13 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel, lo
         {/* ── DISCOUNT MODAL ─────────────────────────────────────────────────── */}
         {showDiscount && (
           <div style={{
-            position: 'absolute', inset: 0, background: 'var(--c-overlay)',
+            position: 'fixed', inset: 0, background: 'var(--c-overlay)',
             borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10,
           }}>
             <div style={{
               background: 'var(--c-bg-panel)', border: `1px solid ${AMBER}40`, borderRadius: 10,
-              padding: 24, width: 320,
+              padding: 24, width: 320, maxWidth: 'calc(100vw - 32px)',
+              maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', boxSizing: 'border-box',
               boxShadow: `0 0 40px ${AMBER}20`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
@@ -301,11 +304,36 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel, lo
                 }}>×</button>
               </div>
 
+              <div style={{ display: 'grid', gap: 8, marginBottom: 18 }}>
+                {[
+                  ['first-time', 'First time customer', '20'],
+                  ['employee', 'Employee discount', '25'],
+                ].map(([id, label, percent]) => (
+                  <button key={id} type="button" aria-pressed={discPreset === id}
+                    onClick={() => {
+                      const selected = discPreset !== id
+                      setDiscPreset(selected ? id : null)
+                      setDiscType('pct')
+                      setDiscInput(selected ? percent : '0')
+                      setDiscTouched(false)
+                    }}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+                      padding: '11px 12px', borderRadius: 6, cursor: 'pointer',
+                      border: `1px solid ${discPreset === id ? AMBER : 'var(--c-border)'}`,
+                      background: discPreset === id ? `${AMBER}20` : 'var(--c-bg-card)',
+                      color: 'var(--c-text)', fontSize: 13, fontWeight: 600,
+                    }}>
+                    <span>{label}</span><span style={{ color: AMBER }}>{percent}%</span>
+                  </button>
+                ))}
+              </div>
+
               <p style={{ color: 'var(--c-text-muted)', fontSize: 12, marginBottom: 10, letterSpacing: 0.3 }}>SELECT DISCOUNT TYPE</p>
               <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
                 {[['pct','%','f59e0b'],['dollar','$','2563eb']].map(([type, sym, col]) => (
                   <button key={type}
-                    onClick={() => { setDiscType(type); setDiscInput('0'); setDiscTouched(false) }}
+                    onClick={() => { setDiscType(type); setDiscInput('0'); setDiscTouched(false); setDiscPreset(null) }}
                     style={{
                       flex: 1, padding: '13px 0',
                       border: `2px solid ${discType === type ? `#${col}` : 'var(--c-border)'}`,
