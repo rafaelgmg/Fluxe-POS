@@ -96,8 +96,8 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel, lo
   const applyDiscount = () => {
     const val = parseFloat(discInput) || 0
     let newPrice = discType === 'pct'
-      ? product.systemPrice * (1 - val / 100)
-      : product.systemPrice - val
+      ? price * (1 - val / 100)
+      : price - val
     newPrice = Math.max(0, newPrice)
     setPriceInput(newPrice.toFixed(2))
     setPriceTouched(true)
@@ -327,8 +327,8 @@ export default function EditItemModal({ product, onAdd, onExchange, onCancel, lo
               {parseFloat(discInput) > 0 && (
                 <p style={{ color: GREEN, fontSize: 12, marginBottom: 12, textAlign: 'center' }}>
                   New price: ${discType === 'pct'
-                    ? Math.max(0, product.systemPrice * (1 - parseFloat(discInput) / 100)).toFixed(2)
-                    : Math.max(0, product.systemPrice - parseFloat(discInput)).toFixed(2)}
+                    ? Math.max(0, price * (1 - parseFloat(discInput) / 100)).toFixed(2)
+                    : Math.max(0, price - parseFloat(discInput)).toFixed(2)}
                 </p>
               )}
 
