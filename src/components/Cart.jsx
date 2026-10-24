@@ -55,15 +55,14 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
 
       {/* Column headers */}
       <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 48px 68px 68px 28px',
+        display: 'grid', gridTemplateColumns: '1fr 48px 80px 28px',
         padding: '8px 12px', background: 'var(--c-bg-card)',
         borderBottom: '1px solid var(--c-border)',
         fontSize: 11, color: 'var(--c-text-muted)', fontWeight: 700, letterSpacing: 0.4,
       }}>
         <span>PRODUCT</span>
         <span style={{ textAlign: 'center' }}>QTY</span>
-        <span style={{ textAlign: 'right' }}>PRICE</span>
-        <span style={{ textAlign: 'right' }}>SUB</span>
+        <span style={{ textAlign: 'right' }}>SUBTOTAL</span>
         <span></span>
       </div>
 
@@ -85,7 +84,7 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
             <div key={idx}
               onClick={() => !isExchange && onEditItem && onEditItem(idx)}
               style={{
-                display: 'grid', gridTemplateColumns: '1fr 48px 68px 68px 28px',
+                display: 'grid', gridTemplateColumns: '1fr 48px 80px 28px',
                 padding: '11px 12px', borderBottom: '1px solid var(--c-border)',
                 alignItems: 'start', transition: 'background 0.2s ease',
                 cursor: isExchange ? 'default' : 'pointer',
@@ -120,9 +119,6 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
               </div>
               <span style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'var(--c-text-sub)' }}>
                 {item.qty}
-              </span>
-              <span style={{ textAlign: 'right', fontSize: 14, color: 'var(--c-text-sub)' }}>
-                ${item.systemPrice.toFixed(2)}
               </span>
               <span style={{
                 textAlign: 'right', fontSize: 15, fontWeight: 700,
