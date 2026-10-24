@@ -111,11 +111,6 @@ export default function Cart({ items, taxRate = 0.085, onRemove, onCompleteSale,
                 {isExchange && !isReturn && (
                   <p style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>⚠ Damaged</p>
                 )}
-                {!isExchange && item.discount > 0 && (
-                  <p style={{ fontSize: 11, color: 'var(--c-text-muted)', fontWeight: 500, marginTop: 2, opacity: 0.75 }}>
-                    −${item.discount.toFixed(2)} disc
-                  </p>
-                )}
               </div>
               <span style={{ textAlign: 'center', fontSize: 15, fontWeight: 600, color: 'var(--c-text-sub)' }}>
                 {item.qty}
