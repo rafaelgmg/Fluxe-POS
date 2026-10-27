@@ -13,7 +13,7 @@ async function run({ token = 'valid', org = ORG, role = 'admin', path = '/sms/se
   const filters = []
   const query = { select() { return this }, eq(k, v) { filters.push([k, v]); return this }, async maybeSingle() { return { data: row } } }
   const client = { auth: { async getUser(jwt) { checkedToken = jwt; if (throws) throw Error('offline'); return { data: { user: { id: 'auth-user', app_metadata: { org_id: org, backend_role: role }, user_metadata: { backend_role: 'admin' } } }, error } } }, from() { return query } }
-  const req = { headers: token ? { authorization: `Bearer ${token}` } : {}, path, body }
+  const req = { method: 'POST', headers: token ? { authorization: `Bearer ${token}` } : {}, path, body }
   const res = response()
   await createApiGuard({ getClient: () => client, getOrgId: () => configured })(req, res, () => { called = true })
   return { req, res, called, checkedToken, filters }
@@ -37,6 +37,15 @@ test('machine account cannot send or administer using user-editable metadata', a
 })
 test('authorized request derives org from verified identity', async () => {
   const r = await run(); assert.equal(r.called, true); assert.equal(r.checkedToken, 'valid'); assert.equal(r.req.body.orgId, ORG)
+})
+
+test('kiosk may request receipt delivery only with verified same-organization identity', async () => {
+  const valid = await run({ role: 'machine', path: '/receipts/send' })
+  assert.equal(valid.called, true)
+  assert.equal(valid.req.auth.orgId, ORG)
+  assert.equal((await run({ role: 'machine', path: '/receipts/send', token: null })).res.code, 401)
+  assert.equal((await run({ role: 'machine', path: '/receipts/send', org: OTHER })).res.code, 403)
+  assert.equal((await run({ role: 'machine', path: '/receipts/send', body: { orgId: OTHER } })).res.code, 403)
 })
 test('customer and location lookups enforce organization ownership', async () => {
   const r = await run({ body: { supabaseId: OTHER, locationId: OTHER } })

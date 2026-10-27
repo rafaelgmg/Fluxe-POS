@@ -1,6 +1,6 @@
 # Receipt worker: controlled pilot
 
-Disabled by default. No new SQL migration is required: the existing queue has all
+The original single-request test mode is disabled by default. It needs no new SQL migration: the existing queue has all
 fields and service-role privileges required for conditional updates. This version
 does not enable general customer delivery or change enqueue_receipt's held default.
 
@@ -52,3 +52,59 @@ operator reconciliation UI and opt-out webhook audit remain follow-up work.
 Tests mock provider calls and the store. The race test verifies worker behavior against
 an atomic store contract; it is not an integration test against production PostgreSQL.
 Run `npm test` from server. No tests send real SMS or modify production data.
+
+## Explicit delivery from the Fluxe SMS button
+
+This mode requires `database/migration_receipt_delivery.sql`, applied ONCE after
+the existing queue migration. Do not rerun the original CREATE TABLE migration.
+It adds delivery_mode and service-role-only RPCs request_receipt_send and
+claim_receipt_send. Existing rows remain test/held (or their existing status).
+Migration alone sends nothing. Browser roles cannot call either RPC.
+
+POST /api/receipts/send validates the authenticated org, persisted sale, requested
+phone and receiptRequested=true, then invokes request_receipt_send. This reuses
+enqueue_receipt checks and releases held -> pending in the same transaction.
+It never resets attempts or terminal outcomes. Old held requests require entering
+the original phone, checking consent, verifying, and explicitly confirming Send.
+The legacy /requests endpoint continues to save held requests, even in live mode.
+
+Deploy code with sending OFF, apply the new migration, then use Railway variables:
+
+```
+RECEIPT_QUEUE_ENABLED=true
+RECEIPT_WORKER_ENABLED=true
+RECEIPT_WORKER_MODE=live
+RECEIPT_SEND_ENABLED=true
+RECEIPT_LIVE_TEST_NUMBER=<your own normalized +1 number>
+SMS_AUTOMATION_ENABLED=false
+```
+
+The optional RECEIPT_LIVE_TEST_NUMBER restricts both the send endpoint AND worker
+to that destination. Use it for the first end-to-end UI test; the original
+RECEIPT_TEST_REQUEST_ID / RECEIPT_TEST_NUMBER settings are ignored in live mode.
+Use an eligible sale without a previously sent/attempted request. Confirm the UI
+shows test sending, enter your number, verify, then press Send receipt by SMS.
+This sends a real SMS; never test with an unrelated customer's linked sale.
+After checking the result, disable RECEIPT_WORKER_ENABLED and RECEIPT_SEND_ENABLED
+until ready for general delivery. To allow all eligible customers, remove
+RECEIPT_LIVE_TEST_NUMBER only as an explicit rollout step and redeploy.
+
+The live worker claims one pending/live request per ten-second tick via an atomic
+FOR UPDATE SKIP LOCKED RPC. Outcomes are written to the exact claimed ID and org.
+Stale processing rows become uncertain; they are never automatically resent.
+Three new requests per recipient/24h remain enforced; release also limits old
+held requests to three live releases per recipient/24h. No backlog is bulk-released.
+Flags take effect after Railway deployment. In-flight provider calls may finish
+during shutdown. Never reset attempts or clear provider IDs to retry a message.
+
+Validation:
+- `npm test` in server: API/config/worker/auth tests with mocked providers.
+- `node tests/run-receipt-delivery-browser.mjs`: isolated Chrome, mocked backend.
+- `tests/receiptDelivery.database.mjs`: actual in-memory PostgreSQL via a temporary
+  @electric-sql/pglite installation; set PGLITE_MODULE to its dist/index.js path.
+  Covers migrations, idempotency, claims, scope, eligibility and RPC privileges.
+  PGlite does not test competing independent PostgreSQL sessions; verify parallel
+  claims in a staging Supabase database before scaling to multiple replicas.
+
+Delivery callbacks remain a separate follow-up: sent still means provider accepted,
+not confirmed delivered. This change does not enable marketing automation.

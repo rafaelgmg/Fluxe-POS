@@ -102,7 +102,14 @@ app.use('/api', (req, res, next) => {
 })
 
 app.post('/api/receipts/authorize', require('./receiptAuthorization').createReceiptAuthorization({ getClient: sbClient.getClient }))
-app.get('/api/receipts/requests/:saleId', require('./receiptQueue').createReceiptStatus({ getClient: sbClient.getClient }))
+const receiptDeliveryConfig = orgId => require('./receiptDelivery').getDeliveryConfig(process.env, orgId)
+app.get('/api/receipts/requests/:saleId', require('./receiptQueue').createReceiptStatus({
+  getClient: sbClient.getClient, getDeliveryConfig: receiptDeliveryConfig,
+}))
+app.post('/api/receipts/send', require('./receiptQueue').createReceiptQueue({
+  getClient: sbClient.getClient, send: true, getDeliveryConfig: receiptDeliveryConfig,
+  isEnabled: () => process.env.RECEIPT_QUEUE_ENABLED === 'true',
+}))
 app.post('/api/receipts/requests', require('./receiptQueue').createReceiptQueue({
   getClient: sbClient.getClient,
   isEnabled: () => process.env.RECEIPT_QUEUE_ENABLED === 'true',

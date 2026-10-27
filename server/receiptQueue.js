@@ -13,11 +13,18 @@ const ERRORS = {
   queue_busy: [503, 'Receipt queue is busy. Check the request status, then retry if needed.'],
 }
 
-function createReceiptQueue({ getClient, isEnabled = () => false }) {
+function createReceiptQueue({ getClient, isEnabled = () => false, send = false, getDeliveryConfig = () => null }) {
   const authorize = createReceiptAuthorization({
     getClient,
     async onAuthorized({ req, res, saleId, phone }) {
-      const { data, error } = await getClient().rpc('enqueue_receipt', {
+      if (send) {
+        const delivery = getDeliveryConfig(req.auth.orgId)
+        if (!delivery) return res.status(503).json({ error: 'Receipt sending is not enabled. No request was released.' })
+        if (delivery.recipient && delivery.recipient !== phone) {
+          return res.status(403).json({ error: 'Receipt sending is currently limited to the configured test number.' })
+        }
+      }
+      const { data, error } = await getClient().rpc(send ? 'request_receipt_send' : 'enqueue_receipt', {
         p_org_id: req.auth.orgId, p_sale_id: saleId,
         p_requested_by: req.auth.userId, p_recipient: phone,
       }).abortSignal(AbortSignal.timeout(10_000))
@@ -41,7 +48,7 @@ function createReceiptQueue({ getClient, isEnabled = () => false }) {
     return authorize(req, res)
   }
 }
-function createReceiptStatus({ getClient }) {
+function createReceiptStatus({ getClient, getDeliveryConfig = () => null }) {
   return async (req, res) => {
     res.set('Cache-Control', 'no-store')
     if (!req.auth?.orgId) return res.status(401).json({ error: 'Authentication required' })
@@ -58,7 +65,8 @@ function createReceiptStatus({ getClient }) {
         .eq('organization_id', req.auth.orgId).eq('sale_id', req.params.saleId)
         .eq('channel', 'sms').eq('purpose', 'receipt').maybeSingle()
       if (error) throw error
-      return res.json({ request: data ? {
+      const delivery = getDeliveryConfig(req.auth.orgId)
+      return res.json({ sendingEnabled: !!delivery, testOnly: !!delivery?.recipient, request: data ? {
         requestId: data.id, status: data.status, recipientLast4: data.recipient.slice(-4),
         requestedAt: data.requested_at, updatedAt: data.updated_at,
       } : null })

@@ -10,6 +10,9 @@ export default function SmsReceiptModal({ invoice, defaultPhone = '', onClose })
   const [queueResult, setQueueResult] = useState(null)
   const [statusChecked, setStatusChecked] = useState(false)
   const [checking, setChecking] = useState(false)
+  const [sendingEnabled, setSendingEnabled] = useState(false)
+  const [testOnly, setTestOnly] = useState(false)
+  const canRequest = !queueResult || (sendingEnabled && queueResult.status === 'held')
   const synced = Boolean(invoice.supabaseId)
 
   const refreshStatus = useCallback(async (signal) => {
@@ -23,6 +26,8 @@ export default function SmsReceiptModal({ invoice, defaultPhone = '', onClose })
       if (!Object.hasOwn(data, 'request')) throw new Error('Unexpected receipt status response')
       if (signal?.aborted) return
       setQueueResult(data.request)
+      setSendingEnabled(data.sendingEnabled === true)
+      setTestOnly(data.testOnly === true)
       setStatusChecked(true)
     } catch (err) {
       if (signal?.aborted) return
@@ -44,11 +49,11 @@ export default function SmsReceiptModal({ invoice, defaultPhone = '', onClose })
   }
 
   async function queueReceipt() {
-    if (busy || checking || !statusChecked || !preview || !requested || queueResult) return
+    if (busy || checking || !statusChecked || !preview || !requested || !canRequest) return
     setBusy(true)
     setError('')
     try {
-      const res = await backendFetch('/api/receipts/requests', {
+      const res = await backendFetch(sendingEnabled ? '/api/receipts/send' : '/api/receipts/requests', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ saleId: invoice.supabaseId, phone, receiptRequested: true }),
       })
@@ -63,7 +68,7 @@ export default function SmsReceiptModal({ invoice, defaultPhone = '', onClose })
   }
 
   async function verifyReceipt() {
-    if (busy || checking || !statusChecked || queueResult || !synced || !requested) return
+    if (busy || checking || !statusChecked || !canRequest || !synced || !requested) return
     setBusy(true)
     setError('')
     setPreview(null)
@@ -92,12 +97,15 @@ export default function SmsReceiptModal({ invoice, defaultPhone = '', onClose })
       <div style={{ width: 440, maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto', background: '#0d1526', border: '1px solid #253349', borderRadius: 12, padding: 20, color: '#f1f5f9' }}>
         <h3 id="receipt-title">SMS Receipt</h3>
         <p style={{ color: '#94a3b8', margin: '8px 0 16px' }}>Invoice #{invoice.number}</p>
-        <p style={{ color: '#fbbf24', marginBottom: 16 }}>Verified requests are saved on hold. Saving a request does not send an SMS; it must be explicitly released for sending.</p>
+        <p style={{ color: '#fbbf24', marginBottom: 16 }}>{sendingEnabled
+          ? testOnly ? 'Test sending is enabled only for the configured test number. Verify the receipt, then confirm Send receipt by SMS.'
+            : 'Verify the receipt and phone number, then confirm Send receipt by SMS. The receipt will be queued for sending.'
+          : 'Verified requests are saved on hold. Saving a request does not send an SMS; it must be explicitly released for sending.'}</p>
         {!synced && <p role="status" style={{ marginBottom: 12 }}>This sale has no confirmed server ID. Its SMS receipt cannot be verified yet.</p>}
         <label htmlFor="receipt-phone">Customer phone (US/Canada)</label>
-        <input id="receipt-phone" type="tel" value={phone} disabled={busy || !!queueResult} placeholder="702-555-1234" style={{ ...inputStyle, margin: '6px 0 12px' }} onChange={e => { setPhone(e.target.value); setPreview(null); setRequested(false); setError('') }} />
+        <input id="receipt-phone" type="tel" value={phone} disabled={busy || !canRequest} placeholder="702-555-1234" style={{ ...inputStyle, margin: '6px 0 12px' }} onChange={e => { setPhone(e.target.value); setPreview(null); setRequested(false); setError('') }} />
         <label style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-          <input type="checkbox" checked={requested} disabled={busy || !!queueResult} onChange={e => { setRequested(e.target.checked); setPreview(null) }} />
+          <input type="checkbox" checked={requested} disabled={busy || !canRequest} onChange={e => { setRequested(e.target.checked); setPreview(null) }} />
           The customer requested this receipt by SMS at this number.
         </label>
         {error && <p role="alert" style={{ color: '#f87171', marginBottom: 12 }}>{error}</p>}
@@ -110,7 +118,7 @@ export default function SmsReceiptModal({ invoice, defaultPhone = '', onClose })
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button onClick={onClose} style={{ ...inputStyle, width: 'auto' }}>Close</button>
           {synced && <button onClick={() => refreshStatus()} disabled={busy || checking} style={{ ...inputStyle, width: 'auto' }}>Refresh status</button>}
-          {!queueResult && <button onClick={preview ? queueReceipt : verifyReceipt} disabled={busy || checking || !statusChecked || !synced || !requested || !phone.trim()} style={{ ...inputStyle, width: 'auto' }}>{busy ? 'Please wait...' : preview ? 'Save request on hold' : 'Verify receipt'}</button>}
+          {canRequest && <button onClick={preview ? queueReceipt : verifyReceipt} disabled={busy || checking || !statusChecked || !synced || !requested || !phone.trim()} style={{ ...inputStyle, width: 'auto' }}>{busy ? 'Please wait...' : preview ? (sendingEnabled ? 'Send receipt by SMS' : 'Save request on hold') : 'Verify receipt'}</button>}
         </div>
       </div>
     </div>

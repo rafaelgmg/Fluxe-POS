@@ -17,13 +17,13 @@ function fixture(options = {}) {
     async revalidate() { if (options.validationError) throw new Error('Unavailable'); return options.valid !== false },
     async finish(_config, patch) { if (options.persistError) throw new Error('Unavailable'); Object.assign(row, patch); return row },
   }
-  const make = (enabled = true) => createReceiptWorker({ config: enabled ? config : null, store,
+  const make = (enabled = true) => createReceiptWorker({ config: enabled ? options.config || config : null, store,
     send: async payload => { sends.push(payload); if (options.sendError) throw options.sendError; return options.reply || { sid } },
     log: { info() {}, warn() {} },
   })
   return { row, sends, make }
 }
-test('worker disabled by default; invalid/live configurations cannot enable sending', () => {
+test('worker disabled by default; incomplete live configuration cannot enable sending', () => {
   assert.equal(readWorkerConfig({}), null)
   assert.throws(() => readWorkerConfig({ RECEIPT_WORKER_ENABLED: 'true', RECEIPT_WORKER_MODE: 'live' }))
   const env = { RECEIPT_WORKER_ENABLED: 'true', RECEIPT_WORKER_MODE: 'test', ORG_ID: config.orgId,
@@ -31,6 +31,47 @@ test('worker disabled by default; invalid/live configurations cannot enable send
     TWILIO_PHONE_NUMBER: config.from, TWILIO_ACCOUNT_SID: `AC${'a'.repeat(32)}`, TWILIO_AUTH_TOKEN: 'fixture' }
   assert.deepEqual(readWorkerConfig(env), config)
   assert.throws(() => readWorkerConfig({ ...env, RECEIPT_TEST_NUMBER: '7025551234' }))
+})
+
+test('live config requires independent send and queue gates, supports a restricted pilot', () => {
+  const { getDeliveryConfig } = require('./receiptDelivery')
+  const env = { RECEIPT_WORKER_ENABLED: 'true', RECEIPT_WORKER_MODE: 'live', ORG_ID: config.orgId,
+    RECEIPT_SEND_ENABLED: 'true', RECEIPT_QUEUE_ENABLED: 'true',
+    TWILIO_PHONE_NUMBER: config.from, TWILIO_ACCOUNT_SID: `AC${'a'.repeat(32)}`, TWILIO_AUTH_TOKEN: 'fixture' }
+  assert.equal(readWorkerConfig(env).mode, 'live')
+  for (const key of ['RECEIPT_WORKER_ENABLED', 'RECEIPT_SEND_ENABLED', 'RECEIPT_QUEUE_ENABLED']) {
+    assert.equal(getDeliveryConfig({ ...env, [key]: 'false' }, config.orgId), null)
+  }
+  assert.equal(getDeliveryConfig(env, 'foreign'), null)
+  assert.equal(getDeliveryConfig({ ...env, RECEIPT_LIVE_TEST_NUMBER: 'invalid' }, config.orgId), null)
+  assert.equal(getDeliveryConfig({ ...env, RECEIPT_LIVE_TEST_NUMBER: config.recipient }, config.orgId).recipient, config.recipient)
+})
+
+test('live worker sends different explicitly released requests; held or test rows do not send', async () => {
+  const live = { mode: 'live', orgId: config.orgId, from: config.from, recipient: null }
+  for (const recipient of [config.recipient, '+12125551234']) {
+    const f = fixture({ config: live, row: { recipient, delivery_mode: 'live' } })
+    await f.make().tick(); await f.make().tick()
+    assert.equal(f.sends.length, 1)
+    assert.equal(f.sends[0].to, recipient)
+  }
+  for (const row of [{ status: 'held', delivery_mode: 'live' }, { delivery_mode: 'test' },
+    { delivery_mode: 'live', organization_id: 'foreign' }]) {
+    const f = fixture({ config: live, row }); await f.make().tick()
+    assert.equal(f.sends.length, 0)
+  }
+})
+
+test('live store uses atomic claim RPC and refuses unscoped outcome updates', async () => {
+  const live = { mode: 'live', orgId: config.orgId, recipient: null }
+  const store = createReceiptWorkerStore(() => ({ rpc(name, args) {
+    assert.equal(name, 'claim_receipt_send')
+    assert.deepEqual(args, { p_org_id: config.orgId, p_recipient: null })
+    return { async abortSignal() { return { data: [] } } }
+  } }))
+  assert.equal(await store.claim(live), null)
+  assert.throws(() => store.finish(live, { status: 'sent' }))
+  assert.throws(() => store.release(live))
 })
 test('disabled worker and held requests never send', async () => {
   const disabled = fixture(); await disabled.make(false).tick(); assert.equal(disabled.row.attempts, 0)

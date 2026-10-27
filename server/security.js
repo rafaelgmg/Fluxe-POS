@@ -21,7 +21,7 @@ function createApiGuard({ getClient, getOrgId }) {
       if (body.orgId && body.orgId !== configuredOrg) return res.status(403).json({ error: 'Organization mismatch' })
       // Legacy JSON storage and templates are not tenant-aware. Keep this deployment
       // pinned to ONE organization until the persistent queue migration is complete.
-      const receiptCheck = req.method === 'POST' && ['/receipts/authorize', '/receipts/requests'].includes(req.path)
+      const receiptCheck = req.method === 'POST' && ['/receipts/authorize', '/receipts/requests', '/receipts/send'].includes(req.path)
       const receiptStatus = req.method === 'GET' && /^\/receipts\/requests\/[0-9a-f-]{36}$/i.test(req.path)
       if (req.path !== '/status' && !receiptCheck && !receiptStatus && req.auth.role !== 'admin') {
         return res.status(403).json({ error: 'Backend administrator permission required' })

@@ -29,7 +29,19 @@ test('status endpoint masks phone, excludes message body, and scopes every read 
   assert.equal(res.body.request.requestId, 'request-id')
   assert.equal(res.body.request.recipient, undefined)
   assert.equal(res.body.request.message_body, undefined)
+  assert.equal(res.body.sendingEnabled, false)
   for (const read of f.reads) assert.ok(read.filters.some(([k, v]) => k === 'organization_id' && v === ORG))
+})
+
+test('status exposes only delivery availability and pilot flag, never the allowed number', async () => {
+  const f = fixture()
+  const res = { set() {}, json(body) { this.body = body } }
+  await createReceiptStatus({ getClient: () => f.client, getDeliveryConfig: org => {
+    assert.equal(org, ORG); return { recipient: '+17025551234' }
+  } })({ auth: { orgId: ORG }, params: { saleId: SALE } }, res)
+  assert.equal(res.body.sendingEnabled, true)
+  assert.equal(res.body.testOnly, true)
+  assert.equal(JSON.stringify(res.body).includes('7025551234'), false)
 })
 
 test('missing record differs from unavailable queue; missing sale is not disclosed', async () => {

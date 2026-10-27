@@ -4,7 +4,7 @@ const { createReceiptQueue } = require('./receiptQueue')
 const ORG = '11111111-1111-4111-8111-111111111111'
 const SALE = '22222222-2222-4222-8222-222222222222'
 const USER = '33333333-3333-4333-8333-333333333333'
-function fixture({ enabled = true, rpcError = null, rpcData, saleStatus = 'completed', rpcThrows = false } = {}) {
+function fixture({ enabled = true, rpcError = null, rpcData, saleStatus = 'completed', rpcThrows = false, send = false, delivery = null } = {}) {
   const calls = []
   let persisted
   const client = {
@@ -33,7 +33,8 @@ function fixture({ enabled = true, rpcError = null, rpcData, saleStatus = 'compl
       } }
     },
   }
-  const handler = createReceiptQueue({ getClient: () => client, isEnabled: () => enabled })
+  const handler = createReceiptQueue({ getClient: () => client, isEnabled: () => enabled,
+    send, getDeliveryConfig: orgId => { assert.equal(orgId, ORG); return delivery } })
   async function request(body = {}) {
     const req = { auth: { orgId: ORG, userId: USER }, body: { saleId: SALE, phone: '7025551234', receiptRequested: true, ...body } }
     const res = { code: 200, set() {}, status(code) { this.code = code; return this }, json(body) { this.body = body; return this } }
@@ -92,4 +93,29 @@ test('maps transaction rejections without exposing database errors', async () =>
   for (const [error, code] of [['queue_busy', 503], ['rate_limit', 429], ['opted_out', 403], ['sale_incomplete', 409], ['sale_not_found', 404], ['organization_denied', 403]]) {
     assert.equal((await fixture({ rpcData: { error } }).request()).code, code)
   }
+})
+
+test('explicit send is disabled by default and pilot rejects other destinations before writes', async () => {
+  for (const [delivery, code] of [[null, 503], [{ recipient: '+12125551234' }, 403]]) {
+    const f = fixture({ send: true, delivery })
+    assert.equal((await f.request()).code, code)
+    assert.equal(f.calls.length, 0)
+  }
+})
+
+test('send calls atomic release RPC only after validation and preserves terminal results', async () => {
+  for (const status of ['pending', 'processing', 'sent', 'failed', 'uncertain', 'cancelled']) {
+    const f = fixture({ send: true, delivery: {}, rpcData: { id: 'queue-id', status, duplicate: true } })
+    const r = await f.request()
+    assert.equal(r.body.status, status)
+    assert.equal(f.calls[0].name, 'request_receipt_send')
+    assert.equal(f.calls[0].params.p_requested_by, USER)
+  }
+  for (const body of [{ receiptRequested: false }, { message: 'untrusted' }]) {
+    const f = fixture({ send: true, delivery: {} })
+    assert.equal((await f.request(body)).code, 400)
+    assert.equal(f.calls.length, 0)
+  }
+  const missing = fixture({ send: true, delivery: {}, rpcError: { code: 'PGRST202' } })
+  assert.equal((await missing.request()).code, 503)
 })
